@@ -1,0 +1,335 @@
+/* ── Perfil.css ──────────────────────────────────────────────────────────── */
+
+.pf-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 820px;
+    margin: 0 auto;
+}
+
+/* ── Header ── */
+.pf-header {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 28px 32px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
+
+/* ── Avatar ── */
+.pf-avatar-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.pf-avatar,
+.pf-avatar-img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+}
+
+.pf-avatar {
+    background: #1a3a5c;
+    color: #fff;
+    font-size: 28px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 1px;
+}
+
+.pf-avatar-img {
+    object-fit: cover;
+    border: 3px solid #e5e7eb;
+}
+
+.pf-avatar-edit {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #1a3a5c;
+    color: #fff;
+    border: 2px solid #fff;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.pf-avatar-edit:hover {
+    background: #2d5a8e;
+}
+
+/* ── Header info ── */
+.pf-header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    flex: 1;
+}
+
+.pf-nombre {
+    font-size: 22px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+    word-break: break-word;
+}
+
+.pf-rol-badge {
+    display: inline-block;
+    background: #1a3a5c18;
+    color: #1a3a5c;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid #1a3a5c30;
+    text-transform: uppercase;
+    width: fit-content;
+}
+
+.pf-email {
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+/* ── Grid de cards ── */
+.pf-secciones {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+/* ── Card ── */
+.pf-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    overflow: hidden;
+}
+
+.pf-card-pass {
+    grid-column: span 2;
+}
+
+.pf-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 18px;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 12px;
+    font-weight: 700;
+    color: #1a3a5c;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    user-select: none;
+}
+
+.pf-card-header i { font-size: 15px; }
+
+.pf-pass-toggle {
+    margin-left: auto;
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.pf-card-body { padding: 8px 0; }
+
+/* ── Campo ── */
+.pf-campo {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 18px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.pf-campo:last-child { border-bottom: none; }
+
+.pf-campo-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.pf-campo-valor {
+    font-size: 13px;
+    font-weight: 500;
+    color: #111827;
+    text-align: right;
+}
+
+/* ── Formulario de contraseña ── */
+.pf-pass-form {
+    padding: 20px 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.pf-pass-fields {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+}
+
+.pf-pass-field-full {
+    grid-column: span 2;
+}
+
+.pf-pass-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.pf-pass-field label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.pf-pass-field input {
+    border: 1px solid #d1d5db;
+    border-radius: 7px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: #111827;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.pf-pass-field input:focus {
+    border-color: #1a3a5c;
+}
+
+/* ── Mensaje ── */
+.pf-pass-msg {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    padding: 8px 12px;
+    border-radius: 7px;
+}
+
+.pf-pass-msg.ok  { background: #f0fdf4; color: #16a34a; }
+.pf-pass-msg.err { background: #fef2f2; color: #dc2626; }
+
+/* ── Botones ── */
+.pf-pass-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.pf-btn-cancel {
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 7px;
+    padding: 7px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.pf-btn-cancel:hover { background: #e5e7eb; }
+
+.pf-btn-save {
+    background: #1a3a5c;
+    border: none;
+    border-radius: 7px;
+    padding: 7px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s;
+}
+
+.pf-btn-save:hover    { background: #2d5a8e; }
+.pf-btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Zoom avatar ── */
+.pf-zoom-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: pf-fadein .15s ease;
+}
+
+@keyframes pf-fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.pf-zoom-img {
+    max-width: 380px;
+    max-height: 380px;
+    width: auto;
+    height: auto;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    object-fit: cover;
+}
+
+.pf-zoom-close {
+    position: fixed;
+    top: 20px;
+    right: 24px;
+    background: rgba(255,255,255,.15);
+    border: none;
+    color: #fff;
+    font-size: 18px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background .15s;
+}
+
+.pf-zoom-close:hover { background: rgba(255,255,255,.3); }
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+    .pf-secciones     { grid-template-columns: 1fr; }
+    .pf-card-pass     { grid-column: span 1; }
+    .pf-pass-fields   { grid-template-columns: 1fr; }
+    .pf-header        { flex-direction: column; text-align: center; align-items: center; }
+}

@@ -1,0 +1,353 @@
+/* ── Estadisticas.css ─────────────────────────────────────────────────────── */
+
+.est-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-bottom: 32px;
+}
+
+/* ── Header + selectores ── */
+.est-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.est-titulo {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a3a5c;
+    letter-spacing: 1px;
+    margin: 0;
+}
+
+.est-filtros {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.est-btn-exportar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: #1d6f42;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s;
+}
+.est-btn-exportar:hover { background: #155534; }
+.est-btn-exportar:disabled { opacity: .6; cursor: not-allowed; }
+.est-spin { display: inline-block; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+
+.est-filtro-grupo {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.est-filtro-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.est-mes-sel {
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s;
+}
+.est-mes-sel:focus { border-color: #1a3a5c; }
+
+/* ── Tarjetas resumen ── */
+.est-tarjetas {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+.est-tarjeta {
+    background: #fff;
+    border-radius: 10px;
+    border-top: 3px solid #1a3a5c;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+
+.est-tarjeta-icono {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.est-tarjeta-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.est-tarjeta-valor {
+    font-size: 22px;
+    font-weight: 800;
+    color: #111827;
+    line-height: 1;
+}
+
+.est-tarjeta-etiqueta {
+    font-size: 10px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    line-height: 1.3;
+}
+
+/* ── Grid de gráficas ── */
+.est-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+}
+
+/* ── Card individual ── */
+.est-card {
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 2px 8px rgba(0,0,0,.10);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.est-card-wide {
+    grid-column: span 3;
+}
+
+/* ── Separador de sección ── */
+.est-seccion {
+    grid-column: span 3;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 6px;
+}
+.est-seccion-linea {
+    flex: 1;
+    height: 1px;
+    background: #d1d5db;
+}
+.est-seccion-label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: #2d6a4f;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+.est-seccion-label i { font-size: 12px; }
+
+.est-card-header {
+    padding: 12px 16px 8px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.est-card-titulo {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #111827;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.est-card-sub {
+    display: block;
+    font-size: 10px;
+    color: #9ca3af;
+    margin-top: 2px;
+}
+
+.est-card-body {
+    padding: 12px 16px 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* ── Dona ── */
+.est-dona-wrap {
+    height: 220px;
+    position: relative;
+}
+
+.est-dona-stats {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.est-dona-stats span {
+    font-size: 11px;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.est-dona-stats strong {
+    font-size: 13px;
+}
+
+/* ── Barra wide ── */
+.est-bar-stats {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.est-bar-stats span {
+    font-size: 11px;
+    color: #6b7280;
+}
+
+.est-bar-stats strong {
+    font-size: 14px;
+    color: #111827;
+    margin-right: 3px;
+}
+
+.est-bar-wrap {
+    height: 240px;
+    position: relative;
+}
+
+/* ── Loading ── */
+.est-cargando {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    font-size: 14px;
+    color: #9ca3af;
+    gap: 8px;
+}
+
+/* ── Highlight al navegar desde tarjeta ── */
+@keyframes est-highlight-pulse {
+    0%   { box-shadow: 0 2px 8px rgba(0,0,0,.10); border-color: #e5e7eb; }
+    20%  { box-shadow: 0 0 0 4px rgba(26,58,92,.25); border-color: #1a3a5c; }
+    60%  { box-shadow: 0 0 0 4px rgba(26,58,92,.25); border-color: #1a3a5c; }
+    100% { box-shadow: 0 2px 8px rgba(0,0,0,.10); border-color: #e5e7eb; }
+}
+
+.est-card-highlight {
+    animation: est-highlight-pulse 1.8s ease forwards;
+}
+
+.est-tarjeta-arrow {
+    margin-left: auto;
+    font-size: 18px;
+    opacity: 0.6;
+    flex-shrink: 0;
+}
+
+.est-tarjeta:hover .est-tarjeta-arrow {
+    opacity: 1;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1200px) {
+    .est-tarjetas  { grid-template-columns: repeat(4, 1fr); }  /* 2 filas de 4 */
+    .est-grid      { grid-template-columns: repeat(2, 1fr); }
+    .est-card-wide { grid-column: span 2; }
+}
+
+@media (max-width: 700px) {
+    .est-tarjetas  { grid-template-columns: repeat(2, 1fr); }
+    .est-grid      { grid-template-columns: 1fr; }
+    .est-card-wide { grid-column: span 1; }
+    .est-filtros   { flex-direction: column; align-items: flex-start; }
+}
+
+/* ── Chips de género ── */
+.est-genero-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.est-genero-chip {
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.est-genero-chip:hover {
+    border-color: #376842;
+    color: #376842;
+    background: #f0faf2;
+}
+
+.est-genero-chip-active {
+    background: #376842;
+    border-color: #376842;
+    color: #fff;
+    font-weight: 600;
+}
+
+/* ── RESPONSIVE ─────────────────────────── */
+@media (max-width: 768px) {
+    .est-genero-chip { font-size: 11px; padding: 5px 10px; }
+
+    /* Charts container */
+    .est-charts { flex-direction: column; }
+    .est-chart-card { width: 100% !important; }
+}

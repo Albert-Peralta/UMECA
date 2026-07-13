@@ -1,0 +1,246 @@
+/* ── Overlay ─────────────────────────────────────────────────── */
+.ped-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: #636363;
+    overflow-y: auto;
+    display: flex; flex-direction: column; align-items: center;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────── */
+.ped-toolbar {
+    width: 100%; background: #2c3e50;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 20px; position: sticky; top: 0; z-index: 10;
+    flex-wrap: wrap; gap: 8px;
+}
+.ped-toolbar-title { color: #ecf0f1; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.ped-toolbar-actions { display: flex; align-items: center; gap: 8px; }
+.ped-btn-cerrar {
+    background: transparent; border: 1px solid #aaa; color: #ecf0f1;
+    border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 13px;
+}
+.ped-btn-cerrar:hover { background: rgba(255,255,255,.1); }
+.ped-btn-imprimir {
+    background: #376842; border: none; color: white;
+    border-radius: 6px; padding: 6px 18px; cursor: pointer;
+    font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px;
+}
+.ped-btn-imprimir:hover { background: #2a5033; }
+@keyframes ped-spin { to { transform: rotate(360deg); } }
+.ped-spin { display: inline-block; animation: ped-spin .8s linear infinite; }
+
+/* ── Barra de formato del editor ─────────────────────────────── */
+.ped-editor-toolbar {
+    width: 100%; background: #1e2d3d;
+    display: flex; align-items: center;
+    gap: 2px; padding: 4px 16px;
+    flex-wrap: wrap; border-bottom: 1px solid #2c3e50;
+}
+.ped-editor-toolbar button {
+    background: transparent; border: none; color: #ecf0f1;
+    width: 30px; height: 28px; border-radius: 4px; cursor: pointer;
+    font-size: 14px; display: flex; align-items: center; justify-content: center;
+    transition: background .12s;
+}
+.ped-editor-toolbar button:hover  { background: rgba(255,255,255,.12); }
+.ped-editor-toolbar button.active { background: rgba(255,255,255,.22); color: #fff; }
+.ped-tb-sep { width: 1px; height: 20px; background: rgba(255,255,255,.2); margin: 0 4px; }
+.ped-toolbar-hint { font-size: 11px; font-weight: 400; color: #9ca3af; margin-left: 4px; }
+
+/* ── Documento ───────────────────────────────────────────────── */
+.ped-documento {
+    width: 216mm;
+    background: white;
+    margin: 20px auto 40px;
+    padding: 10mm 18mm 10mm 20mm;
+    box-shadow: 0 4px 24px rgba(0,0,0,.18);
+    font-family: Arial, sans-serif;
+    font-size: 10pt;
+    color: #000;
+    box-sizing: border-box;
+    line-height: 1.4;
+    position: relative;
+}
+
+/* ── Encabezado ──────────────────────────────────────────────── */
+.ped-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+.ped-logo {
+    width: 220px; height: auto; max-height: 65px;
+    object-fit: contain; object-position: left top;
+    display: block; margin-left: -4px;
+}
+.ped-header-deps {
+    text-align: right;
+    font-size: 7.5pt;
+    line-height: 1.5;
+    color: #000;
+    font-family: Arial, sans-serif;
+}
+.ped-header-deps p { margin: 0; }
+.ped-num-oficio { margin-top: 2px !important; font-size: 7.5pt; }
+
+/* ── Deps editable ───────────────────────────────────────────── */
+.ped-editable-deps {
+    outline: none;
+    border: 1.5px dashed transparent;
+    border-radius: 4px;
+    padding: 2px 4px;
+    transition: border-color .15s;
+    cursor: text;
+}
+.ped-editable-deps:hover { border-color: rgba(55,104,66,.25); }
+.ped-editable-deps:focus { border-color: rgba(55,104,66,.5); outline: none; }
+
+/* ── Editor wrap ─────────────────────────────────────────────── */
+.ped-editor-wrap .tiptap {
+    outline: none;
+    font-family: Arial, sans-serif;
+    font-size: 10pt;
+    line-height: 1.4;
+    color: #000;
+    min-height: 40px;
+    border: 1.5px dashed transparent;
+    border-radius: 4px;
+    transition: border-color .15s;
+    padding: 2px 4px;
+}
+.ped-editor-wrap .tiptap:hover { border-color: rgba(55,104,66,.25); }
+.ped-editor-wrap .tiptap:focus { border-color: rgba(55,104,66,.5); }
+.ped-editor-wrap .tiptap p { margin: 0 0 6px 0; }
+.ped-editor-wrap .tiptap p:last-child { margin-bottom: 0; }
+.ped-editor-wrap .tiptap strong { font-weight: 700; }
+.ped-editor-wrap .tiptap em { font-style: italic; }
+.ped-editor-wrap .tiptap u { text-decoration: underline; }
+
+/* ── Tablas ──────────────────────────────────────────────────── */
+.ped-editor-wrap .tiptap table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 8px 0;
+    font-size: 9pt;
+}
+.ped-editor-wrap .tiptap td,
+.ped-editor-wrap .tiptap th {
+    border: 1px solid #000;
+    padding: 3px 5px;
+    vertical-align: top;
+}
+.ped-editor-wrap .tiptap th {
+    font-weight: 700;
+    background: #d9d9d9;
+    text-align: left;
+}
+/* Tabla de identificación - primera tabla */
+.ped-editor-wrap .tiptap table:first-of-type th {
+    font-size: 8.5pt;
+}
+
+/* ── Firma ───────────────────────────────────────────────────── */
+.ped-firma {
+    text-align: center;
+    margin-top: 40px;
+    margin-bottom: 6px;
+}
+.ped-firma-linea {
+    border-top: 1px solid #000;
+    width: 260px;
+    margin: 0 auto 4px;
+}
+.ped-firma-nombre {
+    font-weight: 700;
+    font-size: 9.5pt;
+    margin: 0 0 2px;
+    text-transform: uppercase;
+}
+.ped-firma-cargo {
+    font-size: 8.5pt;
+    margin: 1px 0;
+    text-transform: uppercase;
+}
+
+/* ── Elaboró / Revisó / Autorizó ─────────────────────────────── */
+.ped-elab-row {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+    margin-bottom: 6px;
+    font-size: 8pt;
+}
+.ped-elab-item {
+    text-align: center;
+    min-width: 120px;
+}
+.ped-elab-label { font-weight: 700; font-size: 7.5pt; }
+.ped-elab-nombre { font-size: 7.5pt; margin-top: 2px; }
+
+/* ── CCP ─────────────────────────────────────────────────────── */
+.ped-ccp {
+    font-size: 8pt;
+    margin-top: 8px;
+    font-style: italic;
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+.ped-footer {
+    margin-top: 10mm;
+    padding-top: 0;
+    text-align: center;
+}
+.ped-footer-img {
+    display: block; width: 100%; height: 22px;
+    object-fit: cover; object-position: center;
+}
+.ped-footer-fecha {
+    text-align: center; font-size: 6.5pt; color: #bbb;
+    margin-top: 3px; font-family: Arial, sans-serif;
+}
+
+/* ── Print ───────────────────────────────────────────────────── */
+@media print {
+    @page { size: letter portrait; margin: 8mm 16mm 0 18mm; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+    body > *:not(.ped-overlay) { display: none !important; }
+
+    .ped-overlay {
+        all: unset !important;
+        display: block !important;
+        background: white !important;
+    }
+    .ped-toolbar { display: none !important; }
+    .ped-editor-toolbar { display: none !important; }
+
+    .ped-documento {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 0 28mm 0 !important;
+        box-shadow: none !important;
+        background: white !important;
+    }
+    .ped-footer {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: -18mm !important;
+        right: -16mm !important;
+        margin: 0 !important;
+        border-top: none !important;
+        padding: 0 !important;
+        background: white !important;
+    }
+    .ped-footer-img {
+        width: 100vw !important;
+        height: 24px !important;
+        object-fit: cover !important;
+        display: block !important;
+    }
+    .ped-footer-fecha { display: none !important; }
+    .ped-editor-wrap .tiptap { border-color: transparent !important; }
+    .ped-editable-deps { border-color: transparent !important; }
+}

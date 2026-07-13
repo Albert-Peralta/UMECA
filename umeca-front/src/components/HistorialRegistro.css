@@ -1,0 +1,124 @@
+/* ── HistorialRegistro ─────────────────────────────────────────────────── */
+.hlog-container {
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    margin-top: 1rem;
+}
+
+.hlog-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .75rem 1rem;
+    background: #f8fafc;
+    border: none;
+    cursor: pointer;
+    font-size: .875rem;
+    font-weight: 600;
+    color: #374151;
+    text-align: left;
+    transition: background .15s;
+}
+.hlog-toggle:hover,
+.hlog-toggle--open { background: #f1f5f9; }
+.hlog-caret { margin-left: auto; color: #94a3b8; }
+.hlog-count {
+    background: #1e40af;
+    color: #fff;
+    border-radius: 9999px;
+    padding: .1rem .45rem;
+    font-size: .7rem;
+    font-weight: 700;
+}
+
+/* Panel */
+.hlog-panel {
+    padding: .5rem .75rem 1rem;
+    background: #fff;
+    border-top: 1px solid #e2e8f0;
+    max-height: 420px;
+    overflow-y: auto;
+}
+.hlog-cargando,
+.hlog-vacio {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    color: #94a3b8;
+    padding: 1.5rem;
+    font-size: .875rem;
+}
+
+/* Timeline */
+.hlog-lista {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+.hlog-item {
+    display: flex;
+    gap: .75rem;
+    padding: .6rem 0;
+    position: relative;
+}
+.hlog-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 13px;
+    top: 34px;
+    bottom: 0;
+    width: 2px;
+    background: #e2e8f0;
+}
+.hlog-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: .75rem;
+    flex-shrink: 0;
+    z-index: 1;
+}
+.hlog-contenido { flex: 1; }
+.hlog-fila-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+.hlog-accion {
+    font-size: .78rem;
+    font-weight: 700;
+}
+.hlog-fecha {
+    font-size: .73rem;
+    color: #94a3b8;
+    white-space: nowrap;
+}
+.hlog-desc {
+    font-size: .82rem;
+    color: #374151;
+    margin: .15rem 0 .2rem;
+}
+.hlog-usuario {
+    font-size: .75rem;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+}
+.hlog-email { color: #94a3b8; }
+
+/* Spin */
+@keyframes hlog-spin { to { transform: rotate(360deg); } }
+.hlog-spin { display: inline-block; animation: hlog-spin .7s linear infinite; }

@@ -1,0 +1,175 @@
+.ee-container { padding: 16px; }
+
+.ee-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.ee-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ee-stats-badges {
+    display: flex;
+    gap: 12px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.ee-filtros {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.ee-buscador {
+    flex: 1;
+    border: 1px solid #e2e2e2;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 14px;
+    outline: none;
+}
+
+.ee-buscador:focus { border-color: #376842; }
+
+.ee-select {
+    border: 1px solid #e2e2e2;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 14px;
+    outline: none;
+    background: white;
+    cursor: pointer;
+}
+
+.ee-btn-nueva {
+    background-color: #376842;
+    color: white;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.ee-table-wrapper {
+    overflow-x: auto;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.ee-table {
+    width: 100%;
+    min-width: 750px;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.ee-table th {
+    background-color: #376842;
+    color: white;
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 13px;
+    text-transform: uppercase;
+}
+
+.ee-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e2e2e2;
+    font-size: 14px;
+}
+
+.ee-table tr:last-child td { border-bottom: none; }
+.ee-table tbody tr:nth-child(odd) td { background-color: #f5f9f6; }
+.ee-table tbody tr:nth-child(even) td { background-color: #ffffff; }
+.ee-table tbody tr:hover td { background-color: #e8f5e9; }
+
+.ee-empty { text-align: center; color: #999; padding: 32px !important; }
+
+.ee-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.ee-badge-completado { background: #e8f5e9; color: #376842; }
+.ee-badge-revision { background: #fff3e0; color: #e65100; }
+.ee-badge-pendiente { background: #ffebee; color: #c62828; }
+
+.ee-tipo {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.ee-tipo-mc { background: #e3f2fd; color: #1565c0; }
+.ee-tipo-scp { background: #f3e5f5; color: #6a1b9a; }
+
+.ee-acciones {
+    display: table-cell;
+    white-space: nowrap;
+    text-align: center;
+}
+
+/* Centrar columnas específicas */
+.ee-tabla th:nth-child(4),
+.ee-tabla td:nth-child(4),
+.ee-tabla th:nth-child(5),
+.ee-tabla td:nth-child(5),
+.ee-tabla th:nth-child(6),
+.ee-tabla td:nth-child(6),
+.ee-tabla th:nth-child(7),
+.ee-tabla td:nth-child(7),
+.ee-tabla th:nth-child(8),
+.ee-tabla td:nth-child(8) {
+    text-align: center;
+}
+
+.ee-btn-ver {
+    background: none;
+    border: 1px solid #376842;
+    color: #376842;
+    border-radius: 6px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 15px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+/* ── Hovers Entrevista Encuadre ── */
+.ee-btn-nueva:hover { background: #2a5233; }
+.ee-btn-ver:hover { background: #376842; color: white; }
+
+/* ── RESPONSIVE ─────────────────────────── */
+@media (max-width: 768px) {
+    .ee-container { padding: 10px; }
+
+    .ee-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .ee-btn-nueva { width: 100%; text-align: center; }
+
+    .ee-filtros { flex-direction: column; gap: 8px; }
+    .ee-buscador, .ee-select { width: 100%; }
+
+    .ee-table-wrapper { overflow-x: auto; }
+    .ee-table { min-width: 600px; }
+    .ee-table th, .ee-table td { padding: 8px 10px; font-size: 12px; }
+
+    .ee-stats-badges { flex-wrap: wrap; gap: 8px; }
+}

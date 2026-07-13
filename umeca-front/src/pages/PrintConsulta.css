@@ -1,0 +1,186 @@
+/* ── Overlay ─────────────────────────────────────────────────── */
+.pco-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: #6b7280;
+    overflow-y: auto;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────── */
+.pco-toolbar {
+    width: 100%; background: #2c3e50;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 20px; position: sticky; top: 0; z-index: 10; flex-wrap: wrap; gap: 8px;
+}
+.pco-toolbar-title { color: #ecf0f1; font-size: 14px; font-weight: 600; }
+.pco-toolbar-actions { display: flex; align-items: center; gap: 8px; }
+.pco-select-wrap {
+    display: flex; align-items: center; gap: 6px;
+    border: 1px solid #aaa; border-radius: 6px;
+    padding: 4px 10px; color: #ecf0f1; font-size: 12px;
+}
+.pco-select-wrap i { font-size: 13px; }
+.pco-select-tamano {
+    background: transparent; border: none; color: #ecf0f1;
+    font-size: 12px; cursor: pointer; outline: none;
+}
+.pco-select-tamano option { background: #2c3e50; color: white; }
+.pco-btn-cerrar {
+    background: transparent; border: 1px solid #aaa; color: #ecf0f1;
+    border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 13px;
+}
+.pco-btn-cerrar:hover { background: rgba(255,255,255,.1); }
+.pco-btn-imprimir {
+    background: #376842; border: none; color: white;
+    border-radius: 6px; padding: 6px 18px; cursor: pointer;
+    font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px;
+}
+.pco-btn-imprimir:hover { background: #2a5033; }
+
+/* ── Documento ───────────────────────────────────────────────── */
+.pco-documento {
+    background: white; margin: 24px auto;
+    box-shadow: 0 4px 24px rgba(0,0,0,.35);
+    font-family: Arial, sans-serif; color: #000;
+    box-sizing: border-box;
+}
+.pco-legal {
+    width: 216mm; min-height: 356mm;
+    font-size: 12pt; padding: 14mm 16mm 16mm;
+}
+.pco-a4 {
+    width: 210mm; min-height: 297mm;
+    font-size: 11.5pt; padding: 12mm 14mm 14mm;
+}
+
+/* ── Encabezado ──────────────────────────────────────────────── */
+.pco-header {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+    padding-bottom: 8px; margin-bottom: 0;
+}
+.pco-header-izq { flex-shrink: 0; }
+.pco-logo {
+    width: 310px; height: auto; max-height: 80px;
+    object-fit: contain; object-position: left top;
+    display: block; margin-left: -8px; margin-top: -4px;
+}
+.pco-header-right { text-align: right; line-height: 1.45; }
+.pco-inst-1 { font-size: 10pt; font-weight: 700; margin: 0 0 1px; }
+.pco-inst-2 { font-size: 9pt; margin: 0 0 1px; }
+.pco-folio  { font-size: 9pt; margin: 6px 0 2px; }
+.pco-lugar  { font-size: 9.5pt; margin: 2px 0; }
+.pco-carpeta { font-size: 9.5pt; margin: 2px 0; }
+
+.pco-separador { display: none; }
+
+/* ── Destinatario ────────────────────────────────────────────── */
+.pco-destinatario { margin-bottom: 16px; }
+.pco-dest-nombre  { font-weight: 700; font-size: 10.5pt; margin: 0 0 2px; }
+.pco-dest-cargo   { font-size: 10pt; margin: 0 0 2px; font-weight: 700; }
+.pco-presente     { margin: 8px 0 0; font-size: 10.5pt; }
+
+/* ── Párrafos ────────────────────────────────────────────────── */
+.pco-parrafo {
+    text-align: justify; font-size: 10.5pt;
+    line-height: 1.6; margin: 0 0 14px;
+    text-indent: 0;
+}
+
+/* ── Tabla imputado ──────────────────────────────────────────── */
+.pco-tabla-imp {
+    width: 100%; border-collapse: collapse;
+    margin: 10px 0 16px; font-size: 10pt;
+}
+.pco-tabla-imp th {
+    background: #d0d0d0; border: 1px solid #555;
+    padding: 6px 10px; text-align: center; font-weight: 700; font-size: 9.5pt;
+}
+.pco-tabla-imp td {
+    border: 1px solid #555; padding: 6px 10px;
+    text-align: center; font-weight: 700;
+}
+.pco-td-curp { font-family: monospace; letter-spacing: .5px; }
+
+/* ── Detalle registro ────────────────────────────────────────── */
+.pco-detalle-reg {
+    border-left: 3px solid #000; padding-left: 14px; margin: 0 0 14px;
+}
+.pco-detalle-reg .pco-parrafo { text-indent: 0; }
+
+/* ── Firma ───────────────────────────────────────────────────── */
+.pco-firma-bloque { margin-top: 28px; text-align: center; }
+.pco-atentamente  { font-size: 10.5pt; letter-spacing: 3px; font-weight: 700; margin: 0 0 32px; }
+.pco-firmas {
+    display: flex; justify-content: space-between; align-items: flex-end; gap: 10px;
+}
+.pco-firmas-director {
+    justify-content: center; margin-bottom: 28px;
+}
+.pco-firmas-director .pco-firma-col-centro { flex: 0 0 50%; }
+.pco-firmas-bottom { justify-content: space-between; gap: 20px; }
+.pco-firma-label-sm { font-size: 6pt; margin: 0; font-weight: 700; text-align: center; }
+.pco-firma-col { display: flex; flex-direction: column; align-items: center; }
+.pco-firma-col-lateral { flex: 1; }
+.pco-firma-col-centro  { flex: 2; }
+.pco-firma-linea { width: 100%; border-top: 1px solid #000; margin-bottom: 5px; }
+.pco-firma-nombre { font-size: 9.5pt; font-weight: 700; margin: 0 0 2px; text-align: center; }
+.pco-firma-cargo  { font-size: 9pt; margin: 0; text-align: center; line-height: 1.3; }
+.pco-firma-label  { font-size: 9pt; margin: 0; font-weight: 700; }
+
+/* ── Pie de página (igual que PrintEntrevista) ───────────────── */
+.pco-footer {
+    margin-top: 8mm; border-top: 1px solid #eee; padding-top: 4px; text-align: center;
+}
+.pco-footer-img {
+    display: block; width: 100%; object-fit: cover; object-position: center; height: 22px;
+}
+.pco-footer-fecha {
+    text-align: center; font-size: 6.5pt; color: #bbb; margin-top: 3px;
+}
+
+/* ── Print media ─────────────────────────────────────────────── */
+@media print {
+    @page { size: legal portrait; margin: 16mm 18mm 16mm 18mm; }
+
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body > * { display: none !important; }
+
+    .pco-overlay {
+        display: block !important; position: static !important;
+        background: white !important; overflow: visible !important;
+    }
+    .no-print { display: none !important; }
+    .pco-documento {
+        width: 100% !important; margin: 0 !important;
+        padding: 0 !important; box-shadow: none !important;
+        min-height: unset !important;
+    }
+    /* Firmas y footer fijos al fondo de cada página */
+    .pco-firma-bloque {
+        position: fixed;
+        bottom: 42mm;
+        left: 0; right: 0;
+        padding: 0 18mm;
+        box-sizing: border-box;
+    }
+    .pco-footer {
+        position: fixed;
+        bottom: 10mm;
+        left: 0; right: 0;
+        margin: 0 !important;
+        background: white;
+        border-top: none !important;
+        padding: 0 !important;
+        box-sizing: border-box;
+    }
+    .pco-footer-img {
+        width: 100% !important;
+        height: 22px;
+        object-fit: cover;
+        object-position: center;
+        display: block;
+    }
+    /* Dejar espacio para que el contenido no quede debajo de las firmas */
+    .pco-legal, .pco-a4 {
+        padding-bottom: 55mm !important;
+    }
+}

@@ -1,0 +1,361 @@
+/* ── Overlay (vista previa) ─────────────────────────────── */
+.pev-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: #636363;
+    overflow-y: auto;
+    display: flex; flex-direction: column; align-items: center;
+}
+
+/* Toolbar */
+.pev-toolbar {
+    width: 100%; background: #2c3e50;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 20px; position: sticky; top: 0; z-index: 10; flex-wrap: wrap; gap: 8px;
+}
+.pev-toolbar-title { color: #ecf0f1; font-size: 14px; font-weight: 600; }
+.pev-toolbar-actions { display: flex; align-items: center; gap: 8px; }
+.pev-btn-cerrar {
+    background: transparent; border: 1px solid #aaa; color: #ecf0f1;
+    border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 13px;
+}
+.pev-btn-cerrar:hover { background: rgba(255,255,255,.1); }
+.pev-btn-imprimir {
+    background: #376842; border: none; color: white;
+    border-radius: 6px; padding: 6px 18px; cursor: pointer;
+    font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px;
+}
+.pev-btn-imprimir:hover { background: #2a5033; }
+
+/* Documento principal */
+.pev-documento {
+    width: 210mm;
+    background: white;
+    margin: 20px auto 40px;
+    padding: 8mm 10mm 8mm 12mm;
+    box-shadow: 0 4px 24px rgba(0,0,0,.18);
+    font-family: 'Arial', sans-serif;
+    font-size: 9.5pt;
+    color: #111;
+    box-sizing: border-box;
+}
+
+/* Header duplicado — oculto en pantalla, visible solo en print */
+.pev-header-page2 { display: none; }
+
+/* ══ ENCABEZADO CARTA OFICIAL ══ */
+.pev-header-carta {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 8px;
+    margin-bottom: 6px;
+}
+.pev-logo {
+    width: 280px; height: auto; max-height: 75px;
+    object-fit: contain; object-position: left top;
+    display: block; margin-left: -6px; margin-top: -4px;
+}
+.pev-header-deps {
+    text-align: right;
+    font-size: 8pt;
+    line-height: 1.5;
+    color: #333;
+}
+.pev-header-deps p { margin: 0; }
+.pev-num-oficio {
+    font-weight: 700; color: #376842; margin-top: 3px !important;
+    font-size: 7.5pt;
+}
+
+.pev-carta-meta {
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-start;
+    font-size: 8.5pt;
+    margin-bottom: 10px;
+    gap: 20px;
+}
+.pev-fecha-lugar { white-space: nowrap; }
+.pev-asunto-bloque {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    gap: 2px;
+}
+.pev-num-oficio-meta {
+    font-size: 7.5pt;
+    color: #376842;
+    font-weight: 700;
+}
+.pev-asunto { text-align: right; white-space: nowrap; }
+
+.pev-cc-bloque {
+    margin-bottom: 8px;
+}
+.pev-cc-bloque p { margin: 0; font-size: 9pt; }
+
+.pev-intro-parrafo {
+    font-size: 9pt;
+    line-height: 1.6;
+    text-align: justify;
+    margin-bottom: 12px;
+}
+
+/* ══ TABLA RESUMEN ENTREVISTA ══ */
+.pev-tabla-resumen {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 14px;
+    font-size: 9pt;
+}
+.pev-tabla-resumen th {
+    background: #f0f0f0;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 8pt;
+    padding: 5px 8px;
+    border: 1px solid #999;
+    text-align: left;
+    width: 25%;
+}
+.pev-tabla-resumen td {
+    padding: 5px 8px;
+    border: 1px solid #999;
+    font-size: 9pt;
+}
+
+/* ══ TITULO TABLA EVALUACIÓN ══ */
+.pev-tabla-titulo {
+    font-size: 10pt;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+    margin: 0 0 4px;
+    color: #111;
+    letter-spacing: .5px;
+}
+
+/* ══ TABLA EVALUACIÓN PRINCIPAL (4 cols) ══ */
+.pev-tabla-eval {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8.5pt;
+    margin-bottom: 14px;
+}
+.pev-tabla-eval th {
+    background: #2d6a4f;
+    color: #fff;
+    font-size: 8pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 5px 7px;
+    border: 1px solid #1a4732;
+    text-align: left;
+}
+.pev-tabla-eval td {
+    padding: 4px 7px;
+    border: 1px solid #ccc;
+    vertical-align: top;
+    line-height: 1.4;
+}
+.pev-tabla-eval tr:nth-child(even) td { background: #fafafa; }
+
+.pev-tv-factor { width: 22%; font-weight: 600; }
+.pev-tabla-eval tbody .pev-tv-factor { background: #f5f5f5 !important; }
+.pev-tabla-eval thead .pev-tv-factor { background: #2d6a4f !important; color: #fff; }
+.pev-tv-datos  { width: 28%; }
+.pev-tv-metodo { width: 25%; }
+.pev-tv-resverif { width: 25%; }
+
+/* Fila de sub-grupo (etiqueta dentro de una sección, sin barra verde) */
+.pev-tv-subgrupo td {
+    background: #dce8dc !important;
+    font-weight: 700;
+    font-size: 7.5pt;
+    text-transform: uppercase;
+    color: #1a4732;
+    padding: 3px 7px;
+    border: 1px solid #afc9b3;
+    letter-spacing: .3px;
+    vertical-align: top;
+}
+
+/* Fila de grupo (sección) */
+.pev-tv-grupo td {
+    background: #e8f0e8 !important;
+    font-weight: 700;
+    font-size: 8pt;
+    text-transform: uppercase;
+    color: #1a4732;
+    padding: 4px 7px;
+    border: 1px solid #afc9b3;
+    letter-spacing: .5px;
+}
+
+/* Fila verificación */
+.pev-verif-row td { background: #f0fdf4 !important; font-style: italic; }
+.pev-tv-verif-label { color: #166534; font-style: normal; font-weight: 700 !important; }
+
+/* Secciones (legacy, por si se usa en otro lugar) */
+.pev-section-title {
+    background: #376842; color: white;
+    font-size: 9pt; font-weight: 700;
+    padding: 3px 10px; margin: 10px 0 0;
+    border-radius: 3px 3px 0 0;
+    text-transform: uppercase; letter-spacing: .5px;
+}
+
+/* ══ CONCLUSIÓN GENERAL ══ */
+.pev-conclusion-bloque {
+    margin-bottom: 12px;
+}
+.pev-page-break {
+    page-break-before: always;
+    break-before: page;
+    padding-top: 4mm;
+}
+.pev-conclusion-titulo {
+    font-size: 10pt;
+    font-weight: 700;
+    margin: 0 0 6px;
+    text-decoration: underline;
+}
+.pev-conclusion-texto {
+    font-size: 9pt;
+    line-height: 1.6;
+    text-align: justify;
+    margin-bottom: 8px;
+}
+
+.pev-tabla-riesgos {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8.5pt;
+    margin-bottom: 12px;
+}
+.pev-tabla-riesgos th {
+    background: #2d6a4f;
+    color: #fff;
+    font-size: 8pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 5px 8px;
+    border: 1px solid #1a4732;
+    text-align: left;
+}
+.pev-tabla-riesgos td {
+    padding: 5px 8px;
+    border: 1px solid #ccc;
+    min-height: 20px;
+    vertical-align: top;
+}
+.pev-tabla-riesgos tr:nth-child(even) td { background: #fafafa; }
+.pev-riesgo-num { text-align: center; font-weight: 700; color: #555; width: 30px; }
+
+/* ══ RESULTADO FINAL ══ */
+.pev-resultado-bloque {
+    border: 1.5px solid #999;
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    background: #fafafa;
+    font-size: 9pt;
+}
+.pev-resultado-bloque > p { margin: 0 0 6px; }
+.pev-resultado-opcion {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    border: 1.5px solid #376842;
+    border-radius: 4px;
+    padding: 6px 10px;
+    background: #f0fdf4;
+}
+.pev-check { font-size: 12pt; color: #376842; font-weight: 900; flex-shrink: 0; }
+.pev-justificacion { margin: 8px 0 0; font-style: italic; font-size: 8.5pt; color: #555; }
+
+/* ══ CIERRE FORMAL ══ */
+.pev-cierre {
+    font-size: 9pt;
+    margin: 16px 0 10px;
+    text-align: justify;
+}
+
+/* ══ FIRMAS ══ */
+.pev-atentamente {
+    text-align: center;
+    font-weight: 700;
+    letter-spacing: 3px;
+    font-size: 10pt;
+    margin: 14px 0 6px;
+}
+.pev-firma-director {
+    text-align: center;
+    margin-top: 40px;
+    margin-bottom: 20px;
+}
+.pev-firma-director-nombre {
+    font-weight: 700;
+    font-size: 9pt;
+    text-transform: uppercase;
+    margin: 0 0 2px;
+}
+.pev-firma-director-cargo {
+    font-size: 8.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin: 0;
+    line-height: 1.5;
+}
+.pev-firmas-grid {
+    display: flex;
+    gap: 20px;
+    justify-content: space-around;
+    margin-top: 30px;
+}
+.pev-firma-bloque { flex: 1; text-align: center; }
+.pev-firma-linea { border-top: 1.5px solid #333; margin-bottom: 5px; }
+.pev-firma-label { font-weight: 700; font-size: 6pt; margin: 0; text-transform: uppercase; }
+.pev-firma-sub { font-size: 9pt; color: #222; margin: 2px 0 0; font-weight: 600; }
+.pev-firma-cargo { font-size: 7.5pt; color: #555; margin: 2px 0 0; text-transform: uppercase; }
+
+/* Footer */
+.pev-footer { margin-top: 8mm; border-top: 1px solid #eee; padding-top: 4px; text-align: center; }
+.pev-footer-img { display: block; width: 100%; height: 22px; object-fit: cover; object-position: center; }
+.pev-footer-fecha { text-align: center; font-size: 6.5pt; color: #bbb; margin-top: 3px; }
+
+/* ── Media Print ─────────────────────────────────────────── */
+@media print {
+    @page { size: A4; margin: 20mm 12mm 12mm 12mm; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body > * { display: none !important; }
+    .pev-overlay {
+        display: block !important; position: static !important;
+        background: white !important; overflow: visible !important;
+    }
+    .no-print { display: none !important; }
+    .pev-documento {
+        width: 100% !important; margin: 0 !important;
+        padding: 0 !important; box-shadow: none !important;
+    }
+    /* Header duplicado para página de conclusión */
+    .pev-header-page2 {
+        display: flex !important;
+        page-break-before: always;
+        break-before: page;
+        padding-bottom: 6mm;
+        border-bottom: 1px solid #ddd;
+        margin-bottom: 6mm;
+    }
+    .pev-tabla-eval { break-inside: auto; }
+    .pev-tabla-eval tr { break-inside: avoid; }
+    .pev-tv-grupo td { break-after: avoid; }
+    /* Evitar que el header de grupo se separe de su primera fila de datos */
+    .pev-grupo-avoid { break-before: avoid; }
+    .pev-tabla-riesgos { break-inside: avoid; }
+    .pev-resultado-bloque { break-inside: avoid; }
+    .pev-firmas-grid { break-inside: avoid; margin-top: 20mm !important; }
+    .pev-footer { position: fixed; bottom: 0; left: 0; right: 0; margin: 0 !important; background: white; }
+}
