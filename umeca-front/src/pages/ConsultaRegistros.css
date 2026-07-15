@@ -354,3 +354,28 @@
 .cr-pag-btn:hover:not(:disabled) { background: #f3f4f6; }
 .cr-pag-btn:disabled { opacity: .35; cursor: default; }
 .cr-pag-num { font-weight: 600; color: #111; min-width: 36px; text-align: center; }
+
+/* ── Imputados dinámicos ────────────────────────────────────── */
+.cr-btn-add-imp {
+    background: #376842; color: white; border: none; border-radius: 6px;
+    padding: 5px 14px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px;
+}
+.cr-btn-add-imp:hover { background: #2a5033; }
+
+.cr-imputado-bloque {
+    border: 1px solid #e5e7eb; border-radius: 8px;
+    padding: 12px 14px; margin-bottom: 10px; background: #fafafa;
+}
+.cr-imp-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+}
+.cr-imp-num { font-size: 12px; font-weight: 700; color: #376842; text-transform: uppercase; letter-spacing: .5px; }
+.cr-btn-rm-imp {
+    background: #fee2e2; color: #991b1b; border: none; border-radius: 5px;
+    padding: 3px 10px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px;
+}
+.cr-btn-rm-imp:hover { background: #fecaca; }
+
+.cr-grid-2 {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin-bottom: 4px;
+}

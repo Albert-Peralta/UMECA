@@ -80,8 +80,14 @@ public class ImputadoService {
         return new ApiResponse(true, "Imputados obtenidos", lista);
     }
 
-    /** Búsqueda por nombre o apellido paterno; devuelve DTOs simplificados. */
+    /** Devuelve todos los imputados que comparten la misma causa penal. */
     @Transactional(readOnly = true)
+    public ApiResponse findByCausaPenal(String causaPenal) {
+        List<ImputadoResponseDTO> lista = imputadoRepository.findAllByCausaPenal(causaPenal)
+                .stream().map(ImputadoResponseDTO::fromSimple).toList();
+        return new ApiResponse(true, "OK", lista);
+    }
+
     public ApiResponse buscar(String termino) {
         List<ImputadoResponseDTO> lista = imputadoRepository
                 .findByNombreContainingIgnoreCaseOrApPaternoContainingIgnoreCase(termino, termino)

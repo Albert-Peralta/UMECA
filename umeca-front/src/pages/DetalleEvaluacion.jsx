@@ -248,16 +248,8 @@ const DetalleEvaluacion = ({ evaluacion: d, onVolver, onEditar, puedeEditar }) =
                 </>
             )}
 
-            {/* Historia escolar */}
-            {sec('7. HISTORIA ESCOLAR')}
-            <div className="de-grid-2">
-                {campo('Nombre de la Escuela', d.nombreEscuela)}
-                {campo('Año Escolar', d.anioEscolar)}
-                {campo('Atraso Escolar', d.atrasoEscolar)}
-            </div>
-
             {/* Entorno social */}
-            {sec('9. ENTORNO SOCIAL')}
+            {sec('7. ENTORNO SOCIAL')}
             <div className="de-grid-2">
                 {campo('Enfermedades', d.enfermedades)}
                 {campo('Hobbies', d.hobbies)}
@@ -272,7 +264,7 @@ const DetalleEvaluacion = ({ evaluacion: d, onVolver, onEditar, puedeEditar }) =
             )}
 
             {/* Datos del denunciante */}
-            {sec('10. DATOS DEL DENUNCIANTE / VÍCTIMA')}
+            {sec('8. DATOS DEL DENUNCIANTE / VÍCTIMA')}
             <div className="de-grid-2">
                 {campo('¿Sabe Quién es el Denunciante?', d.sabeDenunciante ? 'Sí' : 'No')}
                 {campo('¿Vive con el Imputado?', d.viveConImputado ? 'Sí' : 'No')}
@@ -288,9 +280,8 @@ const DetalleEvaluacion = ({ evaluacion: d, onVolver, onEditar, puedeEditar }) =
             )}
 
             {/* Proceso actual */}
-            {sec('11. PROCESO ACTUAL')}
+            {sec('9. PROCESO ACTUAL')}
             <div className="de-grid-2">
-                {campo('Artículo del Delito', d.articuloDelito)}
                 {campo('¿Reincidencia?', d.reincidencia ? 'Sí' : 'No')}
                 {campo('Relación con la Víctima', d.relacionVictima)}
             </div>
@@ -304,7 +295,7 @@ const DetalleEvaluacion = ({ evaluacion: d, onVolver, onEditar, puedeEditar }) =
             {/* Procesos anteriores */}
             {d.procesosAnteriores && (
                 <>
-                    {sec('12. PROCESOS ANTERIORES')}
+                    {sec('10. PROCESOS ANTERIORES')}
                     <div className="de-campo" style={{ marginBottom: 8 }}>
                         <span className="de-label">Procesos Anteriores</span>
                         <span className="de-valor">{d.procesosAnteriores}</span>
@@ -313,7 +304,7 @@ const DetalleEvaluacion = ({ evaluacion: d, onVolver, onEditar, puedeEditar }) =
             )}
 
             {/* Conclusión */}
-            {sec('13. CONCLUSIÓN')}
+            {sec('11. CONCLUSIÓN')}
             <div className="de-grid-2" style={{ marginBottom: 32 }}>
                 <div className="de-campo">
                     <span className="de-label">Resultado</span>

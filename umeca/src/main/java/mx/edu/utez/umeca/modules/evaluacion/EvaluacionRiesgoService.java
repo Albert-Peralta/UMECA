@@ -79,21 +79,28 @@ public class EvaluacionRiesgoService {
         User solicitante = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        Imputado imputado = imputadoRepository.findByCausaPenal(dto.getCausaPenal())
-                .orElseGet(Imputado::new);
-        imputado.setNombre(dto.getNombreImputado());
-        imputado.setApPaterno(dto.getApPaternoImputado());
-        if (dto.getApMaternoImputado() != null) imputado.setApMaterno(dto.getApMaternoImputado());
-        imputado.setCausaPenal(dto.getCausaPenal());
-        imputado.setDelito(dto.getDelito());
-        if (dto.getUbicacionFisica() != null && !dto.getUbicacionFisica().isBlank()) {
-            try {
-                imputado.setUbicacionFisica(Imputado.UbicacionFisica.valueOf(dto.getUbicacionFisica()));
-            } catch (IllegalArgumentException ex) {
-                return new ApiResponse(false, "Ubicación física inválida: " + dto.getUbicacionFisica());
+        // Si viene imputadoId se usa ese directamente; si no, se crea uno nuevo
+        Imputado imputado;
+        if (dto.getImputadoId() != null) {
+            imputado = imputadoRepository.findById(dto.getImputadoId())
+                    .orElse(null);
+            if (imputado == null) return new ApiResponse(false, "Imputado no encontrado");
+        } else {
+            imputado = new Imputado();
+            imputado.setNombre(dto.getNombreImputado());
+            imputado.setApPaterno(dto.getApPaternoImputado());
+            if (dto.getApMaternoImputado() != null) imputado.setApMaterno(dto.getApMaternoImputado());
+            imputado.setCausaPenal(dto.getCausaPenal());
+            imputado.setDelito(dto.getDelito());
+            if (dto.getUbicacionFisica() != null && !dto.getUbicacionFisica().isBlank()) {
+                try {
+                    imputado.setUbicacionFisica(Imputado.UbicacionFisica.valueOf(dto.getUbicacionFisica()));
+                } catch (IllegalArgumentException ex) {
+                    return new ApiResponse(false, "Ubicación física inválida: " + dto.getUbicacionFisica());
+                }
             }
+            imputadoRepository.save(imputado);
         }
-        imputadoRepository.save(imputado);
 
         EvaluacionRiesgo ev = new EvaluacionRiesgo();
         ev.setFechaSolicitud(dto.getFechaSolicitud());
@@ -298,14 +305,20 @@ public class EvaluacionRiesgoService {
         User solicitante = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        Imputado imputado = imputadoRepository.findByCausaPenal(dto.getCausaPenal())
-                .orElseGet(Imputado::new);
-        imputado.setNombre(dto.getNombreImputado());
-        imputado.setApPaterno(dto.getApPaternoImputado());
-        if (dto.getApMaternoImputado() != null) imputado.setApMaterno(dto.getApMaternoImputado());
-        imputado.setCausaPenal(dto.getCausaPenal());
-        if (imputado.getDelito() == null) imputado.setDelito("—");
-        imputadoRepository.save(imputado);
+        // Si viene imputadoId se usa ese directamente; si no, se crea uno nuevo
+        Imputado imputado;
+        if (dto.getImputadoId() != null) {
+            imputado = imputadoRepository.findById(dto.getImputadoId()).orElse(null);
+            if (imputado == null) return new ApiResponse(false, "Imputado no encontrado");
+        } else {
+            imputado = new Imputado();
+            imputado.setNombre(dto.getNombreImputado());
+            imputado.setApPaterno(dto.getApPaternoImputado());
+            if (dto.getApMaternoImputado() != null) imputado.setApMaterno(dto.getApMaternoImputado());
+            imputado.setCausaPenal(dto.getCausaPenal());
+            imputado.setDelito("—");
+            imputadoRepository.save(imputado);
+        }
 
         EvaluacionRiesgo ev = new EvaluacionRiesgo();
         ev.setFechaSolicitud(dto.getFechaSolicitud() != null ? dto.getFechaSolicitud() : LocalDate.now());
@@ -317,6 +330,7 @@ public class EvaluacionRiesgoService {
         ev.setEdad(dto.getEdad());
         ev.setSolicitante(solicitante);
         ev.setImputado(imputado);
+        ev.setEvaluador(solicitante);
         ev.setEstatus(EvaluacionRiesgo.Estatus.FINALIZADO);
         ev.setTipoDocumento(EvaluacionRiesgo.TipoDocumento.NEGACION);
 

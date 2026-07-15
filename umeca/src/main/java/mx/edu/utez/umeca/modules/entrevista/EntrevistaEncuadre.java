@@ -237,6 +237,10 @@ public class EntrevistaEncuadre extends BaseEntity {
     @Transient
     private String fotoImputado;
 
+    /** Campo transitorio: si viene, se vincula al imputado existente en lugar de buscar/crear por causa penal. */
+    @Transient
+    private Long imputadoSelId;
+
     @OneToMany(mappedBy = "entrevista", cascade = CascadeType.ALL, orphanRemoval = true)
     private java.util.List<DomicilioEntrevista> domicilios = new java.util.ArrayList<>();
 

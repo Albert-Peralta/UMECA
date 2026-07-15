@@ -28,6 +28,7 @@ public class ConsultaRegistroDTO {
     private String causaPenal;
     private LocalDate fechaNacimientoImputado;
     private String curp;
+    private String imputadosJson;
     private Long folioConsecutivo;
     private String oficioNumero;
 

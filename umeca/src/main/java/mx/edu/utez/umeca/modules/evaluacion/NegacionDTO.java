@@ -21,4 +21,7 @@ public class NegacionDTO {
     private LocalDate fechaSolicitud;
     private String horaInicio;
     private String lugarEntrevista;
+
+    /** Si se envía, se vincula al imputado existente en lugar de buscar/crear por causa penal. */
+    private Long imputadoId;
 }

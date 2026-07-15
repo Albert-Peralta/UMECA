@@ -51,6 +51,9 @@ public class EvaluacionRiesgoDTO {
     // FK entrevista (opcional)
     private Long entrevistaId;
 
+    /** Si se envía, se vincula al imputado existente en lugar de buscar/crear por causa penal. */
+    private Long imputadoId;
+
     // Datos personales imputado (del formulario)
     private String genero;
     private java.time.LocalDate fechaNacimiento;

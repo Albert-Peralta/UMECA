@@ -8,11 +8,26 @@ import {
 } from '../api/consultasApi';
 import './ConsultaRegistros.css';
 
+const IMP_BASE = { nombre: '', apPaterno: '', apMaterno: '', fechaNacimiento: '' };
+
 const FORM_BASE = {
     fechaSolicitud: '', quienSolicita: '', cargoSolicitante: '', dependenciaSolicitante: '',
-    nombreImputado: '', apPaternoImputado: '', apMaternoImputado: '',
-    fechaNacimientoImputado: '', causaPenal: '', curp: '',
-    folioConsecutivo: '', oficioNumero: '', resultado: '', observaciones: '',
+    imputados: [{ ...IMP_BASE }],
+    causaPenal: '', folioConsecutivo: '', oficioNumero: '', resultado: '', observaciones: '',
+};
+
+/** Reconstruye el array de imputados desde los campos planos + imputadosJson del API */
+const reconstruirImputados = (c) => {
+    const lista = [{
+        nombre: c.nombreImputado || '',
+        apPaterno: c.apPaternoImputado || '',
+        apMaterno: c.apMaternoImputado || '',
+        fechaNacimiento: c.fechaNacimientoImputado || '',
+    }];
+    if (c.imputadosJson) {
+        try { lista.push(...JSON.parse(c.imputadosJson)); } catch { /* ignorar */ }
+    }
+    return lista;
 };
 
 const hoy = new Date().toISOString().split('T')[0];
@@ -21,7 +36,9 @@ const hoy = new Date().toISOString().split('T')[0];
 const FormularioConsulta = ({ consulta, onVolver, onGuardado }) => {
     const { showToast } = useToast();
     const esEdicion = !!consulta;
-    const [form, setForm] = useState(esEdicion ? { ...FORM_BASE, ...consulta } : { ...FORM_BASE });
+    const [form, setForm] = useState(esEdicion
+        ? { ...FORM_BASE, ...consulta, imputados: reconstruirImputados(consulta) }
+        : { ...FORM_BASE });
     const [antecedentes, setAntecedentes] = useState([]);
     const [registros, setRegistros] = useState(null); // RegistrosImputadoDTO
     const [errores, setErrores] = useState({});
@@ -31,18 +48,19 @@ const FormularioConsulta = ({ consulta, onVolver, onGuardado }) => {
 
     const s = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
 
-    // Buscar antecedentes + registros en otros módulos al cambiar CURP, nombre+apellido o causa penal
+    // Buscar antecedentes + registros al cambiar nombre/apellido del primer imputado o causa penal
     useEffect(() => {
         if (busquedaTimer) clearTimeout(busquedaTimer);
         const timer = setTimeout(async () => {
-            const { curp, nombreImputado, apPaternoImputado, causaPenal } = form;
-            const tieneIdentificador = curp || (nombreImputado && apPaternoImputado) || causaPenal;
+            const primerImp = form.imputados?.[0] || {};
+            const { nombre, apPaterno } = primerImp;
+            const { causaPenal } = form;
+            const tieneIdentificador = (nombre && apPaterno) || causaPenal;
             if (!tieneIdentificador) { setRegistros(null); return; }
             try {
                 const params = {};
-                if (curp) params.curp = curp;
-                if (nombreImputado) params.nombre = nombreImputado;
-                if (apPaternoImputado) params.apPaterno = apPaternoImputado;
+                if (nombre) params.nombre = nombre;
+                if (apPaterno) params.apPaterno = apPaterno;
                 if (causaPenal) params.causaPenal = causaPenal;
 
                 const [antRes, regRes] = await Promise.all([
@@ -61,13 +79,21 @@ const FormularioConsulta = ({ consulta, onVolver, onGuardado }) => {
         setBusquedaTimer(timer);
         return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [form.curp, form.nombreImputado, form.apPaternoImputado, form.causaPenal]);
+    }, [form.imputados?.[0]?.nombre, form.imputados?.[0]?.apPaterno, form.causaPenal]);
+
+    const setImp = (idx, campo, valor) => setForm(prev => {
+        const imps = prev.imputados.map((imp, i) => i === idx ? { ...imp, [campo]: valor } : imp);
+        return { ...prev, imputados: imps };
+    });
+    const agregarImputado = () => setForm(prev => ({ ...prev, imputados: [...prev.imputados, { ...IMP_BASE }] }));
+    const quitarImputado  = (idx) => setForm(prev => ({ ...prev, imputados: prev.imputados.filter((_, i) => i !== idx) }));
 
     const handleGuardar = async () => {
+        const primerImp = form.imputados?.[0] || {};
         const nuevosErr = {
             fechaSolicitud: !form.fechaSolicitud,
             quienSolicita:  !form.quienSolicita,
-            nombreImputado: !form.nombreImputado,
+            nombreImputado: !primerImp.nombre,
             resultado:      !form.resultado,
         };
         setErrores(nuevosErr);
@@ -79,8 +105,14 @@ const FormularioConsulta = ({ consulta, onVolver, onGuardado }) => {
         setError('');
         try {
             let res;
+            const adicionales = form.imputados.slice(1);
             const payload = {
                 ...form,
+                nombreImputado:        primerImp.nombre,
+                apPaternoImputado:     primerImp.apPaterno || null,
+                apMaternoImputado:     primerImp.apMaterno || null,
+                fechaNacimientoImputado: primerImp.fechaNacimiento || null,
+                imputadosJson:         adicionales.length > 0 ? JSON.stringify(adicionales) : null,
                 folioConsecutivo: form.folioConsecutivo ? parseInt(form.folioConsecutivo) : null,
             };
             if (esEdicion) res = await actualizarConsulta(consulta.id, payload);
@@ -150,17 +182,36 @@ const FormularioConsulta = ({ consulta, onVolver, onGuardado }) => {
                 {fld('Dependencia', <input value={form.dependenciaSolicitante} onChange={e => s('dependenciaSolicitante', e.target.value)} placeholder="Ej. FGE Morelos" />)}
             </div>
 
-            <div className="cr-seccion"><h3>Datos del Imputado</h3></div>
-            <div className="cr-grid-3">
-                {fld('Nombre(s)', <input value={form.nombreImputado} onChange={e => s('nombreImputado', e.target.value)} />, true, errores.nombreImputado)}
-                {fld('Apellido Paterno', <input value={form.apPaternoImputado} onChange={e => s('apPaternoImputado', e.target.value)} />, false, errores.apPaternoImputado)}
-                {fld('Apellido Materno', <input value={form.apMaternoImputado} onChange={e => s('apMaternoImputado', e.target.value)} />)}
+            <div className="cr-seccion" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h3>Datos del Imputado(s)</h3>
+                <button type="button" className="cr-btn-add-imp" onClick={agregarImputado}>
+                    <i className="bi bi-plus-circle" /> Agregar imputado
+                </button>
             </div>
-            <div className="cr-grid-3">
-                {fld('Fecha de Nacimiento', <input type="date" value={form.fechaNacimientoImputado} onChange={e => s('fechaNacimientoImputado', e.target.value)} />)}
-                {fld('CURP', <input value={form.curp} onChange={e => s('curp', e.target.value.toUpperCase())} placeholder="18 caracteres" maxLength={18} style={{ textTransform: 'uppercase' }} />)}
-                {fld('Causa Penal / Carpeta de Investigación', <input value={form.causaPenal} onChange={e => s('causaPenal', e.target.value)} />)}
-            </div>
+
+            {form.imputados.map((imp, idx) => (
+                <div key={idx} className="cr-imputado-bloque">
+                    {form.imputados.length > 1 && (
+                        <div className="cr-imp-header">
+                            <span className="cr-imp-num">Imputado #{idx + 1}</span>
+                            {idx > 0 && (
+                                <button type="button" className="cr-btn-rm-imp" onClick={() => quitarImputado(idx)}>
+                                    <i className="bi bi-trash" /> Quitar
+                                </button>
+                            )}
+                        </div>
+                    )}
+                    <div className="cr-grid-3">
+                        {fld('Nombre(s)', <input value={imp.nombre} onChange={e => setImp(idx, 'nombre', e.target.value)} />, idx === 0, idx === 0 && errores.nombreImputado)}
+                        {fld('Apellido Paterno', <input value={imp.apPaterno} onChange={e => setImp(idx, 'apPaterno', e.target.value)} />)}
+                        {fld('Apellido Materno', <input value={imp.apMaterno} onChange={e => setImp(idx, 'apMaterno', e.target.value)} />)}
+                    </div>
+                    <div className="cr-grid-2">
+                        {fld('Fecha de Nacimiento', <input type="date" value={imp.fechaNacimiento} onChange={e => setImp(idx, 'fechaNacimiento', e.target.value)} />)}
+                        {idx === 0 && fld('Causa Penal / Carpeta de Investigación', <input value={form.causaPenal} onChange={e => s('causaPenal', e.target.value)} />)}
+                    </div>
+                </div>
+            ))}
 
             {/* Tabla de registros en otros módulos */}
             {registros && (
@@ -312,8 +363,7 @@ const DetalleConsulta = ({ consulta: d, onVolver, onEditar }) => {
                 <div className="cr-detalle-info">
                     <span className="cr-detalle-nombre">{d.nombreCompleto || `${d.apPaternoImputado || ''} ${d.nombreImputado || ''}`.trim()}</span>
                     {d.causaPenal && <span className="cr-detalle-causa">{d.causaPenal}</span>}
-                    {d.curp && <span className="cr-detalle-curp">CURP: {d.curp}</span>}
-                </div>
+                    </div>
                 <div className="cr-detalle-fecha">
                     <span className="cr-detalle-fecha-lbl">FECHA SOLICITUD</span>
                     <span className="cr-detalle-fecha-val">{d.fechaSolicitud}</span>
@@ -361,7 +411,6 @@ const DetalleConsulta = ({ consulta: d, onVolver, onEditar }) => {
                 {campo('Fecha de Nacimiento', d.fechaNacimientoImputado
                     ? new Date(d.fechaNacimientoImputado + 'T00:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' })
                     : null)}
-                {campo('CURP', d.curp)}
                 {campo('Causa Penal / Carpeta', d.causaPenal)}
             </div>
 
@@ -422,7 +471,6 @@ const ConsultaRegistros = () => {
             (c.nombreImputado || '').toLowerCase().includes(q) ||
             (c.apPaternoImputado || '').toLowerCase().includes(q) ||
             (c.causaPenal || '').toLowerCase().includes(q) ||
-            (c.curp || '').toLowerCase().includes(q) ||
             (c.quienSolicita || '').toLowerCase().includes(q)
         );
     });
@@ -502,7 +550,6 @@ const ConsultaRegistros = () => {
                             <tr>
                                 <th>Fecha</th>
                                 <th>Imputado</th>
-                                <th>CURP</th>
                                 <th>Carpeta de Investigación</th>
                                 <th>Solicitante</th>
                                 <th>Resultado</th>
@@ -517,7 +564,6 @@ const ConsultaRegistros = () => {
                                         <strong>{[c.apPaternoImputado, c.apMaternoImputado, c.nombreImputado].filter(Boolean).join(' ')}</strong>
                                         {c.oficioNumero && <span>Oficio: {c.oficioNumero}</span>}
                                     </td>
-                                    <td className="cr-td-mono">{c.curp || '—'}</td>
                                     <td>{c.causaPenal || '—'}</td>
                                     <td>{c.quienSolicita}</td>
                                     <td>

@@ -45,6 +45,10 @@ public class ConsultaRegistro extends BaseEntity {
     @Column(name = "curp", length = 20)
     private String curp;
 
+    /** JSON array con imputados adicionales (a partir del segundo). Formato: [{nombre,apPaterno,apMaterno,fechaNacimiento},...] */
+    @Column(name = "imputados_json", columnDefinition = "TEXT")
+    private String imputadosJson;
+
     @Column(name = "folio_consecutivo")
     private Long folioConsecutivo;
 

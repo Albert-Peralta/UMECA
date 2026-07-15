@@ -1,5 +1,5 @@
+import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useState } from 'react';
 import './PrintConsulta.css';
 import logo from '../assets/logo-morelos-nuevo.png';
 import footerDorado from '../assets/footer-dorado.png';
@@ -14,42 +14,147 @@ const hoy = (fechaStr, mayusculas = false) => {
 };
 
 const PrintConsulta = ({ consulta: d, onCerrar }) => {
-    const [tamano, setTamano] = useState('a4'); // 'a4' | 'legal'
-    const nombreCompleto = [d.apPaternoImputado, d.apMaternoImputado, d.nombreImputado]
-        .filter(Boolean).join(' ').toUpperCase();
+    const docRef = useRef(null);
+    const initialHtml = useRef(null);
+    const [imprimiendo, setImprimiendo] = useState(false);
+    const [guardadoEn, setGuardadoEn] = useState(null);
+    const storageKey = `umeca-consulta-${d?.id || d?.causaPenal || 'nueva'}`;
+
+    // Al montar: guarda el HTML inicial, luego aplica el guardado si existe
+    const handleMounted = (el) => {
+        if (!el) return;
+        if (!initialHtml.current) initialHtml.current = el.innerHTML; // guardar antes de sobreescribir
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+            el.innerHTML = saved;
+            const meta = localStorage.getItem(storageKey + '-meta');
+            if (meta) setGuardadoEn(meta);
+        }
+    };
+
+    const handleRestaurar = () => {
+        if (!window.confirm('¿Restaurar el documento original? Se perderán los cambios editados.')) return;
+        localStorage.removeItem(storageKey);
+        localStorage.removeItem(storageKey + '-meta');
+        setGuardadoEn(null);
+        if (docRef.current && initialHtml.current) {
+            docRef.current.innerHTML = initialHtml.current;
+        }
+    };
+
+    const handleInput = () => {
+        if (!docRef.current) return;
+        localStorage.setItem(storageKey, docRef.current.innerHTML);
+        const ahora = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+        localStorage.setItem(storageKey + '-meta', ahora);
+        setGuardadoEn(ahora);
+    };
+
+    // Construir lista de imputados: primero el principal, luego los adicionales del JSON
+    const listaImputados = (() => {
+        const lista = [{
+            nombre: [d.apPaternoImputado, d.apMaternoImputado, d.nombreImputado].filter(Boolean).join(' ').toUpperCase(),
+            fechaNacimiento: d.fechaNacimientoImputado,
+        }];
+        if (d.imputadosJson) {
+            try {
+                const adicionales = JSON.parse(d.imputadosJson);
+                adicionales.forEach(imp => {
+                    lista.push({
+                        nombre: [imp.apPaterno, imp.apMaterno, imp.nombre].filter(Boolean).join(' ').toUpperCase(),
+                        fechaNacimiento: imp.fechaNacimiento,
+                    });
+                });
+            } catch { /* ignorar */ }
+        }
+        return lista;
+    })();
 
     const esPositivo = d.resultado === 'POSITIVO';
 
+    const handleImprimir = async () => {
+        setImprimiendo(true);
+        try {
+            const html2pdf = (await import('html2pdf.js')).default;
+            const el       = docRef.current;
+            const footerEl = el.querySelector('.pco-footer');
+
+            el.style.width     = '720px';
+            el.style.margin    = '0';
+            el.style.boxShadow = 'none';
+            el.style.padding   = '14px 22px';
+            el.style.minHeight = 'unset';
+
+            if (footerEl) {
+                el.getBoundingClientRect();
+                const gap = Math.max(20, 1200 - el.scrollHeight);
+                footerEl.style.marginTop = gap + 'px';
+            }
+
+            const blobUrl = await html2pdf()
+                .set({
+                    margin:      [8, 14, 10, 14],
+                    image:       { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 720 },
+                    jsPDF:       { unit: 'mm', format: 'legal', orientation: 'portrait' },
+                    pagebreak:   { mode: ['css', 'legacy'], avoid: ['.pco-header', '.pco-firma-bloque', 'tr'] },
+                })
+                .from(el)
+                .output('bloburl');
+
+            if (footerEl) footerEl.style.marginTop = '';
+            el.style.width     = '';
+            el.style.margin    = '';
+            el.style.boxShadow = '';
+            el.style.padding   = '';
+            el.style.minHeight = '';
+
+            window.open(blobUrl, '_blank');
+        } catch (err) {
+            console.error('Error al generar PDF:', err);
+        } finally {
+            setImprimiendo(false);
+        }
+    };
+
     const content = (
         <div className="pco-overlay">
-            <style>{`@media print { @page { size: ${tamano === 'a4' ? 'A4' : 'legal'} portrait; margin: 12mm 14mm; } }`}</style>
             {/* Toolbar */}
-            <div className="pco-toolbar no-print">
+            <div className="pco-toolbar">
                 <span className="pco-toolbar-title">Vista previa — Oficio de Consulta</span>
+                <span className="pco-toolbar-hint">
+                    <i className="bi bi-pencil-square" /> Haz clic en el documento para editar
+                </span>
                 <div className="pco-toolbar-actions">
-                    <div className="pco-select-wrap">
-                        <i className="bi bi-file-earmark" />
-                        <select value={tamano} onChange={e => setTamano(e.target.value)} className="pco-select-tamano">
-                            <option value="a4">Tamaño: A4</option>
-                            <option value="legal">Tamaño: Oficio</option>
-                        </select>
-                    </div>
+                    {guardadoEn && (
+                        <>
+                            <span className="pco-guardado-en">
+                                <i className="bi bi-cloud-check" /> Guardado {guardadoEn}
+                            </span>
+                            <button className="pco-btn-restaurar" onClick={handleRestaurar}>
+                                <i className="bi bi-arrow-counterclockwise" /> Restaurar
+                            </button>
+                        </>
+                    )}
                     <button className="pco-btn-cerrar" onClick={onCerrar}>✕ Cerrar</button>
-                    <button className="pco-btn-imprimir" onClick={() => window.print()}>
-                        <i className="bi bi-printer-fill" /> Imprimir
+                    <button className="pco-btn-imprimir" onClick={handleImprimir} disabled={imprimiendo}>
+                        <i className="bi bi-printer-fill" /> {imprimiendo ? 'Generando...' : 'Imprimir'}
                     </button>
                 </div>
             </div>
 
-            {/* Documento */}
-            <div className={`pco-documento pco-${tamano}`}>
+            {/* Documento — pco-legal da el ancho/padding de pantalla; ref apunta aquí para el PDF */}
+            <div ref={el => { docRef.current = el; handleMounted(el); }}
+                 onInput={handleInput}
+                 className="pco-documento pco-legal">
 
                 {/* Encabezado */}
                 <div className="pco-header">
                     <div className="pco-header-izq">
                         <img src={logo} alt="Morelos" className="pco-logo" />
                     </div>
-                    <div className="pco-header-right">
+                    <div contentEditable suppressContentEditableWarning
+                         className="pco-header-right pco-editable">
                         <p className="pco-inst-1">Secretaría de Seguridad y Protección Ciudadana</p>
                         <p className="pco-inst-2">Coordinación del Sistema Penitenciario</p>
                         <p className="pco-inst-2">Dirección General de Reinserción Social</p>
@@ -74,7 +179,8 @@ const PrintConsulta = ({ consulta: d, onCerrar }) => {
                 <div className="pco-separador" />
 
                 {/* Destinatario */}
-                <div className="pco-destinatario">
+                <div contentEditable suppressContentEditableWarning
+                     className="pco-destinatario pco-editable">
                     <p className="pco-dest-nombre">{d.quienSolicita?.toUpperCase() || '___________'}</p>
                     <p className="pco-dest-cargo">{d.cargoSolicitante?.toUpperCase() || ''}</p>
                     {d.dependenciaSolicitante && (
@@ -83,8 +189,8 @@ const PrintConsulta = ({ consulta: d, onCerrar }) => {
                     <p className="pco-presente">P R E S E N T E.</p>
                 </div>
 
-                {/* Cuerpo – párrafo 1 */}
-                <p className="pco-parrafo">
+                {/* Párrafo 1 */}
+                <p contentEditable suppressContentEditableWarning className="pco-parrafo pco-editable">
                     Con fundamento en lo dispuesto por los artículos 105, 176, 177 fracción XI, del Código Nacional de
                     Procedimientos Penales, así como en atención a su oficio número:{' '}
                     <strong>{d.oficioNumero || '___________'}</strong>, de fecha {hoy(d.fechaSolicitud)}, donde solicita
@@ -94,38 +200,36 @@ const PrintConsulta = ({ consulta: d, onCerrar }) => {
                     continuación:
                 </p>
 
-                {/* Tabla del imputado */}
+                {/* Tabla de imputado(s) */}
                 <table className="pco-tabla-imp">
                     <thead>
                         <tr>
                             <th>NOMBRE</th>
                             <th>FECHA DE NACIMIENTO</th>
-                            <th>CURP</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>{nombreCompleto || '___________'}</td>
-                            <td>{d.fechaNacimientoImputado ? hoy(d.fechaNacimientoImputado, true) : '___________'}</td>
-                            <td className="pco-td-curp">{d.curp || '___________'}</td>
-                        </tr>
+                        {listaImputados.map((imp, i) => (
+                            <tr key={i}>
+                                <td>{imp.nombre || '___________'}</td>
+                                <td>{imp.fechaNacimiento ? hoy(imp.fechaNacimiento, true) : '___________'}</td>
+                            </tr>
+                        ))}
                     </tbody>
                 </table>
 
                 {/* Párrafo resultado */}
                 {esPositivo ? (
-                    <p className="pco-parrafo">
+                    <p contentEditable suppressContentEditableWarning className="pco-parrafo pco-editable">
                         Derivado de lo anterior, me permito hacer de su conocimiento que, una vez realizada la consulta
                         en las bases de datos a disposición de esta Dirección de la Unidad de Medidas Cautelares y
                         Salidas Alternas para Adultos,{' '}
                         <strong>SI SE CUENTA CON REGISTRO</strong>, por cuanto a la{' '}
-                        <strong>
-                            SUPERVISIÓN CONDICIONAL Y MEDIDAS CAUTELARES EN LIBERTAD
-                        </strong>
+                        <strong>SUPERVISIÓN CONDICIONAL Y MEDIDAS CAUTELARES EN LIBERTAD</strong>
                         , de la causa penal:
                     </p>
                 ) : (
-                    <p className="pco-parrafo">
+                    <p contentEditable suppressContentEditableWarning className="pco-parrafo pco-editable">
                         Derivado de lo anterior, me permito hacer de su conocimiento que, una vez realizada la consulta
                         en las bases de datos a disposición de esta Dirección de la Unidad de Medidas Cautelares y
                         Salidas Alternas para Adultos,{' '}
@@ -134,53 +238,54 @@ const PrintConsulta = ({ consulta: d, onCerrar }) => {
                     </p>
                 )}
 
-                {/* Detalle del registro (observaciones) – solo si positivo */}
                 {esPositivo && d.observaciones && (
                     <div className="pco-detalle-reg">
                         <p className="pco-parrafo">{d.observaciones}</p>
                     </div>
                 )}
 
-                {/* Párrafo cierre */}
-                <p className="pco-parrafo">
+                <p contentEditable suppressContentEditableWarning className="pco-parrafo pco-editable">
                     Es importante mencionar que, esta Autoridad de acuerdo al Código Nacional de Procedimientos Penales,
                     únicamente tiene como objeto el seguimiento de las medidas cautelares y de la supervisión condicional
                     del proceso, debiendo destacar que se desconoce respecto a los acuerdos reparatorios, procedimientos
                     simplificados o abreviados.
                 </p>
 
-                <p className="pco-parrafo">
+                <p contentEditable suppressContentEditableWarning className="pco-parrafo pco-editable">
                     Sin otro particular, aprovecho la ocasión para enviarle un cordial saludo.
                 </p>
 
                 {/* Firma */}
                 <div className="pco-firma-bloque">
                     <p className="pco-atentamente">A T E N T A M E N T E</p>
-
-                    {/* Fila superior: solo el Director */}
                     <div className="pco-firmas pco-firmas-director">
-                        <div className="pco-firma-col pco-firma-col-centro">
+                        <div contentEditable suppressContentEditableWarning
+                             className="pco-firma-col pco-firma-col-centro pco-editable">
                             <p className="pco-firma-nombre">LIC. REY GIOVANNI RIVAS SANDOVAL</p>
                             <p className="pco-firma-cargo">DIRECTOR DE LA UNIDAD DE MEDIDAS CAUTELARES</p>
                             <p className="pco-firma-cargo">Y SALIDAS ALTERNAS PARA ADULTOS.</p>
                         </div>
                     </div>
-
-                    {/* Fila inferior: ELABORÓ · REVISÓ · AUTORIZÓ */}
                     <div className="pco-firmas pco-firmas-bottom">
-                        <div className="pco-firma-col pco-firma-col-lateral">
+                        <div contentEditable suppressContentEditableWarning
+                             className="pco-firma-col pco-firma-col-lateral pco-editable">
                             <p className="pco-firma-label-sm">ELABORÓ</p>
+                            <p className="pco-firma-nombre-sm">[Nombre del elaborador]</p>
                         </div>
-                        <div className="pco-firma-col pco-firma-col-lateral">
+                        <div contentEditable suppressContentEditableWarning
+                             className="pco-firma-col pco-firma-col-lateral pco-editable">
                             <p className="pco-firma-label-sm">REVISÓ</p>
+                            <p className="pco-firma-nombre-sm">[Nombre del revisor]</p>
                         </div>
-                        <div className="pco-firma-col pco-firma-col-lateral">
+                        <div contentEditable suppressContentEditableWarning
+                             className="pco-firma-col pco-firma-col-lateral pco-editable">
                             <p className="pco-firma-label-sm">AUTORIZÓ</p>
+                            <p className="pco-firma-nombre-sm">[Nombre del autorizador]</p>
                         </div>
                     </div>
                 </div>
 
-                {/* Pie de página igual que PrintEntrevista */}
+                {/* Footer */}
                 <div className="pco-footer">
                     <img src={footerDorado} alt="" className="pco-footer-img" />
                     <p className="pco-footer-fecha">

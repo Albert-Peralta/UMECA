@@ -55,11 +55,11 @@ const EditorToolbar = ({ editor }) => {
 };
 
 /* ── Helpers ── */
-const val = (v, fallback = '[Sin dato]') => (v && String(v).trim()) || fallback;
+const val = (v, fallback = '—') => (v && String(v).trim()) || fallback;
 const domicilioLinea = (d) => {
     const partes = [d.domicilioActualCalle, d.domicilioActualNo, d.domicilioActualColonia,
                     d.domicilioActualMunicipio, d.domicilioActualEstado].filter(Boolean);
-    return partes.length ? partes.join(', ') + '.' : '[Sin dato]';
+    return partes.length ? partes.join(', ') + '.' : '—';
 };
 
 /* ── Componente principal ── */
@@ -124,8 +124,8 @@ const PrintInformeEval = ({ evaluacion: d, onCerrar }) => {
         <strong>CURP:</strong> ${val(d.curp)}.<br/>
         <strong>Estado civil:</strong> ${val(d.estadoCivil)}.<br/>
         <strong>Escolaridad:</strong> ${val(d.gradoEstudios)}.<br/>
-        <strong>Enfermedad:</strong> [Sin dato].<br/>
-        <strong>Oficio/Profesión:</strong> [Sin dato].
+        <strong>Enfermedad:</strong> —<br/>
+        <strong>Oficio/Profesión:</strong> —
       </td>
     </tr>
     <tr>
@@ -138,16 +138,16 @@ const PrintInformeEval = ({ evaluacion: d, onCerrar }) => {
     </tr>
     <tr>
       <td><strong>Domicilios anteriores</strong><br/>(Según lo manifestó)</td>
-      <td colspan="2">[Sin dato]</td><td><strong>Temporalidad</strong><br/>[Sin dato]</td>
+      <td colspan="2">—</td><td><strong>Temporalidad</strong><br/>—</td>
     </tr>
     <tr>
       <td><strong>Datos Familiares</strong><br/>(según lo manifestó)</td>
       <td colspan="2">[Descripción de con quién vive el entrevistado]</td>
-      <td><strong>Tiempo de cohabitar</strong><br/>[Sin dato]</td>
+      <td><strong>Tiempo de cohabitar</strong><br/>—</td>
     </tr>
     <tr>
       <td><strong>Cuenta con familiares fuera del estado y/o país</strong></td>
-      <td colspan="2">[Sin dato]</td>
+      <td colspan="2">—</td>
       <td><strong>Cuenta con documentos migratorios</strong><br/>${d.tieneVisa || d.tienePasaporte ? 'Sí.' : 'No tiene.'}</td>
     </tr>
     <tr>
@@ -158,8 +158,8 @@ const PrintInformeEval = ({ evaluacion: d, onCerrar }) => {
     </tr>
     <tr>
       <td><strong>Actividad Laboral/Escolar Actual y Temporalidad</strong><br/>(según lo manifestó)</td>
-      <td colspan="2">[Sin dato]</td>
-      <td><strong>Salario</strong><br/>[Sin dato]</td>
+      <td colspan="2">—</td>
+      <td><strong>Salario</strong><br/>—</td>
     </tr>
     <tr>
       <td><strong>Delito por el que se le procesa</strong><br/>(Carpeta de investigación)</td>
@@ -172,15 +172,15 @@ const PrintInformeEval = ({ evaluacion: d, onCerrar }) => {
     </tr>
     <tr>
       <td><strong>Información sobre la Víctima</strong></td>
-      <td colspan="3">Sin Dato.<br/>(${d.nombreSolicitante ? `Oficio de petición de ${d.nombreSolicitante}` : 'Oficio de petición del Agente del Ministerio Público'})</td>
+      <td colspan="3">—<br/>(${d.nombreSolicitante ? `Oficio de petición de ${d.nombreSolicitante}` : 'Oficio de petición del Agente del Ministerio Público'})</td>
     </tr>
     <tr>
       <td><strong>Consumo de Sustancias</strong><br/>(según lo manifestó) Antes</td>
-      <td colspan="3">[Sin dato]</td>
+      <td colspan="3">—</td>
     </tr>
     <tr>
       <td><strong>Desde cuando las consume</strong><br/>(según lo manifestó)</td>
-      <td colspan="3">Sin dato.</td>
+      <td colspan="3">—</td>
     </tr>
   </tbody>
 </table>`;
@@ -214,19 +214,37 @@ ${tablaSocio}
     const handleImprimir = async () => {
         setImprimiendo(true);
         try {
-            const html2pdf  = (await import('html2pdf.js')).default;
-            const el        = docRef.current;
-            const footerEl  = el.querySelector('.ped-footer');
-
-            const prevWidth     = el.style.width;
-            const prevMargin    = el.style.margin;
-            const prevBoxShadow = el.style.boxShadow;
-            const prevPadding   = el.style.padding;
+            const html2pdf = (await import('html2pdf.js')).default;
+            const el       = docRef.current;
+            const footerEl = el.querySelector('.ped-footer');
 
             el.style.width     = '720px';
             el.style.margin    = '0';
             el.style.boxShadow = 'none';
             el.style.padding   = '14px 22px';
+
+            // html2canvas no puede renderizar elementos contenteditable.
+            // Reemplazamos cada uno por un <div> estático con el mismo HTML y clases,
+            // capturamos el PDF, y luego los restauramos.
+            const editables = Array.from(el.querySelectorAll('[contenteditable]'));
+            const snapshots = editables.map(orig => {
+                const snap = document.createElement('div');
+                snap.innerHTML = orig.innerHTML;
+                snap.className = orig.className;
+                // Copiar estilos computados relevantes
+                const cs = window.getComputedStyle(orig);
+                snap.style.cssText = orig.style.cssText;
+                snap.style.fontFamily  = cs.fontFamily;
+                snap.style.fontSize    = cs.fontSize;
+                snap.style.lineHeight  = cs.lineHeight;
+                snap.style.color       = cs.color;
+                snap.style.whiteSpace  = cs.whiteSpace;
+                snap.style.padding     = cs.padding;
+                snap.style.border      = 'none';
+                orig.parentNode.insertBefore(snap, orig);
+                orig.style.display = 'none';
+                return { orig, snap };
+            });
 
             if (footerEl) {
                 el.getBoundingClientRect();
@@ -240,16 +258,22 @@ ${tablaSocio}
                     image:       { type: 'jpeg', quality: 0.98 },
                     html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 720 },
                     jsPDF:       { unit: 'mm', format: 'legal', orientation: 'portrait' },
-                    pagebreak:   { mode: 'avoid-all' },
+                    pagebreak:   { mode: ['css', 'legacy'], avoid: ['.ped-header', '.ped-firma', '.ped-elab-row', 'tr'] },
                 })
                 .from(el)
                 .output('bloburl');
 
+            // Restaurar elementos originales
+            snapshots.forEach(({ orig, snap }) => {
+                orig.style.display = '';
+                snap.parentNode.removeChild(snap);
+            });
+
             if (footerEl) footerEl.style.marginTop = '';
-            el.style.width     = prevWidth;
-            el.style.margin    = prevMargin;
-            el.style.boxShadow = prevBoxShadow;
-            el.style.padding   = prevPadding;
+            el.style.width     = '';
+            el.style.margin    = '';
+            el.style.boxShadow = '';
+            el.style.padding   = '';
 
             window.open(blobUrl, '_blank');
         } catch (err) {

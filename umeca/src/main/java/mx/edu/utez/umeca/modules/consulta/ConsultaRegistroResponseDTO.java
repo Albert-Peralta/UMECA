@@ -24,6 +24,7 @@ public class ConsultaRegistroResponseDTO {
     private Long folioConsecutivo;
     private LocalDate fechaNacimientoImputado;
     private String curp;
+    private String imputadosJson;
     private String oficioNumero;
     private String resultado;
     private String observaciones;
@@ -60,6 +61,7 @@ public class ConsultaRegistroResponseDTO {
         dto.setFolioConsecutivo(c.getFolioConsecutivo());
         dto.setFechaNacimientoImputado(c.getFechaNacimientoImputado());
         dto.setCurp(c.getCurp());
+        dto.setImputadosJson(c.getImputadosJson());
         dto.setOficioNumero(c.getOficioNumero());
         dto.setResultado(c.getResultado().name());
         dto.setObservaciones(c.getObservaciones());

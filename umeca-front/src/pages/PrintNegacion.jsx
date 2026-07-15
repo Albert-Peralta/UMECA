@@ -53,7 +53,7 @@ const EditorToolbar = ({ editor }) => {
     );
 };
 
-const val = (v, fallback = '[Sin dato]') => (v && String(v).trim()) || fallback;
+const val = (v, fallback = '—') => (v && String(v).trim()) || fallback;
 
 const PrintNegacion = ({ evaluacion: d, onCerrar }) => {
     const docRef = useRef(null);

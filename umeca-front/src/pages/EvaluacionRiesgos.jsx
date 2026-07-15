@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { getEvaluaciones, buscarEvaluaciones, getEvaluacionById, asignarEvaluador, asignarResultado, crearNegacion } from '../api/evaluacionesApi';
+import { getImputadosPorCausaPenal } from '../api/imputadosApi';
 import FormularioEvaluacion from './FormularioEvaluacion';
 import DetalleEvaluacion from './DetalleEvaluacion';
 import PrintNegacion from './PrintNegacion';
@@ -63,11 +64,28 @@ const EvaluacionRiesgos = () => {
     // Modal Negación
     const [showModalNegacion, setShowModalNegacion] = useState(false);
     const [showPrintNegacion, setShowPrintNegacion] = useState(false);
+    const [negacionParaImprimir, setNegacionParaImprimir] = useState(null);
     const negacionVacio = { nombreImputado: '', apPaternoImputado: '', apMaternoImputado: '', edad: '',
         causaPenal: '', dependencia: '', cargo: '',
-        nombreSolicitante: '', fechaSolicitud: '', horaInicio: '', lugarEntrevista: '' };
+        nombreSolicitante: '', fechaSolicitud: '', horaInicio: '', lugarEntrevista: '', imputadoId: null };
     const [negacionData, setNegacionData] = useState(negacionVacio);
     const [negacionErrores, setNegacionErrores] = useState({});
+
+    // Sugerencias inline de imputados con la misma causa penal
+    const [imputadosCausaPenal, setImputadosCausaPenal] = useState([]);
+
+    /** Busca imputados por causa penal; si hay más de uno muestra modal de selección. */
+    const handleCausaPenalNegacionBlur = async (causaPenal) => {
+        if (!causaPenal?.trim()) return;
+        try {
+            const res = await getImputadosPorCausaPenal(causaPenal.trim());
+            const lista = res.data?.data || [];
+            if (lista.length >= 1) {
+                // Mostrar sugerencias inline
+                setImputadosCausaPenal(lista);
+            }
+        } catch { /* si falla la búsqueda, el usuario captura manualmente */ }
+    };
 
     // Valida campos obligatorios del formulario de negación antes de generar el documento.
     const validarNegacion = () => {
@@ -263,7 +281,7 @@ const EvaluacionRiesgos = () => {
                         <i className="bi bi-plus-lg"></i> Nueva Evaluación
                     </button>
                     <button className="btn-nueva-eval" style={{ background: '#c0392b', borderColor: '#c0392b' }}
-                        onClick={() => setShowModalNegacion(true)}>
+                        onClick={() => { setNegacionData(negacionVacio); setNegacionErrores({}); setShowModalNegacion(true); }}>
                         <i className="bi bi-file-earmark-x"></i> Negación
                     </button>
                 </>)}
@@ -340,7 +358,7 @@ const EvaluacionRiesgos = () => {
                                                     if (res.data.ok) {
                                                         const data = res.data.data;
                                                         if (data.tipoDocumento === 'NEGACION') {
-                                                            setNegacionData({
+                                                            setNegacionParaImprimir({
                                                                 nombreImputado: data.nombreImputado || '',
                                                                 apPaternoImputado: data.apPaternoImputado || '',
                                                                 apMaternoImputado: data.apMaternoImputado || '',
@@ -484,7 +502,48 @@ const EvaluacionRiesgos = () => {
 
                             {/* Sección imputado */}
                             <p style={{ fontSize: 11, fontWeight: 700, color: '#c0392b', textTransform: 'uppercase', letterSpacing: 1, margin: '0 0 10px', borderBottom: '1px solid #f0d9c8', paddingBottom: 6 }}>Datos del imputado</p>
-                            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '10px', marginBottom: 16 }}>
+
+                            {/* 1. Causa penal */}
+                            <div style={{ marginBottom: 12 }}>
+                                <label style={{ fontSize: 11, fontWeight: 600, color: negacionErrores.causaPenal ? '#c0392b' : '#444', display: 'block', marginBottom: 4 }}>Carpeta / Causa penal *</label>
+                                <input value={negacionData.causaPenal}
+                                    onChange={e => { setNegacionData(p => ({ ...p, causaPenal: e.target.value, imputadoId: null })); setNegacionErrores(p => ({ ...p, causaPenal: '' })); setImputadosCausaPenal([]); }}
+                                    onBlur={e => handleCausaPenalNegacionBlur(e.target.value)}
+                                    style={{ width: '100%', boxSizing: 'border-box', border: `1px solid ${negacionErrores.causaPenal ? '#c0392b' : '#ddd'}`, borderRadius: 6, padding: '7px 10px', fontSize: 13, outline: 'none' }} />
+                                {negacionErrores.causaPenal && <span style={{ fontSize: 10, color: '#c0392b' }}>{negacionErrores.causaPenal}</span>}
+                            </div>
+
+                            {/* Sugerencias inline debajo de causa penal */}
+                            {imputadosCausaPenal.length > 0 && (
+                                <div style={{ border: '1px solid #b6d4fe', borderRadius: 8, marginBottom: 12, overflow: 'hidden', background: '#eef4ff' }}>
+                                    <p style={{ margin: 0, padding: '7px 12px', fontSize: 11, fontWeight: 600, color: '#2c4fa3', background: '#ddeaff', borderBottom: '1px solid #b6d4fe' }}>
+                                        ℹ Esta causa penal ya existe. ¿Es alguno de estos?
+                                    </p>
+                                    {imputadosCausaPenal.map(imp => (
+                                        <div key={imp.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid #d0e4ff', background: '#f5f9ff' }}>
+                                            <span style={{ fontSize: 13 }}>
+                                                <strong style={{ color: '#1a1a1a' }}>{imp.nombre} {imp.apPaterno} {imp.apMaterno || ''}</strong>
+                                                <span style={{ marginLeft: 8, color: '#777', fontSize: 12 }}>{imp.delito || '—'}</span>
+                                            </span>
+                                            <button onClick={() => {
+                                                setNegacionData(p => ({ ...p, imputadoId: imp.id, nombreImputado: imp.nombre || '', apPaternoImputado: imp.apPaterno || '', apMaternoImputado: imp.apMaterno || '' }));
+                                                setImputadosCausaPenal([]);
+                                            }} style={{ background: '#2d6a4f', color: '#fff', border: 'none', borderRadius: 5, padding: '5px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>
+                                                Seleccionar
+                                            </button>
+                                        </div>
+                                    ))}
+                                    <div style={{ padding: '8px 12px', background: '#eef4ff' }}>
+                                        <button onClick={() => { setNegacionData(p => ({ ...p, imputadoId: null, nombreImputado: '', apPaternoImputado: '', apMaternoImputado: '' })); setImputadosCausaPenal([]); }}
+                                            style={{ background: '#fff', border: '1px solid #aac4f0', borderRadius: 5, fontSize: 12, cursor: 'pointer', color: '#2c4fa3', padding: '4px 12px', fontWeight: 600 }}>
+                                            + Es una persona diferente
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 2. Nombre y apellidos */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '10px', marginBottom: 12 }}>
                                 {[
                                     ['nombreImputado',    'Nombre(s) *'],
                                     ['apPaternoImputado', 'Apellido paterno *'],
@@ -492,24 +551,20 @@ const EvaluacionRiesgos = () => {
                                 ].map(([key, label]) => (
                                     <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                         <label style={{ fontSize: 11, fontWeight: 600, color: negacionErrores[key] ? '#c0392b' : '#444' }}>{label}</label>
-                                        <input value={negacionData[key]} onChange={e => { setNegacionData(p => ({ ...p, [key]: e.target.value })); setNegacionErrores(p => ({ ...p, [key]: '' })); }}
-                                            style={{ border: `1px solid ${negacionErrores[key] ? '#c0392b' : '#ddd'}`, borderRadius: 6, padding: '7px 10px', fontSize: 13, outline: 'none', background: negacionErrores[key] ? '#fff5f5' : '#fff' }} />
+                                        <input value={negacionData[key]}
+                                            readOnly={!!negacionData.imputadoId}
+                                            onChange={e => { if (!negacionData.imputadoId) { setNegacionData(p => ({ ...p, [key]: e.target.value })); setNegacionErrores(p => ({ ...p, [key]: '' })); } }}
+                                            style={{ border: `1px solid ${negacionErrores[key] ? '#c0392b' : '#ddd'}`, borderRadius: 6, padding: '7px 10px', fontSize: 13, outline: 'none', background: negacionData.imputadoId ? '#f5f5f5' : negacionErrores[key] ? '#fff5f5' : '#fff', cursor: negacionData.imputadoId ? 'not-allowed' : 'text' }} />
                                         {negacionErrores[key] && <span style={{ fontSize: 10, color: '#c0392b' }}>{negacionErrores[key]}</span>}
                                     </div>
                                 ))}
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: 18 }}>
-                                {[
-                                    ['edad',      'Edad'],
-                                    ['causaPenal','Carpeta / Causa penal *'],
-                                ].map(([key, label]) => (
-                                    <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                        <label style={{ fontSize: 11, fontWeight: 600, color: negacionErrores[key] ? '#c0392b' : '#444' }}>{label}</label>
-                                        <input value={negacionData[key]} onChange={e => { setNegacionData(p => ({ ...p, [key]: e.target.value })); setNegacionErrores(p => ({ ...p, [key]: '' })); }}
-                                            style={{ border: `1px solid ${negacionErrores[key] ? '#c0392b' : '#ddd'}`, borderRadius: 6, padding: '7px 10px', fontSize: 13, outline: 'none', background: negacionErrores[key] ? '#fff5f5' : '#fff' }} />
-                                        {negacionErrores[key] && <span style={{ fontSize: 10, color: '#c0392b' }}>{negacionErrores[key]}</span>}
-                                    </div>
-                                ))}
+
+                            {/* 3. Edad */}
+                            <div style={{ marginBottom: 16, width: '48%' }}>
+                                <label style={{ fontSize: 11, fontWeight: 600, color: '#444', display: 'block', marginBottom: 4 }}>Edad</label>
+                                <input value={negacionData.edad} onChange={e => { setNegacionData(p => ({ ...p, edad: e.target.value })); }}
+                                    style={{ width: '100%', boxSizing: 'border-box', border: '1px solid #ddd', borderRadius: 6, padding: '7px 10px', fontSize: 13, outline: 'none' }} />
                             </div>
 
                             {/* Sección solicitante */}
@@ -572,16 +627,20 @@ const EvaluacionRiesgos = () => {
                                         fechaSolicitud: negacionData.fechaSolicitud || new Date().toISOString().split('T')[0],
                                         horaInicio: negacionData.horaInicio,
                                         lugarEntrevista: negacionData.lugarEntrevista,
+                                        imputadoId: negacionData.imputadoId || null,
                                     };
                                     await crearNegacion(payload);
                                     showToast('Negación registrada en el sistema', 'success');
                                     cargarDatos();
+                                    setNegacionParaImprimir({ ...negacionData });
+                                    setShowModalNegacion(false);
+                                    setNegacionData(negacionVacio);
+                                    setShowPrintNegacion(true);
                                 } catch (e) {
                                     showToast('No se pudo guardar el registro de negación', 'error');
+                                    setShowModalNegacion(false);
+                                    setNegacionData(negacionVacio);
                                 }
-                                setShowModalNegacion(false);
-                                setNegacionData(negacionVacio);
-                                setShowPrintNegacion(true);
                             }}
                                 style={{ background: '#c0392b', border: 'none', color: '#fff', borderRadius: 8, padding: '8px 20px', cursor: 'pointer', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <i className="bi bi-file-earmark-text" /> Generar Documento
@@ -592,8 +651,9 @@ const EvaluacionRiesgos = () => {
             )}
 
             {showPrintNegacion && (
-                <PrintNegacion evaluacion={negacionData} onCerrar={() => setShowPrintNegacion(false)} />
+                <PrintNegacion evaluacion={negacionParaImprimir} onCerrar={() => { setShowPrintNegacion(false); setNegacionParaImprimir(null); }} />
             )}
+
         </div>
     );
 };

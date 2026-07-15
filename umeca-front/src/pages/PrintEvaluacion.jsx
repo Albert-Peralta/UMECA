@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import logoMorelos from '../assets/logo-morelos-nuevo.png';
 import footerDorado from '../assets/footer-dorado.png';
@@ -32,7 +33,105 @@ const FilaVerif = ({ label, metodo, resultado }) => {
 };
 
 const PrintEvaluacion = ({ evaluacion: d, onCerrar }) => {
-    const handlePrint = () => window.print();
+    const docRef = useRef(null);
+    const [imprimiendo, setImprimiendo] = useState(false);
+
+    const handlePrint = async () => {
+        setImprimiendo(true);
+        try {
+            const { default: html2pdf } = await import('html2pdf.js');
+            const el = docRef.current;
+            const h2cOpts = { scale: 2, useCORS: true, logging: false, windowWidth: 720 };
+
+            el.style.width     = '720px';
+            el.style.margin    = '0';
+            el.style.boxShadow = 'none';
+            el.style.padding   = '14px 22px';
+            el.style.minHeight = 'unset';
+
+            // Ocultar encabezado duplicado (page2)
+            const h2 = el.querySelector('.pev-header-page2');
+            if (h2) h2.style.display = 'none';
+
+            // Capturar header usando html2canvas interno de html2pdf
+            const headerEl = el.querySelector('.pev-header-carta');
+            const headerCanvas = await html2pdf().set({ html2canvas: h2cOpts }).from(headerEl).toCanvas().get('canvas');
+            const headerImgData = headerCanvas.toDataURL('image/jpeg', 0.98);
+            headerEl.style.display = 'none';
+
+            // Dimensiones
+            const marginL = 14, marginR = 14, marginTop = 8;
+            const contentW = 215.9 - marginL - marginR;
+            const headerH  = (headerCanvas.height / headerCanvas.width) * contentW;
+            const topMargin = marginTop + headerH + 4;
+
+            // Cargar imagen del footer dorado usando el import directo del asset
+            let footerImgData = null;
+            let footerHMm    = 0;
+            await new Promise((res) => {
+                const img = new Image();
+                img.onload = () => {
+                    const fc = document.createElement('canvas');
+                    fc.width  = img.naturalWidth;
+                    fc.height = img.naturalHeight;
+                    fc.getContext('2d').drawImage(img, 0, 0);
+                    footerImgData = fc.toDataURL('image/jpeg', 0.98);
+                    footerHMm = (img.naturalHeight / img.naturalWidth) * contentW;
+                    res();
+                };
+                img.onerror = () => res();
+                img.src = footerDorado; // asset ya importado al inicio del archivo
+            });
+
+            // Ocultar footer del HTML (se añade con jsPDF)
+            const footerEl = el.querySelector('.pev-footer');
+            if (footerEl) footerEl.style.display = 'none';
+
+            const bottomMargin = 10 + footerHMm + 2;
+
+            const pdfInstance = await html2pdf()
+                .set({
+                    margin:      [topMargin, marginR, bottomMargin, marginL],
+                    image:       { type: 'jpeg', quality: 0.98 },
+                    html2canvas: h2cOpts,
+                    jsPDF:       { unit: 'mm', format: 'legal', orientation: 'portrait' },
+                    pagebreak:   { mode: ['css', 'legacy'], avoid: ['.pev-firmas', 'tr'] },
+                })
+                .from(el)
+                .toPdf()
+                .get('pdf');
+
+            // Añadir encabezado y footer en cada página
+            const pageH      = pdfInstance.internal.pageSize.getHeight();
+            const totalPages = pdfInstance.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                pdfInstance.setPage(i);
+                pdfInstance.addImage(headerImgData, 'JPEG', marginL, marginTop, contentW, headerH);
+                if (footerImgData) {
+                    const fH = footerHMm * 0.75; // reducir un 25% el alto del footer
+                    pdfInstance.addImage(footerImgData, 'JPEG', marginL, pageH - 10 - fH, contentW, fH);
+                }
+            }
+
+            const blobUrl = pdfInstance.output('bloburl');
+
+            // Restaurar estilos
+            headerEl.style.display = '';
+            if (footerEl) footerEl.style.display = '';
+            if (h2)       h2.style.display = '';
+            el.style.width     = '';
+            el.style.margin    = '';
+            el.style.boxShadow = '';
+            el.style.padding   = '';
+            el.style.minHeight = '';
+
+            window.open(blobUrl, '_blank');
+        } catch (err) {
+            console.error('Error al generar PDF:', err);
+        } finally {
+            setImprimiendo(false);
+        }
+    };
 
     const domAnt  = (() => { try { return JSON.parse(d.domiciliosAnterioresJson || '[]'); } catch { return []; } })();
     const empAnt  = (() => { try { return JSON.parse(d.empleosAnterioresJson   || '[]'); } catch { return []; } })();
@@ -61,13 +160,13 @@ const PrintEvaluacion = ({ evaluacion: d, onCerrar }) => {
                 <span className="pev-toolbar-title">Vista previa de impresión — Evaluación de Riesgos</span>
                 <div className="pev-toolbar-actions">
                     <button className="pev-btn-cerrar" onClick={onCerrar}>✕ Cerrar</button>
-                    <button className="pev-btn-imprimir" onClick={handlePrint}>
-                        <i className="bi bi-printer-fill" /> Imprimir
+                    <button className="pev-btn-imprimir" onClick={handlePrint} disabled={imprimiendo}>
+                        <i className="bi bi-printer-fill" /> {imprimiendo ? 'Generando...' : 'Imprimir'}
                     </button>
                 </div>
             </div>
 
-            <div className="pev-documento">
+            <div className="pev-documento" ref={docRef}>
 
                 {/* ══ ENCABEZADO CARTA OFICIAL ══ */}
                 <div className="pev-header-carta">
@@ -133,6 +232,10 @@ const PrintEvaluacion = ({ evaluacion: d, onCerrar }) => {
                             <th>LUGAR DONDE SE REALIZÓ LA ENTREVISTA</th>
                             <td colSpan={3}>{val(d.lugarEntrevista)}</td>
                         </tr>
+                        <tr>
+                            <th>FECHA DE REGISTRO</th>
+                            <td colSpan={3}>{d.createdAt ? new Date(d.createdAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }) : '—'}</td>
+                        </tr>
                     </tbody>
                 </table>
 
@@ -182,45 +285,21 @@ const PrintEvaluacion = ({ evaluacion: d, onCerrar }) => {
 
                         {/* ── INFORMACIÓN LABORAL ── */}
                         <tr className="pev-tv-grupo pev-grupo-avoid"><td colSpan={4}>6. INFORMACIÓN LABORAL / OCUPACIONAL</td></tr>
-                        <tr className="pev-grupo-avoid"><td className="pev-tv-factor">Empresa</td><td>{val(d.empresaImp)}</td><td rowSpan={6} className="pev-tv-metodo">{val(d.verifS6Metodo)}</td><td rowSpan={6}>{val(d.verifS6Resultado)}</td></tr>
+                        <tr className="pev-grupo-avoid"><td className="pev-tv-factor">Empresa</td><td>{val(d.empresaImp)}</td><td className="pev-tv-metodo" rowSpan={3}>{val(d.verifS6Metodo)}</td><td rowSpan={3}>{val(d.verifS6Resultado)}</td></tr>
                         <tr><td className="pev-tv-factor">Puesto</td><td>{val(d.puestoImp)}</td></tr>
                         <tr><td className="pev-tv-factor">Horario</td><td>{val(d.horarioTrabajoImp)}</td></tr>
-                        <tr><td className="pev-tv-factor">Salario</td><td>{d.salarioMensualImp ? `$${d.salarioMensualImp}` : '—'}</td></tr>
+                        <tr><td className="pev-tv-factor">Salario</td><td>{d.salarioMensualImp ? `$${d.salarioMensualImp}` : '—'}</td><td className="pev-tv-metodo" rowSpan={3 + empAnt.length}></td><td rowSpan={3 + empAnt.length}></td></tr>
                         <tr><td className="pev-tv-factor">Temporalidad</td><td>{val(d.ultimoEmpleoImp)}</td></tr>
                         <tr><td className="pev-tv-factor">Domicilio trabajo</td><td>{val(d.domicilioTrabajoImp)}</td></tr>
                         {empAnt.length > 0 && empAnt.map((ea, i) => (
-                            <tr key={i}><td className="pev-tv-factor">Empleo ant. {i+1}</td><td>{val(ea.empresa)} — {val(ea.puesto)}</td><td className="pev-tv-metodo"></td><td></td></tr>
+                            <tr key={i}><td className="pev-tv-factor">Empleo ant. {i+1}</td><td>{val(ea.empresa)} — {val(ea.puesto)}</td></tr>
                         ))}
 
-                        {/* ── HISTORIA ESCOLAR ── */}
-                        <tr className="pev-tv-grupo pev-grupo-avoid"><td colSpan={4}>7. HISTORIA ESCOLAR</td></tr>
-                        <tr className="pev-grupo-avoid"><td className="pev-tv-factor">Grado de Estudios</td><td>{val(d.gradoEstudios)}</td><td rowSpan={3} className="pev-tv-metodo">{val(d.verifS7Metodo)}</td><td rowSpan={3}>{val(d.verifS7Resultado)}</td></tr>
-                        <tr><td className="pev-tv-factor">Escuela</td><td>{val(d.nombreEscuela)}</td></tr>
-                        <tr><td className="pev-tv-factor">Año escolar</td><td>{val(d.anioEscolar)}</td></tr>
-
-                        {/* ── PROCESO ACTUAL / DELITO ── */}
-                        <tr className="pev-tv-grupo pev-grupo-avoid"><td colSpan={4}>DELITO POR EL QUE SE LE PROCESA</td></tr>
-                        <tr className="pev-grupo-avoid"><td className="pev-tv-factor">Delito</td><td>{val(d.delito)}</td><td className="pev-tv-metodo">{val(d.verifS11Metodo)}</td><td>{val(d.verifS11Resultado)}</td></tr>
-                        <tr><td className="pev-tv-factor">Artículo</td><td>{val(d.articuloDelito)}</td><td className="pev-tv-metodo"></td><td></td></tr>
-                        <tr><td className="pev-tv-factor">¿Reincidencia?</td><td>{yesno(d.reincidencia)}</td><td className="pev-tv-metodo"></td><td></td></tr>
-
                         {/* ── COMPORTAMIENTO / ENTORNO ── */}
-                        <tr className="pev-tv-grupo pev-grupo-avoid"><td colSpan={4}>9. ENTORNO SOCIAL</td></tr>
+                        <tr className="pev-tv-grupo pev-grupo-avoid"><td colSpan={4}>8. ENTORNO SOCIAL</td></tr>
                         <tr className="pev-grupo-avoid"><td className="pev-tv-factor">Enfermedades</td><td>{val(d.enfermedades)}</td><td rowSpan={3} className="pev-tv-metodo">{val(d.verifS9Metodo)}</td><td rowSpan={3}>{val(d.verifS9Resultado)}</td></tr>
                         <tr><td className="pev-tv-factor">Hobbies / Deporte</td><td>{val(d.hobbies)}</td></tr>
                         <tr><td className="pev-tv-factor">Organizaciones</td><td>{val(d.organizaciones)}</td></tr>
-
-                        {/* ── INFORMACIÓN DE LA VÍCTIMA ── */}
-                        <tr className="pev-tv-grupo pev-grupo-avoid"><td colSpan={4}>10. DATOS SOBRE EL DENUNCIANTE</td></tr>
-                        <tr className="pev-grupo-avoid"><td className="pev-tv-factor">¿Sabe quién lo denunció?</td><td>{yesno(d.sabeDenunciante)}</td><td rowSpan={3} className="pev-tv-metodo">{val(d.verifS10Metodo)}</td><td rowSpan={3}>{val(d.verifS10Resultado)}</td></tr>
-                        <tr><td className="pev-tv-factor">¿Vive con el imputado?</td><td>{yesno(d.viveConImputado)}</td></tr>
-                        <tr><td className="pev-tv-factor">Tipo de solicitud</td><td>{val(d.tipoSolicitud)}</td></tr>
-
-                        {/* ── PROCESOS ANTERIORES ── */}
-                        {d.procesosAnteriores && <>
-                            <tr className="pev-tv-grupo"><td colSpan={4}>COMPORTAMIENTO EN PROCESOS ANTERIORES</td></tr>
-                            <tr><td className="pev-tv-factor">Expediente</td><td colSpan={3}>{val(d.procesosAnteriores)}</td></tr>
-                        </>}
                     </tbody>
                 </table>
 

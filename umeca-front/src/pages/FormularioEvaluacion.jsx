@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { crearEvaluacion, actualizarEvaluacion, getEvaluacionesByImputado } from '../api/evaluacionesApi';
-import { getImputados, getImputadoById } from '../api/imputadosApi';
+import { getImputados, getImputadoById, getImputadosPorCausaPenal } from '../api/imputadosApi';
 import { getEntrevistaById } from '../api/entrevistasApi';
 import './FormularioEvaluacion.css';
 
@@ -207,6 +207,24 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
   const [imputadoSelId, setImputadoSelId] = useState(null);
   const [tieneDraft, setTieneDraft] = useState(false);
   const [draftGuardadoEn, setDraftGuardadoEn] = useState(null);
+
+  // Selección de imputado cuando hay varios con la misma causa penal
+  const [imputadosCausaPenal, setImputadosCausaPenal] = useState([]);
+  const [showSeleccionImputado, setShowSeleccionImputado] = useState(false);
+
+  /** Al salir del campo causa penal, busca si ya hay imputados con ese número */
+  const handleCausaPenalBlur = async (causaPenal) => {
+    if (!causaPenal?.trim() || esEdicion) return;
+    try {
+      const res = await getImputadosPorCausaPenal(causaPenal.trim());
+      const lista = res.data?.data || [];
+      if (lista.length >= 1) {
+        // Siempre preguntar — puede ser la misma persona u otra diferente
+        setImputadosCausaPenal(lista);
+        setShowSeleccionImputado(true);
+      }
+    } catch { /* búsqueda fallida — el usuario captura manualmente */ }
+  };
 
   // ── Draft localStorage ──────────────────────────────────────────────────────
   const draftKey = esEdicion ? `umeca-draft-eval-${evaluacion.id}` : 'umeca-draft-eval-nuevo';
@@ -582,21 +600,12 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
   <tbody>${empAntHTML}</tbody></table>
   ${verifBloque('S6', 's6')}
 
-  <div class="seccion">7. Historia Escolar</div>
-  <div class="grid g4">
-    <div class="f"><label>Grado de Estudios</label><span>${form.gradoEstudios||'—'}</span></div>
-    <div class="f"><label>Nombre Escuela</label><span>${form.nombreEscuela||'—'}</span></div>
-    <div class="f"><label>Año Escolar</label><span>${form.anioEscolar||'—'}</span></div>
-    <div class="f"><label>Atraso</label><span>${form.atrasoEscolar||'—'}</span></div>
-  </div>
-  ${verifBloque('S7', 's7')}
-
-  <div class="seccion">8. Consumo de Sustancias</div>
+  <div class="seccion">7. Consumo de Sustancias</div>
   <table><thead><tr><th>Sustancia</th><th>¿Consume?</th><th>Inicio</th><th>Grms</th><th>Meses</th><th>Cantidad</th><th>Últ. Consumo</th></tr></thead>
   <tbody>${sustHTML}</tbody></table>
   ${verifBloque('S8', 's8')}
 
-  <div class="seccion">9. Entorno Social</div>
+  <div class="seccion">8. Entorno Social</div>
   <div class="grid g2">
     <div class="f"><label>Enfermedades</label><span>${form.enfermedades||'—'}</span></div>
     <div class="f"><label>Enfermedad familiar</label><span>${form.enfermedadFamiliar||'—'}</span></div>
@@ -606,7 +615,7 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
   </div>
   ${verifBloque('S9', 's9')}
 
-  <div class="seccion">10. Datos sobre el Denunciante</div>
+  <div class="seccion">9. Datos sobre el Denunciante</div>
   <div class="grid g3">
     <div class="f"><label>¿Sabe quién lo denunció?</label><span class="yn">${form.sabeDenunciante?'Sí':'No'}</span></div>
     <div class="f"><label>¿Vive con el imputado?</label><span class="yn">${form.viveConImputado?'Sí':'No'}</span></div>
@@ -617,10 +626,9 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
   ${form.basesVictima ? `<div class="f"><label>Bases para esta víctima</label><span>${form.basesVictima}</span></div>` : ''}
   ${verifBloque('S10', 's10')}
 
-  <div class="seccion">11. Información del Proceso Actual</div>
+  <div class="seccion">10. Información del Proceso Actual</div>
   <div class="grid g4">
     <div class="f"><label>Delito</label><span>${form.delito||'—'}</span></div>
-    <div class="f"><label>Artículo</label><span>${form.articuloDelito||'—'}</span></div>
     <div class="f"><label>Reincidencia</label><span class="yn">${form.reincidencia?'Sí':'No'}</span></div>
     <div class="f"><label>Ubicación Física</label><span>${form.ubicacionFisica||'—'}</span></div>
     <div class="f f-full"><label>Relación con la víctima</label><span>${form.relacionVictima||'—'}</span></div>
@@ -628,10 +636,10 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
   </div>
   ${verifBloque('S11', 's11')}
 
-  <div class="seccion">12. Procesos Pendientes / Anteriores</div>
+  <div class="seccion">11. Procesos Pendientes / Anteriores</div>
   <div class="f"><label>Expediente</label><span>${form.procesosAnteriores||'—'}</span></div>
 
-  <div class="seccion">13. Conclusión / Criterio de Riesgo</div>
+  <div class="seccion">12. Conclusión / Criterio de Riesgo</div>
   <div class="criterio">${resultadoLabel}</div>
   <div class="f" style="margin-top:6px"><label>Justificación</label><span>${form.justificacionResultado||'—'}</span></div>
 
@@ -697,6 +705,7 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
       const payload = {
         ...form,
         entrevistaId,
+        imputadoId: imputadoSelId || null,
         // Fechas vacías → null (Spring no puede deserializar "" como LocalDate)
         fechaSolicitud:     form.fechaSolicitud     || null,
         puestaDisposicion:  form.puestaDisposicion  || null,
@@ -877,7 +886,7 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
         </div>
         <div className="fev-header-box">
           <div className="fev-header-row1">
-            {field('No. de Carpeta de Investigación *', inp(form.causaPenal, v => s('causaPenal', v)), false, errores.causaPenal, 'fev-causaPenal')}
+            {field('No. de Carpeta de Investigación *', inp(form.causaPenal, v => { s('causaPenal', v); setImputadoSelId(null); }, 'text', { onBlur: e => handleCausaPenalBlur(e.target.value) }), false, errores.causaPenal, 'fev-causaPenal')}
             {field('Hora de inicio:', inp(form.horaInicio, v => s('horaInicio', v), 'time'))}
             {field('Hora final:', inp(form.horaFinal, v => s('horaFinal', v), 'time'))}
           </div>
@@ -1074,18 +1083,8 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
       </div>
       <BloqueVerificacion secId="s6" form={form} s={s} />
 
-      {/* 7. Historia escolar */}
-      {sec('7. HISTORIA ESCOLAR')}
-      <div className="fev-grid-4">
-        {field('Último grado de estudios', sel(form.gradoEstudios, v => s('gradoEstudios', v), [['Sin estudios','Sin estudios'],['Primaria','Primaria'],['Secundaria','Secundaria'],['Preparatoria','Preparatoria'],['Licenciatura','Licenciatura'],['Posgrado','Posgrado']]))}
-        {field('Nombre de la escuela', inp(form.nombreEscuela, v => s('nombreEscuela', v)))}
-        {field('Año escolar', inp(form.anioEscolar, v => s('anioEscolar', v)))}
-        {field('Atraso', inp(form.atrasoEscolar, v => s('atrasoEscolar', v)))}
-      </div>
-      <BloqueVerificacion secId="s7" form={form} s={s} />
-
       {/* 8. Consumo de sustancias */}
-      {sec('8. CONSUMO DE SUSTANCIAS')}
+      {sec('7. CONSUMO DE SUSTANCIAS')}
       <div className="fev-tabla-wrap">
         <table className="fev-tabla">
           <thead><tr><th>Sustancia</th><th>¿Consume?</th><th>Inicio</th><th>Grms</th><th>Meses</th><th>Cantidad</th><th>Fecha Último Consumo</th></tr></thead>
@@ -1111,7 +1110,7 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
       <BloqueVerificacion secId="s8" form={form} s={s} />
 
       {/* 9. Entorno social */}
-      {sec('9. ENTORNO SOCIAL')}
+      {sec('8. ENTORNO SOCIAL')}
       <div className="fev-grid-2">
         {field('Enfermedades (Hipertensión, Hepatitis, Alergias, Embarazo, etc.)', <textarea value={form.enfermedades||''} onChange={e => s('enfermedades', e.target.value)} />)}
         {field('Enfermedad de familiar que depende económicamente', <textarea value={form.enfermedadFamiliar||''} onChange={e => s('enfermedadFamiliar', e.target.value)} />)}
@@ -1123,7 +1122,7 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
       <BloqueVerificacion secId="s9" form={form} s={s} />
 
       {/* 10. Datos sobre el denunciante */}
-      {sec('10. DATOS SOBRE EL DENUNCIANTE')}
+      {sec('9. DATOS SOBRE EL DENUNCIANTE')}
       <div className="fev-preguntas">
         <div className="fev-pregunta-fila">
           <span>¿Sabe quién lo denunció?</span>
@@ -1147,26 +1146,25 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
       <BloqueVerificacion secId="s10" form={form} s={s} />
 
       {/* 11. Información del proceso actual */}
-      {sec('11. INFORMACIÓN DEL PROCESO ACTUAL')}
+      {sec('10. INFORMACIÓN DEL PROCESO ACTUAL')}
       <div className="fev-grid-4">
         {field('Delito *', inp(form.delito, v => s('delito', v)), false, errores.delito, 'fev-delito')}
-        {field('Artículo', inp(form.articuloDelito, v => s('articuloDelito', v)))}
         <div className="fev-field">
           <label>¿Reincidencia?</label>
           {yn(form.reincidencia, v => s('reincidencia', v))}
         </div>
-        {field('Ubicación Física *', sel(form.ubicacionFisica, v => s('ubicacionFisica', v), [['FGR','FGR'],['FGE','FGE'],['CERESO','CERESO'],['DOMICILIO','Domicilio'],['UMECA','UMECA']]), false, errores.ubicacionFisica, 'fev-ubicacionFisica')}
+        {field('Ubicación Física *', inp(form.ubicacionFisica, v => s('ubicacionFisica', v)), false, errores.ubicacionFisica, 'fev-ubicacionFisica')}
       </div>
       {field('Relación con la víctima', inp(form.relacionVictima, v => s('relacionVictima', v)), true)}
       {field('Descripción del compromiso', <textarea value={form.descripcionCompromiso||''} onChange={e => s('descripcionCompromiso', e.target.value)} />, true)}
       <BloqueVerificacion secId="s11" form={form} s={s} />
 
       {/* 12. Procesos pendientes / anteriores */}
-      {sec('12. PROCESOS PENDIENTES / ANTERIORES')}
+      {sec('11. PROCESOS PENDIENTES / ANTERIORES')}
       {field('Expediente', <textarea value={form.procesosAnteriores||''} onChange={e => s('procesosAnteriores', e.target.value)} />, true)}
 
       {/* 13. Conclusión */}
-      {sec('13. CONCLUSIÓN / CRITERIO DE RIESGO *')}
+      {sec('12. CONCLUSIÓN / CRITERIO DE RIESGO *')}
       <div className={`fev-criterios${errores.resultado ? ' fev-criterios-error' : ''}`}>
         {[['FLEXIBLE','Flexible — Bajo Riesgo','fev-criterio-bajo'],['ESTRICTO','Estricto — Medio Riesgo','fev-criterio-medio'],['DIFICIL_CUMPLIR','Difícil de Cumplir — Alto Riesgo','fev-criterio-alto']].map(([val, lbl, cls]) => (
           <label key={val} className={`fev-criterio ${cls} ${form.resultado === val ? 'selected' : ''}`}>
@@ -1217,6 +1215,43 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
           {loading ? 'Guardando...' : '✔ Guardar registro'}
         </button>
       </div>
+
+      {/* Modal: seleccionar imputado cuando hay varios con la misma causa penal */}
+      {showSeleccionImputado && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 12, padding: 28, width: 480, maxWidth: '95vw', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}>
+            <h3 style={{ margin: '0 0 6px', fontSize: 16, color: '#1a1a1a' }}>Imputados con la misma causa penal</h3>
+            <p style={{ margin: '0 0 18px', fontSize: 13, color: '#666' }}>
+              Se encontraron <strong>{imputadosCausaPenal.length}</strong> personas con esa causa penal. Selecciona a cuál corresponde esta evaluación, o elige "Es uno nuevo".
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 18 }}>
+              {imputadosCausaPenal.map(imp => (
+                <button key={imp.id} onClick={() => {
+                  setImputadoSelId(imp.id);
+                  s('nombreImputado', imp.nombre || '');
+                  s('apPaternoImputado', imp.apPaterno || '');
+                  s('apMaternoImputado', imp.apMaterno || '');
+                  s('delito', imp.delito || '');
+                  setShowSeleccionImputado(false);
+                }} style={{ background: '#f0f7f0', border: '1.5px solid #2d6a4f', borderRadius: 8, padding: '10px 16px', cursor: 'pointer', textAlign: 'left', fontSize: 13 }}>
+                  <strong>{imp.nombre} {imp.apPaterno} {imp.apMaterno || ''}</strong>
+                  <span style={{ marginLeft: 10, color: '#555', fontSize: 12 }}>{imp.delito || '—'}</span>
+                </button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <button onClick={() => { setImputadoSelId(null); setShowSeleccionImputado(false); }}
+                style={{ background: 'none', border: '1px solid #ccc', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13, color: '#555' }}>
+                Es uno nuevo
+              </button>
+              <button onClick={() => setShowSeleccionImputado(false)}
+                style={{ background: 'none', border: '1px solid #ccc', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13, color: '#555' }}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -94,17 +94,22 @@ public class EntrevistaEncuadreService {
 
         entrevista.setEstado(EntrevistaEncuadre.Estado.PENDIENTE);
 
-        // Crear o actualizar el imputado vinculado
-        Imputado imputado = imputadoRepository.findByCausaPenal(entrevista.getCausaPenal())
-                .orElseGet(Imputado::new);
-        imputado.setNombre(entrevista.getNombre());
-        imputado.setApPaterno(entrevista.getApPaterno());
-        imputado.setApMaterno(entrevista.getApMaterno());
-        imputado.setCausaPenal(entrevista.getCausaPenal());
-        if (entrevista.getFotoImputado() != null && !entrevista.getFotoImputado().isBlank()) {
-            imputado.setFoto(entrevista.getFotoImputado());
+        // Si viene imputadoId se vincula al existente; si no, se crea uno nuevo
+        Imputado imputado;
+        if (entrevista.getImputadoSelId() != null) {
+            imputado = imputadoRepository.findById(entrevista.getImputadoSelId()).orElse(null);
+            if (imputado == null) return new ApiResponse(false, "Imputado no encontrado");
+        } else {
+            imputado = new Imputado();
+            imputado.setNombre(entrevista.getNombre());
+            imputado.setApPaterno(entrevista.getApPaterno());
+            imputado.setApMaterno(entrevista.getApMaterno());
+            imputado.setCausaPenal(entrevista.getCausaPenal());
+            if (entrevista.getFotoImputado() != null && !entrevista.getFotoImputado().isBlank()) {
+                imputado.setFoto(entrevista.getFotoImputado());
+            }
+            imputadoRepository.save(imputado);
         }
-        imputadoRepository.save(imputado);
         entrevista.setImputado(imputado);
 
         // Asignar referencia de entrevista a los domicilios antes de guardar

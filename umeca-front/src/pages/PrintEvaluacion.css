@@ -345,6 +345,8 @@
         display: flex !important;
         page-break-before: always;
         break-before: page;
+        page-break-inside: avoid;
+        break-inside: avoid;
         padding-bottom: 6mm;
         border-bottom: 1px solid #ddd;
         margin-bottom: 6mm;

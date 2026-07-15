@@ -27,6 +27,14 @@ public class ImputadoController {
         return ResponseEntity.ok(res);
     }
 
+    /** Devuelve todos los imputados que comparten la misma causa penal. */
+    @GetMapping("/por-causa")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR', 'ROLE_SUPERVISION', 'ROLE_EVALUADOR_RIESGO')")
+    public ResponseEntity<ApiResponse> findByCausaPenal(@RequestParam String causaPenal) {
+        ApiResponse res = service.findByCausaPenal(causaPenal);
+        return ResponseEntity.ok(res);
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR', 'ROLE_SUPERVISION', 'ROLE_EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> findById(@PathVariable Long id) {

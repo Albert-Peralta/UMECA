@@ -292,6 +292,7 @@ public class ConsultaRegistroService {
         if (dto.getFolioConsecutivo() != null) c.setFolioConsecutivo(dto.getFolioConsecutivo());
         c.setFechaNacimientoImputado(dto.getFechaNacimientoImputado());
         c.setCurp(dto.getCurp());
+        c.setImputadosJson(dto.getImputadosJson());
         c.setOficioNumero(dto.getOficioNumero());
         try {
             c.setResultado(ConsultaRegistro.Resultado.valueOf(dto.getResultado()));

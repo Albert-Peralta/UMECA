@@ -9,7 +9,7 @@ const ETIQUETA_ROL = {
     SUPERVISION:      'Supervisión',
     EVALUADOR_RIESGO: 'Evaluador de Riesgos',
 };
-const ZONAS = ['XOCHITEPEC'];
+const ZONAS = ['XOCHITEPEC', 'CUAUTLA', 'JOJUTLA'];
 
 const initialForm = {
     nombre: '', apPaterno: '', apMaterno: '',
@@ -215,7 +215,9 @@ const GestionUsuarios = () => {
                             </div>
                             <div className="gu-field">
                                 <label>Zona</label>
-                                <input value="XOCHITEPEC" disabled style={{background:'#f5f5f5', color:'#888', cursor:'not-allowed'}}/>
+                                <select value={form.zona} onChange={e => setForm(p => ({ ...p, zona: e.target.value }))}>
+                                    {ZONAS.map(z => <option key={z} value={z}>{z}</option>)}
+                                </select>
                             </div>
                         </div>
                         </div>{/* gu-modal-body */}

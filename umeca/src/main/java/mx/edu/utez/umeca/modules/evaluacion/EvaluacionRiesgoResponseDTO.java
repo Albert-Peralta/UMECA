@@ -4,12 +4,14 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
 public class EvaluacionRiesgoResponseDTO {
     private Long id;
     private LocalDate fechaSolicitud;
+    private LocalDateTime createdAt;
     private String nombreSolicitante;
     private boolean imputadoFallecido;
     private String nombreImputado;      // solo el nombre (para el formulario)
@@ -268,6 +270,7 @@ public class EvaluacionRiesgoResponseDTO {
         dto.setVerifS10Metodo(e.getVerifS10Metodo()); dto.setVerifS10Resultado(e.getVerifS10Resultado());
         dto.setVerifS11Metodo(e.getVerifS11Metodo()); dto.setVerifS11Resultado(e.getVerifS11Resultado());
         dto.setTipoDocumento(e.getTipoDocumento() != null ? e.getTipoDocumento().name() : "NORMAL");
+        dto.setCreatedAt(e.getCreatedAt());
         return dto;
     }
 }

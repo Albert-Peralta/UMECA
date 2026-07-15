@@ -18,7 +18,12 @@ public interface ImputadoRepository extends JpaRepository<Imputado, Long> {
 
     boolean existsByCausaPenal(String causaPenal);
 
+    /** @deprecated Usar {@link #findAllByCausaPenal(String)} — una causa penal puede tener varios imputados. */
+    @Deprecated
     Optional<Imputado> findByCausaPenal(String causaPenal);
+
+    /** Devuelve todos los imputados con la misma causa penal. */
+    List<Imputado> findAllByCausaPenal(String causaPenal);
 
     // ── Estadísticas ──────────────────────────────────────────────────────────
     @Query("SELECT COUNT(i) FROM Imputado i WHERE YEAR(i.createdAt) = :anio")

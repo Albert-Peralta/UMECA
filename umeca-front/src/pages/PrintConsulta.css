@@ -184,3 +184,36 @@
         padding-bottom: 55mm !important;
     }
 }
+
+/* ── Hint editable ───────────────────────────────────────────── */
+.pco-toolbar-hint {
+    font-size: 11px; color: #9ca3af; display: flex; align-items: center; gap: 5px;
+}
+.pco-editable {
+    outline: none;
+    border: 1.5px dashed transparent;
+    border-radius: 3px;
+    padding: 1px 3px;
+    transition: border-color .15s;
+    cursor: text;
+}
+.pco-editable:hover  { border-color: rgba(55,104,66,.25); }
+.pco-editable:focus  { border-color: rgba(55,104,66,.5); }
+
+.pco-firma-nombre-sm {
+    font-size: 7.5pt; font-weight: 700; margin: 2px 0 0; color: #555;
+}
+.pco-firma-cargo-sm {
+    font-size: 7pt; margin: 1px 0 0; color: #777;
+}
+
+.pco-guardado-en {
+    font-size: 11px; color: #6ee7b7; display: flex; align-items: center; gap: 5px;
+}
+
+.pco-btn-restaurar {
+    background: transparent; border: 1px solid #aaa; color: #ecf0f1;
+    border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 13px;
+    display: flex; align-items: center; gap: 6px;
+}
+.pco-btn-restaurar:hover { background: rgba(255,255,255,.1); }
