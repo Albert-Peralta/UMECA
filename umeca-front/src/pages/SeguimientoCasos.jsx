@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { getMedidas, getMedidaById } from '../api/medidasApi';
 import { getImputados } from '../api/imputadosApi';
 import { buscarEntrevistasParaMedida } from '../api/entrevistasApi';
@@ -21,6 +22,7 @@ const estadoConfig = {
 
 const SeguimientoCasos = () => {
     const { user } = useAuth();
+    const { showToast } = useToast();
     const puedeRegistrar = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERVISION';
 
     // ── Alerta de vencimiento SCP ─────────────────────────────────────────────
@@ -310,6 +312,7 @@ const SeguimientoCasos = () => {
 
         const guardadoDesdeFormulario = async (idGuardado) => {
             cargarDatos();
+            showToast(medidaActiva?.id ? 'Medida actualizada correctamente' : 'Medida registrada correctamente');
             if (medidaActiva?.id) {
                 try {
                     const res = await getMedidaById(medidaActiva.id);
@@ -457,6 +460,11 @@ const SeguimientoCasos = () => {
                                         <span className={`scp-tipo-badge ${item.tipo === 'SUSPENSION_CONDICIONAL' ? 'scp-tipo-suspension' : 'scp-tipo-medida'}`}>
                                             {item.tipo === 'SUSPENSION_CONDICIONAL' ? 'S.C.P.' : 'M.C.'}
                                         </span>
+                                        {item.vieneDeMC && (
+                                            <span style={{ display: 'block', fontSize: 10, color: '#94a3b8', marginTop: 2 }}>
+                                                M.C. → S.C.P.
+                                            </span>
+                                        )}
                                     </td>
                                     <td>
                                         {item.delito || '—'}
@@ -483,25 +491,28 @@ const SeguimientoCasos = () => {
 
                             return [
                                 // ── Fila principal (nombre + medida más reciente) ─
-                                <tr key={`g-${grupo.key}`} className={`scp-grupo-header${expanded ? ' scp-grupo-expanded' : ''}`}>
+                                <tr
+                                    key={`g-${grupo.key}`}
+                                    className={`scp-grupo-header${expanded ? ' scp-grupo-expanded' : ''}${tieneVarias ? ' scp-grupo-clickeable' : ''}`}
+                                    onClick={tieneVarias ? () => toggleExpand(grupo.key) : undefined}
+                                    title={tieneVarias ? (expanded ? 'Ocultar anteriores' : `Ver ${resto.length} medida${resto.length > 1 ? 's' : ''} anterior${resto.length > 1 ? 'es' : ''}`) : undefined}
+                                >
                                     <td className="scp-grupo-num">{inicio + gi + 1}</td>
                                     <td className="scp-grupo-nombre-cell">
                                         <div className="scp-grupo-nombre-wrap">
-                                            <i className="bi bi-person-fill scp-grupo-icon" />
+                                            {tieneVarias
+                                                ? <i className={`bi bi-caret-${expanded ? 'down' : 'right'}-fill scp-grupo-caret`} />
+                                                : <i className="bi bi-person-fill scp-grupo-icon" />
+                                            }
                                             <span className="scp-grupo-nombre-txt">{grupo.nombre}</span>
                                         </div>
                                         {tieneVarias && (
-                                            <button
-                                                className={`scp-btn-mas${expanded ? ' activo' : ''}`}
-                                                onClick={() => toggleExpand(grupo.key)}
-                                                title={expanded ? 'Ocultar anteriores' : `Ver ${resto.length} medida${resto.length > 1 ? 's' : ''} anterior${resto.length > 1 ? 'es' : ''}`}
-                                            >
-                                                <i className={`bi bi-layers${expanded ? '' : ''}`} />
+                                            <span className="scp-grupo-hint-txt">
                                                 {expanded
-                                                    ? <><i className="bi bi-chevron-up" style={{fontSize:'0.6rem'}} /> Ocultar anteriores</>
-                                                    : <><i className="bi bi-chevron-down" style={{fontSize:'0.6rem'}} /> Ver +{resto.length} anterior{resto.length > 1 ? 'es' : ''}</>
+                                                    ? 'Ocultar anteriores'
+                                                    : `+${resto.length} registro${resto.length > 1 ? 's' : ''} anterior${resto.length > 1 ? 'es' : ''}`
                                                 }
-                                            </button>
+                                            </span>
                                         )}
                                         <div className="scp-grupo-badges">
                                             {countVenc > 0 && <span className="scp-grupo-badge scp-grupo-badge-vencido"><i className="bi bi-exclamation-circle-fill" /> {labelVenc}</span>}
@@ -510,7 +521,7 @@ const SeguimientoCasos = () => {
                                     </td>
                                     {renderMedidaCols(reciente)}
                                     <td style={{ textAlign: 'center' }}>
-                                        <button className="btn-ver" onClick={() => handleVerDetalle(reciente)} title="Ver detalle" disabled={cargandoDetalle}>
+                                        <button className="btn-ver" onClick={(e) => { e.stopPropagation(); handleVerDetalle(reciente); }} title="Ver detalle" disabled={cargandoDetalle}>
                                             <i className="bi bi-eye"></i>
                                         </button>
                                     </td>
