@@ -100,9 +100,9 @@ const Login = () => {
                         {loading ? 'Iniciando...' : 'Iniciar sesión'}
                     </button>
 
-                    <Link to="/forgot-password" className="login-forgot-link">
+                    {/* <Link to="/forgot-password" className="login-forgot-link">
                         ¿Olvidaste tu contraseña?
-                    </Link>
+                    </Link> */}
                 </form>
             </div>
             

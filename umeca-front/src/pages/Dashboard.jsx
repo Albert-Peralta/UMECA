@@ -65,7 +65,7 @@ const Dashboard = () => {
 
     const getValidKey = (hash) => {
         const items = menuPorRol[user?.rol] || [];
-        const keys = items.filter(i => !i.separator).map(i => i.key);
+        const keys = [...items.filter(i => !i.separator).map(i => i.key), 'perfil'];
         const key = hash.replace('#', '');
         return keys.includes(key) ? key : (keys[0] || 'imputados');
     };

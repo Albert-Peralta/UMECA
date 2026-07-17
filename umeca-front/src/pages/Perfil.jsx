@@ -84,8 +84,8 @@ const Perfil = () => {
             setPassMsg({ ok: false, texto: 'La contraseña debe contener al menos un número.' });
             return;
         }
-        if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(passForm.nueva)) {
-            setPassMsg({ ok: false, texto: 'La contraseña debe contener al menos un carácter especial (!@#$%...).' });
+        if (!/[!@#$%&*?]/.test(passForm.nueva)) {
+            setPassMsg({ ok: false, texto: 'La contraseña debe contener al menos un carácter especial (!@#$%&*?).' });
             return;
         }
         setLoading(true);
