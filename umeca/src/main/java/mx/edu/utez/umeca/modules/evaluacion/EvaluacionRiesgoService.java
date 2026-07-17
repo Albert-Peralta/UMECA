@@ -75,8 +75,9 @@ public class EvaluacionRiesgoService {
         if (dto.getPuestaDisposicion() != null && dto.getPuestaDisposicion().isAfter(LocalDate.now()))
             return new ApiResponse(false, "La puesta a disposición no puede ser futura");
 
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User solicitante = userRepository.findByEmail(email)
+        String usernameOrEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User solicitante = userRepository.findByUsername(usernameOrEmail)
+                .or(() -> userRepository.findByEmail(usernameOrEmail))
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         // Si viene imputadoId se usa ese directamente; si no, se crea uno nuevo
@@ -147,14 +148,16 @@ public class EvaluacionRiesgoService {
      */
     @Transactional
     public ApiResponse update(Long id, EvaluacionRiesgoDTO dto) {
-        String emailUpdate = SecurityContextHolder.getContext().getAuthentication().getName();
+        String usernameOrEmailUpdate = SecurityContextHolder.getContext().getAuthentication().getName();
         return evaluacionRepository.findById(id).map(ev -> {
             if (dto.getEntrevistaId() != null)
                 entrevistaRepository.findById(dto.getEntrevistaId()).ifPresent(ev::setEntrevista);
 
             // Auto-asignar evaluador al usuario que edita el formulario
             if (ev.getEvaluador() == null) {
-                userRepository.findByEmail(emailUpdate).ifPresent(ev::setEvaluador);
+                userRepository.findByUsername(usernameOrEmailUpdate)
+                        .or(() -> userRepository.findByEmail(usernameOrEmailUpdate))
+                        .ifPresent(ev::setEvaluador);
                 if (ev.getEstatus() == EvaluacionRiesgo.Estatus.PENDIENTE)
                     ev.setEstatus(EvaluacionRiesgo.Estatus.TRABAJANDO);
             }
@@ -301,8 +304,9 @@ public class EvaluacionRiesgoService {
      */
     @Transactional
     public ApiResponse saveNegacion(NegacionDTO dto) {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User solicitante = userRepository.findByEmail(email)
+        String usernameOrEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User solicitante = userRepository.findByUsername(usernameOrEmail)
+                .or(() -> userRepository.findByEmail(usernameOrEmail))
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         // Si viene imputadoId se usa ese directamente; si no, se crea uno nuevo
@@ -379,8 +383,9 @@ public class EvaluacionRiesgoService {
      */
     @Transactional
     public ApiResponse asignarEvaluador(Long id) {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User evaluador = userRepository.findByEmail(email)
+        String usernameOrEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User evaluador = userRepository.findByUsername(usernameOrEmail)
+                .or(() -> userRepository.findByEmail(usernameOrEmail))
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         return evaluacionRepository.findById(id).map(e -> {

@@ -244,6 +244,8 @@
 .gu-btn-guardar:hover { background: #2a5033; }
 
 .gu-error { color: #c62828; font-size: 13px; margin-bottom: 12px; }
+.gu-advertencia { color: #b45309; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 8px 12px; font-size: 13px; margin-bottom: 10px; }
+.gu-field-nota { display: block; font-size: 11.5px; color: #6b7280; margin-top: 4px; }
 
 .gu-table td .gu-acciones {
     display: flex !important;
@@ -306,3 +308,56 @@
     .gu-btn-cancelar, .gu-btn-guardar { width: 100%; text-align: center; padding: 12px; }
 }
 
+
+/* Reglas de contraseña */
+.gu-pwd-reglas {
+    list-style: none;
+    padding: 6px 0 0 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.gu-pwd-reglas li {
+    font-size: 0.72rem;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.gu-pwd-ok {
+    color: #16a34a;
+}
+
+.gu-pwd-fail {
+    color: #dc2626;
+}
+
+/* Wrapper campo contraseña con ojito */
+.gu-pwd-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.gu-pwd-wrapper input {
+    width: 100%;
+    padding-right: 36px;
+}
+
+.gu-pwd-toggle {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #64748b;
+    font-size: 1rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+}
+
+.gu-pwd-toggle:hover {
+    color: #2e6f40;
+}

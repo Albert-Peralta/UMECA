@@ -29,7 +29,7 @@ api.interceptors.response.use(
             const isLoginRoute = error.config.url.includes('/auth/login');
             if (!isLoginRoute) {
                 localStorage.clear();
-                window.location.href = '/';
+                window.location.replace('/');
             }
         }
         return Promise.reject(error);

@@ -21,6 +21,7 @@ public class MedidaCautelarDTO {
     private LocalDate fechaRecepcion;
     private String delito;
     private String modalidad;
+    private String delitosJson;
     private String sede;
     private String nombreJuez;
     private LocalDate fechaFormulacion;

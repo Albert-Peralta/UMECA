@@ -117,6 +117,9 @@ public class EntrevistaEncuadre extends BaseEntity {
     @Column(name = "tiene_tatuajes")
     private Boolean tieneTatuajes = false;
 
+    @Column(name = "tatuajes_json", columnDefinition = "TEXT")
+    private String tatuajesJson;
+
     @Column(length = 100)
     private String alias;
 

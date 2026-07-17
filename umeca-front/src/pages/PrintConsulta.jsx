@@ -87,7 +87,7 @@ const PrintConsulta = ({ consulta: d, onCerrar }) => {
 
             if (footerEl) {
                 el.getBoundingClientRect();
-                const gap = Math.max(20, 1200 - el.scrollHeight);
+                const gap = Math.max(20, 1280 - el.scrollHeight);
                 footerEl.style.marginTop = gap + 'px';
             }
 
@@ -119,6 +119,14 @@ const PrintConsulta = ({ consulta: d, onCerrar }) => {
 
     const content = (
         <div className="pco-overlay">
+            {imprimiendo && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+                    <style>{`@keyframes pco-spin { to { transform: rotate(360deg); } }`}</style>
+                    <div style={{ width: 52, height: 52, border: '5px solid rgba(255,255,255,0.15)', borderTop: '5px solid #376842', borderRadius: '50%', animation: 'pco-spin 0.8s linear infinite' }} />
+                    <p style={{ color: 'white', fontSize: 15, fontWeight: 600, margin: 0, letterSpacing: 0.5 }}>Generando PDF...</p>
+                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, margin: 0 }}>Por favor espera un momento</p>
+                </div>
+            )}
             {/* Toolbar */}
             <div className="pco-toolbar">
                 <span className="pco-toolbar-title">Vista previa — Oficio de Consulta</span>

@@ -218,20 +218,25 @@ ${tablaSocio}
             const el       = docRef.current;
             const footerEl = el.querySelector('.ped-footer');
 
+            // Capturar header ANTES de aplicar estilos para obtener el tamaño original
+            const headerEl = el.querySelector('.ped-header');
+            const h2cOpts  = { scale: 2, useCORS: true, logging: false, windowWidth: 720 };
+            const headerCanvas = await html2pdf().set({ html2canvas: h2cOpts }).from(headerEl).toCanvas().get('canvas');
+            const headerImgData = headerCanvas.toDataURL('image/jpeg', 0.98);
+
             el.style.width     = '720px';
             el.style.margin    = '0';
             el.style.boxShadow = 'none';
             el.style.padding   = '14px 22px';
 
+            headerEl.style.display = 'none';
+
             // html2canvas no puede renderizar elementos contenteditable.
-            // Reemplazamos cada uno por un <div> estático con el mismo HTML y clases,
-            // capturamos el PDF, y luego los restauramos.
             const editables = Array.from(el.querySelectorAll('[contenteditable]'));
             const snapshots = editables.map(orig => {
                 const snap = document.createElement('div');
                 snap.innerHTML = orig.innerHTML;
                 snap.className = orig.className;
-                // Copiar estilos computados relevantes
                 const cs = window.getComputedStyle(orig);
                 snap.style.cssText = orig.style.cssText;
                 snap.style.fontFamily  = cs.fontFamily;
@@ -246,22 +251,81 @@ ${tablaSocio}
                 return { orig, snap };
             });
 
-            if (footerEl) {
-                el.getBoundingClientRect();
-                const gap = Math.max(20, 1320 - el.scrollHeight);
-                footerEl.style.marginTop = gap + 'px';
-            }
+            const marginL = 14, marginR = 14, marginTop = 10;
+            const contentW = 215.9 - marginL - marginR;
+            const headerW  = 215.9 - 19 - 16;
+            const headerH  = (headerCanvas.height / headerCanvas.width) * headerW;
+            const topMargin = marginTop + headerH + 4;
 
-            const blobUrl = await html2pdf()
+            // Capturar footer dorado para repetirlo en cada página
+            let footerImgData = null;
+            let footerHMm = 0;
+            await new Promise((res) => {
+                const img = new Image();
+                img.onload = () => {
+                    const fc = document.createElement('canvas');
+                    fc.width  = img.naturalWidth;
+                    fc.height = img.naturalHeight;
+                    fc.getContext('2d').drawImage(img, 0, 0);
+                    footerImgData = fc.toDataURL('image/jpeg', 0.98);
+                    footerHMm = (img.naturalHeight / img.naturalWidth) * contentW;
+                    res();
+                };
+                img.onerror = () => res();
+                img.src = footerDorado;
+            });
+
+            if (footerEl) footerEl.style.display = 'none';
+
+            // Forzar que las filas de tabla no se corten entre páginas
+            const styleTag = document.createElement('style');
+            styleTag.id = 'pdf-no-break';
+            styleTag.textContent = 'tr { page-break-inside: avoid !important; break-inside: avoid !important; } .ped-editor-wrap .tiptap td, .ped-editor-wrap .tiptap th { border-top: 1px solid #000 !important; } .ped-editor-wrap .tiptap > *:first-child { margin-top: -10px !important; }';
+            document.head.appendChild(styleTag);
+
+            const bottomMargin = 22 + footerHMm;
+
+            const pdfInstance = await html2pdf()
                 .set({
-                    margin:      [6, 14, 10, 14],
+                    margin:      [topMargin, marginR, bottomMargin, marginL],
                     image:       { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 720 },
+                    html2canvas: h2cOpts,
                     jsPDF:       { unit: 'mm', format: 'legal', orientation: 'portrait' },
-                    pagebreak:   { mode: ['css', 'legacy'], avoid: ['.ped-header', '.ped-firma', '.ped-elab-row', 'tr'] },
+                    pagebreak:   { mode: ['css', 'legacy'], avoid: ['.ped-firma', '.ped-elab-row', 'tr'] },
                 })
                 .from(el)
-                .output('bloburl');
+                .toPdf()
+                .get('pdf');
+
+            // Añadir header y footer en cada página
+            const pageH      = pdfInstance.internal.pageSize.getHeight();
+            const totalPages = pdfInstance.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                pdfInstance.setPage(i);
+                pdfInstance.addImage(headerImgData, 'JPEG', 19, marginTop, headerW, headerH);
+                if (footerImgData) {
+                    const footerY = pageH - 12 - footerHMm;
+                    if (i === totalPages) {
+                        pdfInstance.setFontSize(7);
+                        pdfInstance.setFont('helvetica', 'italic');
+                        pdfInstance.text('c.c.p.- Instituto de la Defensoría Pública del Estado de Morelos. Para su conocimiento.', marginL, footerY - 5);
+                    }
+                    pdfInstance.addImage(footerImgData, 'JPEG', marginL, footerY, contentW, footerHMm);
+                    pdfInstance.setFontSize(6);
+                    pdfInstance.setFont('helvetica', 'normal');
+                    pdfInstance.setTextColor(150);
+                    pdfInstance.text(
+                        `Documento generado el ${new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}`,
+                        215.9 / 2, footerY + footerHMm + 3.5, { align: 'center' }
+                    );
+                    pdfInstance.setTextColor(0);
+                }
+            }
+
+            const blobUrl = pdfInstance.output('bloburl');
+            headerEl.style.display = '';
+            if (footerEl) footerEl.style.display = '';
+            document.getElementById('pdf-no-break')?.remove();
 
             // Restaurar elementos originales
             snapshots.forEach(({ orig, snap }) => {
@@ -269,7 +333,6 @@ ${tablaSocio}
                 snap.parentNode.removeChild(snap);
             });
 
-            if (footerEl) footerEl.style.marginTop = '';
             el.style.width     = '';
             el.style.margin    = '';
             el.style.boxShadow = '';
@@ -319,6 +382,14 @@ ${tablaSocio}
 
     return createPortal(
         <div className="ped-overlay">
+            {imprimiendo && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+                    <style>{`@keyframes inf-spin { to { transform: rotate(360deg); } }`}</style>
+                    <div style={{ width: 52, height: 52, border: '5px solid rgba(255,255,255,0.15)', borderTop: '5px solid #376842', borderRadius: '50%', animation: 'inf-spin 0.8s linear infinite' }} />
+                    <p style={{ color: 'white', fontSize: 15, fontWeight: 600, margin: 0, letterSpacing: 0.5 }}>Generando PDF...</p>
+                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, margin: 0 }}>Por favor espera un momento</p>
+                </div>
+            )}
 
             {/* Toolbar */}
             <div className="ped-toolbar">
@@ -396,12 +467,10 @@ ${tablaSocio}
                     </div>
                 </div>
 
-                <p className="ped-ccp ped-editable-deps" contentEditable suppressContentEditableWarning>c.c.p.- Instituto de la Defensoría Pública del Estado de Morelos. Para su conocimiento.</p>
-
                 {/* Footer */}
                 <div className="ped-footer">
                     <img src={footerDorado} alt="" className="ped-footer-img" />
-                    <p className="ped-footer-fecha">Documento generado el {new Date().toLocaleString('es-MX')}</p>
+                    <p className="ped-footer-fecha">Documento generado el {new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                 </div>
 
             </div>

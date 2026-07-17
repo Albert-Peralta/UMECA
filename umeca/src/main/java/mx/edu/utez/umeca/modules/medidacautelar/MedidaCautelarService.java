@@ -108,8 +108,10 @@ public class MedidaCautelarService {
         if (dto.getEntrevistaId() != null)
             entrevistaRepository.findById(dto.getEntrevistaId()).ifPresent(medida::setEntrevista);
 
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        userRepository.findByEmail(email).ifPresent(medida::setRegistradoPor);
+        String usernameOrEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        userRepository.findByUsername(usernameOrEmail)
+                .or(() -> userRepository.findByEmail(usernameOrEmail))
+                .ifPresent(medida::setRegistradoPor);
 
         mapFields(dto, medida);
         MedidaCautelar saved = repository.save(medida);
@@ -121,6 +123,8 @@ public class MedidaCautelarService {
                 origen.setFechaCambioScp(LocalDate.now());
                 repository.save(origen);
             });
+            saved.setVieneDeMC(true);
+            repository.save(saved);
         }
 
         String nombre = saved.getImputado() != null
@@ -144,12 +148,30 @@ public class MedidaCautelarService {
         if (dto.getEntrevistaId() != null)
             entrevistaRepository.findById(dto.getEntrevistaId()).ifPresent(medida::setEntrevista);
 
+        // Capturar cambios relevantes antes de mapFields
+        java.util.List<String> cambiosMC = new java.util.ArrayList<>();
+        if (dto.getCausaPenal() != null && !java.util.Objects.equals(medida.getCausaPenal(), dto.getCausaPenal()))
+            cambiosMC.add("Causa penal: " + dto.getCausaPenal());
+        if (dto.getDelito() != null && !java.util.Objects.equals(medida.getDelito(), dto.getDelito()))
+            cambiosMC.add("Delito: " + dto.getDelito());
+        if (dto.getDelitosJson() != null && !java.util.Objects.equals(medida.getDelitosJson(), dto.getDelitosJson()))
+            cambiosMC.add("Delitos actualizados");
+        if (dto.getTipo() != null && (medida.getTipo() == null || !medida.getTipo().name().equals(dto.getTipo())))
+            cambiosMC.add("Tipo: " + dto.getTipo());
+        if (dto.getEstado() != null && (medida.getEstado() == null || !medida.getEstado().name().equals(dto.getEstado())))
+            cambiosMC.add("Estado: " + dto.getEstado());
+        if (dto.getFechaTermino() != null && !java.util.Objects.equals(medida.getFechaTermino(), dto.getFechaTermino()))
+            cambiosMC.add("Fecha término actualizada");
+        if (dto.getObservaciones() != null && !java.util.Objects.equals(medida.getObservaciones(), dto.getObservaciones()))
+            cambiosMC.add("Observaciones actualizadas");
+        String descCambiosMC = cambiosMC.isEmpty() ? "Medida cautelar actualizada" : String.join(". ", cambiosMC);
+
         mapFields(dto, medida);
         MedidaCautelar updated = repository.save(medida);
         String nombreUpd = updated.getImputado() != null
                 ? updated.getImputado().getNombre() + " " + updated.getImputado().getApPaterno() : "—";
         bitacoraService.registrar(Bitacora.Entidad.MEDIDA_CAUTELAR, updated.getId(), nombreUpd,
-                Bitacora.Accion.EDITAR, "Datos de la medida actualizados");
+                Bitacora.Accion.EDITAR, descCambiosMC);
         return new ApiResponse(true, "Registro actualizado", MedidaCautelarResponseDTO.from(updated));
     }
 
@@ -177,8 +199,10 @@ public class MedidaCautelarService {
             seg.setMedida(medida);
             seg.setFechaSeguimiento(dto.getFechaSeguimiento());
             seg.setDetalles(dto.getDetalles());
-            String email = SecurityContextHolder.getContext().getAuthentication().getName();
-            userRepository.findByEmail(email).ifPresent(seg::setRegistradoPor);
+            String usernameOrEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+            userRepository.findByUsername(usernameOrEmail)
+                    .or(() -> userRepository.findByEmail(usernameOrEmail))
+                    .ifPresent(seg::setRegistradoPor);
             seguimientoRepository.save(seg);
             String nombreSeg = medida.getImputado() != null
                     ? medida.getImputado().getNombre() + " " + medida.getImputado().getApPaterno() : "—";
@@ -260,6 +284,7 @@ public class MedidaCautelarService {
         // Datos procesales
         m.setFechaRecepcion(dto.getFechaRecepcion());
         m.setDelito(dto.getDelito());
+        if (dto.getDelitosJson() != null) m.setDelitosJson(dto.getDelitosJson());
         m.setModalidad(dto.getModalidad());
         m.setSede(dto.getSede());
         m.setNombreJuez(dto.getNombreJuez());

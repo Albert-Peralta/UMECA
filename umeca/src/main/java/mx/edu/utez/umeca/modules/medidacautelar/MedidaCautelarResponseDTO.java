@@ -18,6 +18,7 @@ public class MedidaCautelarResponseDTO {
     private String causaPenal;
     private String causaPenalImputado;
     private String delito;
+    private String delitosJson;
     private String tipo;
     private Long entrevistaId;
     private String folioEntrevista;
@@ -95,6 +96,7 @@ public class MedidaCautelarResponseDTO {
     // Cambio a SCP
     private Boolean cambiadoAScp;
     private LocalDate fechaCambioScp;
+    private Boolean vieneDeMC;
 
     private List<SeguimientoDTO> seguimientos;
 
@@ -127,6 +129,7 @@ public class MedidaCautelarResponseDTO {
         dto.setCausaPenal(m.getCausaPenal());
         dto.setCausaPenalImputado(m.getImputado().getCausaPenal());
         dto.setDelito(m.getDelito() != null ? m.getDelito() : m.getImputado().getDelito());
+        dto.setDelitosJson(m.getDelitosJson());
         dto.setTipo(m.getTipo().name());
         dto.setEstado(m.getEstado().name());
         dto.setRegistradoPor(m.getRegistradoPor() != null
@@ -201,6 +204,7 @@ public class MedidaCautelarResponseDTO {
 
         // Cambio a SCP
         dto.setCambiadoAScp(Boolean.TRUE.equals(m.getCambiadoAScp()));
+        dto.setVieneDeMC(Boolean.TRUE.equals(m.getVieneDeMC()));
         dto.setFechaCambioScp(m.getFechaCambioScp());
 
         // Levantamiento

@@ -84,8 +84,10 @@ public class BitacoraService {
 
     private User usuarioActual() {
         try {
-            String email = SecurityContextHolder.getContext().getAuthentication().getName();
-            return userRepository.findByEmail(email).orElse(null);
+            String usernameOrEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+            return userRepository.findByUsername(usernameOrEmail)
+                    .or(() -> userRepository.findByEmail(usernameOrEmail))
+                    .orElse(null);
         } catch (Exception e) {
             return null;
         }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
@@ -8,21 +8,27 @@ import footerVerde from '../assets/footer-verde.png';
 import './Login.css';
 
 const Login = () => {
-    const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [errorTipo, setErrorTipo] = useState('error'); // 'error' | 'desactivada'
     const [loading, setLoading] = useState(false);
     const [bienvenida, setBienvenida] = useState(null); // { nombre, destino }
-    const { login } = useAuth();
+    const { login, logout } = useAuth();
     const navigate = useNavigate();
+
+    // Al llegar al login (sea por logout, flecha de atrás o acceso directo),
+    // se invalida cualquier sesión activa para que el forward no regrese al dashboard
+    useEffect(() => {
+        logout();
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
         try {
-            const res = await api.post('/auth/login', { email, password });
+            const res = await api.post('/auth/login', { username, password });
             if (res.data.ok) {
                 const { token, ...userData } = res.data.data;
                 login(userData, token);
@@ -37,7 +43,7 @@ const Login = () => {
                 setLoading(false);
             }
         } catch (err) {
-            const msg = err.response?.data?.message || 'Correo o contraseña incorrectos';
+            const msg = err.response?.data?.message || 'Usuario o contraseña incorrectos';
             setErrorTipo(msg.includes('desactivada') ? 'desactivada' : 'error');
             setError(msg);
             setLoading(false);
@@ -65,12 +71,12 @@ const Login = () => {
                 </p>
 
                 <form className="login-form" onSubmit={handleSubmit}>
-                    <label>Email</label>
+                    <label>Usuario</label>
                     <input
-                        type="email"
-                        placeholder="Ingresa tú email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        type="text"
+                        placeholder="Ingresa tu usuario"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
                         required
                     />
 

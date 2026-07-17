@@ -138,7 +138,7 @@ ${tablaIdent}
 
             if (footerEl) {
                 el.getBoundingClientRect();
-                const gap = Math.max(20, 1320 - el.scrollHeight);
+                const gap = Math.max(20, 1010 - el.scrollHeight);
                 footerEl.style.marginTop = gap + 'px';
             }
 
@@ -147,7 +147,7 @@ ${tablaIdent}
                     margin:      [6, 14, 10, 14],
                     image:       { type: 'jpeg', quality: 0.98 },
                     html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 720 },
-                    jsPDF:       { unit: 'mm', format: 'legal', orientation: 'portrait' },
+                    jsPDF:       { unit: 'mm', format: 'letter', orientation: 'portrait' },
                     pagebreak:   { mode: 'avoid-all' },
                 })
                 .from(el)
@@ -203,6 +203,14 @@ ${tablaIdent}
 
     return createPortal(
         <div className="ped-overlay">
+            {imprimiendo && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+                    <style>{`@keyframes neg-spin { to { transform: rotate(360deg); } }`}</style>
+                    <div style={{ width: 52, height: 52, border: '5px solid rgba(255,255,255,0.15)', borderTop: '5px solid #376842', borderRadius: '50%', animation: 'neg-spin 0.8s linear infinite' }} />
+                    <p style={{ color: 'white', fontSize: 15, fontWeight: 600, margin: 0, letterSpacing: 0.5 }}>Generando PDF...</p>
+                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, margin: 0 }}>Por favor espera un momento</p>
+                </div>
+            )}
 
             <div className="ped-toolbar">
                 <span className="ped-toolbar-title">
@@ -273,9 +281,8 @@ ${tablaIdent}
                     </div>
                 </div>
 
-                <p className="ped-ccp ped-editable-deps" contentEditable suppressContentEditableWarning>c.c.p.- Instituto de la Defensoría Pública del Estado de Morelos. Para su conocimiento.</p>
-
                 <div className="ped-footer">
+                    <p className="ped-ccp ped-editable-deps" contentEditable suppressContentEditableWarning style={{ margin: '0 0 4px 0', textAlign: 'left' }}>c.c.p.- Instituto de la Defensoría Pública del Estado de Morelos. Para su conocimiento.</p>
                     <img src={footerDorado} alt="" className="ped-footer-img" />
                     <p className="ped-footer-fecha">Documento generado el {new Date().toLocaleString('es-MX')}</p>
                 </div>

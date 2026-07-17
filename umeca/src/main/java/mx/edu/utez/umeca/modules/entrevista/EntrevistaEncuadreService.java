@@ -89,8 +89,10 @@ public class EntrevistaEncuadreService {
 
         entrevista.setFechaRegistro(LocalDate.now());
 
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        userRepository.findByEmail(email).ifPresent(entrevista::setRegistradoPor);
+        String usernameOrEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        userRepository.findByUsername(usernameOrEmail)
+                .or(() -> userRepository.findByEmail(usernameOrEmail))
+                .ifPresent(entrevista::setRegistradoPor);
 
         entrevista.setEstado(EntrevistaEncuadre.Estado.PENDIENTE);
 
@@ -157,11 +159,28 @@ public class EntrevistaEncuadreService {
                 cambios.add("Teléfono actualizado");
             if (!java.util.Objects.equals(existing.getCelular(), entrevista.getCelular()))
                 cambios.add("Celular actualizado");
-            if (!java.util.Objects.equals(existing.getDomicilios(), entrevista.getDomicilios()))
+            if (!domiciliosSonIguales(existing.getDomicilios(), entrevista.getDomicilios()))
                 cambios.add("Domicilio actualizado");
+            if (!personasHabitaSonIguales(existing.getPersonasHabita(), entrevista.getPersonasHabita()))
+                cambios.add("Personas con las que habita: actualizadas (" + (entrevista.getPersonasHabita() != null ? entrevista.getPersonasHabita().size() : 0) + " registro(s))");
+            if (!referenciasSonIguales(existing.getReferencias(), entrevista.getReferencias()))
+                cambios.add("Referencias personales: actualizadas (" + (entrevista.getReferencias() != null ? entrevista.getReferencias().size() : 0) + " registro(s))");
+            if (!consumoSonIguales(existing.getConsumoSustancias(), entrevista.getConsumoSustancias()))
+                cambios.add("Consumo de sustancias: actualizado");
+            if (!java.util.Objects.equals(existing.getFolio(), entrevista.getFolio()) && entrevista.getFolio() != null)
+                cambios.add("Folio: " + entrevista.getFolio());
+            if (!java.util.Objects.equals(existing.getLibro(), entrevista.getLibro()))
+                cambios.add("Libro: " + entrevista.getLibro());
+            if (!java.util.Objects.equals(existing.getFoja(), entrevista.getFoja()))
+                cambios.add("Foja: " + entrevista.getFoja());
             if (!java.util.Objects.equals(existing.getTipoSeguimiento(), entrevista.getTipoSeguimiento())
                     && entrevista.getTipoSeguimiento() != null)
                 cambios.add("Tipo seguimiento: " + entrevista.getTipoSeguimiento());
+            if (!java.util.Objects.equals(existing.getTieneTatuajes(), entrevista.getTieneTatuajes()))
+                cambios.add("Tatuajes/cicatrices: " + (Boolean.TRUE.equals(entrevista.getTieneTatuajes()) ? "Sí" : "No"));
+            if (Boolean.TRUE.equals(entrevista.getTieneTatuajes())
+                    && !java.util.Objects.equals(existing.getTatuajesJson(), entrevista.getTatuajesJson()))
+                cambios.add("Tatuajes/cicatrices: detalle actualizado");
             String descCambios = cambios.isEmpty() ? "Entrevista actualizada" : String.join(". ", cambios);
 
             existing.setNombre(entrevista.getNombre());
@@ -193,6 +212,10 @@ public class EntrevistaEncuadreService {
             existing.setPais(entrevista.getPais());
             existing.setEnfermedad(entrevista.getEnfermedad());
             existing.setGradoEstudios(entrevista.getGradoEstudios());
+            if (entrevista.getFolio() != null && !entrevista.getFolio().isBlank())
+                existing.setFolio(entrevista.getFolio());
+            existing.setLibro(entrevista.getLibro());
+            existing.setFoja(entrevista.getFoja());
             existing.setGenero(entrevista.getGenero());
             existing.setComplexion(entrevista.getComplexion());
             existing.setEstatura(entrevista.getEstatura());
@@ -203,6 +226,7 @@ public class EntrevistaEncuadreService {
             existing.setTamLabios(entrevista.getTamLabios());
             existing.setSenasCara(entrevista.getSenasCara());
             existing.setTieneTatuajes(entrevista.getTieneTatuajes());
+            existing.setTatuajesJson(entrevista.getTatuajesJson());
             existing.setAlias(entrevista.getAlias());
             existing.setDocumentosMigratorios(entrevista.getDocumentosMigratorios());
             existing.setEstadoCivil(entrevista.getEstadoCivil());
@@ -256,8 +280,10 @@ public class EntrevistaEncuadreService {
             }
 
             // Actualizar el usuario que realizó la última modificación
-            String emailEditor = SecurityContextHolder.getContext().getAuthentication().getName();
-            userRepository.findByEmail(emailEditor).ifPresent(existing::setRegistradoPor);
+            String usernameOrEmailEditor = SecurityContextHolder.getContext().getAuthentication().getName();
+            userRepository.findByUsername(usernameOrEmailEditor)
+                    .or(() -> userRepository.findByEmail(usernameOrEmailEditor))
+                    .ifPresent(existing::setRegistradoPor);
 
             EntrevistaEncuadre updatedEnt = repository.save(existing);
             bitacoraService.registrar(Bitacora.Entidad.ENTREVISTA, updatedEnt.getId(),
@@ -276,5 +302,67 @@ public class EntrevistaEncuadreService {
             repository.delete(e);
             return new ApiResponse(true, "Entrevista eliminada");
         }).orElse(new ApiResponse(false, "Entrevista no encontrada"));
+    }
+
+    /** Compara dos listas de domicilios por sus campos clave para evitar falsos positivos en la bitácora. */
+    private boolean domiciliosSonIguales(java.util.List<DomicilioEntrevista> a, java.util.List<DomicilioEntrevista> b) {
+        if (a == null && b == null) return true;
+        if (a == null || b == null) return false;
+        if (a.size() != b.size()) return false;
+        for (int i = 0; i < a.size(); i++) {
+            DomicilioEntrevista da = a.get(i);
+            DomicilioEntrevista db = b.get(i);
+            if (!java.util.Objects.equals(da.getCalle(), db.getCalle())) return false;
+            if (!java.util.Objects.equals(da.getNumero(), db.getNumero())) return false;
+            if (!java.util.Objects.equals(da.getColonia(), db.getColonia())) return false;
+            if (!java.util.Objects.equals(da.getMunicipio(), db.getMunicipio())) return false;
+            if (!java.util.Objects.equals(da.getEstado(), db.getEstado())) return false;
+            if (!java.util.Objects.equals(da.getCp(), db.getCp())) return false;
+        }
+        return true;
+    }
+
+    /** Compara personas que habita por nombre y parentesco. */
+    private boolean personasHabitaSonIguales(java.util.List<PersonaHabita> a, java.util.List<PersonaHabita> b) {
+        if (a == null && b == null) return true;
+        if (a == null || b == null) return false;
+        if (a.size() != b.size()) return false;
+        for (int i = 0; i < a.size(); i++) {
+            PersonaHabita pa = a.get(i);
+            PersonaHabita pb = b.get(i);
+            if (!java.util.Objects.equals(pa.getNombre(), pb.getNombre())) return false;
+            if (!java.util.Objects.equals(pa.getParentesco(), pb.getParentesco())) return false;
+            if (!java.util.Objects.equals(pa.getTelefono(), pb.getTelefono())) return false;
+        }
+        return true;
+    }
+
+    /** Compara referencias personales por nombre y teléfono. */
+    private boolean referenciasSonIguales(java.util.List<ReferenciaPersonal> a, java.util.List<ReferenciaPersonal> b) {
+        if (a == null && b == null) return true;
+        if (a == null || b == null) return false;
+        if (a.size() != b.size()) return false;
+        for (int i = 0; i < a.size(); i++) {
+            ReferenciaPersonal ra = a.get(i);
+            ReferenciaPersonal rb = b.get(i);
+            if (!java.util.Objects.equals(ra.getNombre(), rb.getNombre())) return false;
+            if (!java.util.Objects.equals(ra.getTelefono(), rb.getTelefono())) return false;
+        }
+        return true;
+    }
+
+    /** Compara consumo de sustancias por sustancia y si consume. */
+    private boolean consumoSonIguales(java.util.List<ConsumoSustancia> a, java.util.List<ConsumoSustancia> b) {
+        if (a == null && b == null) return true;
+        if (a == null || b == null) return false;
+        if (a.size() != b.size()) return false;
+        for (int i = 0; i < a.size(); i++) {
+            ConsumoSustancia ca = a.get(i);
+            ConsumoSustancia cb = b.get(i);
+            if (!java.util.Objects.equals(ca.getSustancia(), cb.getSustancia())) return false;
+            if (!java.util.Objects.equals(ca.getConsume(), cb.getConsume())) return false;
+            if (!java.util.Objects.equals(ca.getDesde(), cb.getDesde())) return false;
+        }
+        return true;
     }
 }

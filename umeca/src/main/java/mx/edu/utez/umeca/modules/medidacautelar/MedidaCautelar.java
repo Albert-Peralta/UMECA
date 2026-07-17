@@ -213,6 +213,10 @@ public class MedidaCautelar extends BaseEntity {
     @Column(name = "fecha_cambio_scp")
     private LocalDate fechaCambioScp;
 
+    /** true cuando esta SCP fue creada a partir de una MC existente */
+    @Column(name = "viene_de_mc")
+    private Boolean vieneDeMC = false;
+
     // ── Levantamiento ────────────────────────────────────────────────────────
     @Column(name = "fecha_levantamiento")
     private LocalDate fechaLevantamiento;

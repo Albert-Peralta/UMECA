@@ -271,6 +271,14 @@
     color: #991b1b;
 }
 
+/* ── Banner fallecido ── */
+.dm-banner-fallecido {
+    background: #1a1a2e;
+    border: 1px solid #4a4a6a;
+    border-left: 4px solid #6b21a8;
+    color: #e2d9f3;
+}
+
 /* ── Banner cambiado a SCP ── */
 .dm-banner-scp {
     display: flex;

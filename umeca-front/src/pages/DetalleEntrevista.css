@@ -38,14 +38,12 @@
 }
 
 .de-btn-editar {
-    background: #376842;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 14px;
+    background: none; color: #376842; border: 1px solid #376842;
+    padding: 7px 16px; border-radius: 8px; cursor: pointer;
+    font-size: 13px; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 6px; transition: all .2s;
 }
+.de-btn-editar:hover { background: #376842; color: white; }
 .de-btn-imprimir {
     background: none; border: 1px solid #1565c0; color: #1565c0;
     padding: 7px 16px; border-radius: 8px; cursor: pointer;
@@ -54,12 +52,12 @@
 }
 .de-btn-imprimir:hover { background: #1565c0; color: white; }
 
-.de-btn-informe   { background: #1a4f6e !important; border: none !important; color: white !important; }
-.de-btn-informe:hover { background: #08202e !important; color: white !important; box-shadow: 0 2px 8px rgba(0,0,0,.35) !important; }
-.de-btn-negacion  { background: #c0392b !important; border: none !important; color: white !important; }
-.de-btn-negacion:hover { background: #922b21 !important; color: white !important; box-shadow: 0 2px 8px rgba(0,0,0,.35) !important; }
-.de-btn-opinion   { background: #1a5c2e !important; border: none !important; color: white !important; }
-.de-btn-opinion:hover { background: #082b13 !important; color: white !important; box-shadow: 0 2px 8px rgba(0,0,0,.35) !important; }
+.de-btn-informe   { background: none !important; border: 1px solid #1a4f6e !important; color: #1a4f6e !important; }
+.de-btn-informe:hover { background: #1a4f6e !important; color: white !important; }
+.de-btn-negacion  { background: none !important; border: 1px solid #c0392b !important; color: #c0392b !important; }
+.de-btn-negacion:hover { background: #c0392b !important; color: white !important; }
+.de-btn-opinion   { background: none !important; border: 1px solid #1a5c2e !important; color: #1a5c2e !important; }
+.de-btn-opinion:hover { background: #1a5c2e !important; color: white !important; }
 
 .de-btn-cancelar {
     background: #f5f5f5;
@@ -509,3 +507,52 @@
     .de-btn-volver, .de-btn-editar,
     .de-btn-cancelar, .de-btn-guardar { width: 100%; text-align: center; }
 }
+
+/* ── Tabla de tatuajes/cicatrices ─────────────────────────────────────── */
+.de-tatuajes-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.83rem;
+    margin-top: 6px;
+}
+.de-tatuajes-table th {
+    background: #e8f0eb;
+    color: #2d5a3d;
+    font-weight: 600;
+    padding: 6px 10px;
+    text-align: left;
+    border-bottom: 2px solid #b8d4c0;
+}
+.de-tatuajes-table td {
+    padding: 5px 8px;
+    border-bottom: 1px solid #e5eee8;
+}
+.de-tatuajes-table td input {
+    width: 100%;
+    border: 1px solid #cdd8d0;
+    border-radius: 5px;
+    padding: 4px 7px;
+    font-size: 0.82rem;
+    background: #fff;
+}
+.de-tatuajes-view td { color: #2c4a34; }
+.de-btn-eliminar-fila {
+    background: none;
+    border: none;
+    color: #c0392b;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 2px 6px;
+}
+.de-btn-agregar-fila {
+    margin-top: 8px;
+    background: none;
+    border: 1.5px dashed #7ab890;
+    color: #2e6040;
+    border-radius: 6px;
+    padding: 5px 14px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-weight: 600;
+}
+.de-btn-agregar-fila:hover { background: #edf5f0; }

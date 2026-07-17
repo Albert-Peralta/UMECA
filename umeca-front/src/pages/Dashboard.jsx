@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import gobiernoImg from '../assets/gobierno-mexico.png';
 import logoMorelos from '../assets/logo-morelos-nuevo.png';
 import footerDorado from '../assets/footer-dorado.png';
@@ -61,15 +61,27 @@ const menuPorRol = {
 const Dashboard = () => {
     const { user, logout, login } = useAuth();
     const navigate = useNavigate();
-    const [activeMenu, setActiveMenu] = useState(() => {
+    const location = useLocation();
+
+    const getValidKey = (hash) => {
         const items = menuPorRol[user?.rol] || [];
         const keys = items.filter(i => !i.separator).map(i => i.key);
-        const saved = localStorage.getItem('activeMenu');
-        // Restaurar solo si la sección guardada está disponible para el rol actual
-        return saved && keys.includes(saved) ? saved : (keys[0] || 'imputados');
-    });
+        const key = hash.replace('#', '');
+        return keys.includes(key) ? key : (keys[0] || 'imputados');
+    };
+
+    const [activeMenu, setActiveMenu] = useState(() => getValidKey(window.location.hash));
     const [avatarSrc, setAvatarSrc] = useState(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    // Si el token desaparece (logout en otra pestaña o navegación por historial), cierra sesión
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            logout();
+            navigate('/', { replace: true });
+        }
+    }, []);
 
     // Carga el avatar al montar y cuando cambia el usuario
     useEffect(() => {
@@ -78,6 +90,11 @@ const Dashboard = () => {
         }
     }, [user?.id]);
 
+    // Sincroniza activeMenu con el hash cuando el usuario usa las flechas del navegador
+    useEffect(() => {
+        setActiveMenu(getValidKey(location.hash));
+    }, [location.hash]);
+
     // Permite que cualquier módulo dispare window.dispatchEvent(new CustomEvent('navigate', {detail:'evaluacion'}))
     // para cambiar de sección sin pasar props hacia arriba.
     useEffect(() => {
@@ -85,10 +102,7 @@ const Dashboard = () => {
             const key = e.detail;
             const items = menuPorRol[user?.rol] || [];
             const keys = items.filter(i => !i.separator).map(i => i.key);
-            if (keys.includes(key)) {
-                setActiveMenu(key);
-                localStorage.setItem('activeMenu', key);
-            }
+            if (keys.includes(key)) navegarA(key);
         };
         window.addEventListener('navigate', handler);
         return () => window.removeEventListener('navigate', handler);
@@ -103,9 +117,15 @@ const Dashboard = () => {
         return () => window.removeEventListener('avatar-updated', handler);
     }, [user?.id]);
 
+    // Cambia de sección actualizando el hash — el navegador registra la entrada en su historial
+    const navegarA = (key) => {
+        navigate(`/dashboard#${key}`);
+        setSidebarOpen(false);
+    };
+
     const handleLogout = () => {
         logout();
-        navigate('/');
+        navigate('/', { replace: true });
     };
 
     const getInitials = () => {
@@ -128,8 +148,7 @@ const Dashboard = () => {
         case 'imputados': return <Imputados onNavigarEntrevista={(imp) => {
             // Pasa datos del imputado a EntrevistaEncuadre vía localStorage para pre-llenar el formulario
             localStorage.setItem('entrevistaPreset', JSON.stringify({ causaPenal: imp.causaPenal, nombre: imp.nombreCompleto }));
-            setActiveMenu('entrevista');
-            localStorage.setItem('activeMenu', 'entrevista');
+            navegarA('entrevista');
         }} />;
         case 'evaluacion': return <EvaluacionRiesgos />;
         case 'medidas':    return <SeguimientoCasos />;
@@ -172,11 +191,7 @@ const Dashboard = () => {
                             <button
                                 key={item.key}
                                 className={`sidebar-item ${activeMenu === item.key ? 'active' : ''}`}
-                                onClick={() => {
-                                    setActiveMenu(item.key);
-                                    localStorage.setItem('activeMenu', item.key);
-                                    setSidebarOpen(false);
-                                }}
+                                onClick={() => navegarA(item.key)}
                             >
                                 <i className={item.icon}></i> {item.label}
                             </button>
@@ -187,7 +202,7 @@ const Dashboard = () => {
                 <div className="sidebar-footer">
                     <div
                         className={`sidebar-user${activeMenu === 'perfil' ? ' active' : ''}`}
-                        onClick={() => { setActiveMenu('perfil'); localStorage.setItem('activeMenu', 'perfil'); setSidebarOpen(false); }}
+                        onClick={() => navegarA('perfil')}
                         title="Ver perfil"
                     >
                         {avatarSrc

@@ -33,7 +33,13 @@ public class User extends BaseEntity implements UserDetails {
     @Column(length = 150)
     private String dependencia;
 
-    @Column(nullable = false, unique = true, length = 150)
+    // Usuario para login (reemplaza al correo como credencial de acceso)
+    @Column(unique = true, length = 60)
+    private String username;
+
+    // Correo electrónico (opcional, se conserva por si se requiere en el futuro)
+    // @Column(nullable = false, unique = true, length = 150)
+    @Column(length = 150)
     private String email;
 
     @Column(name = "password_hash", nullable = false)
@@ -78,7 +84,7 @@ public class User extends BaseEntity implements UserDetails {
 
     @Override
     public String getUsername() {
-        return email;
+        return username;
     }
 
     @Override

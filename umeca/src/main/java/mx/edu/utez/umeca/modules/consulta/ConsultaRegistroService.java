@@ -51,8 +51,10 @@ public class ConsultaRegistroService {
 
     /** Extrae el usuario autenticado del contexto de seguridad. */
     private User usuarioActual() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepo.findByEmail(email).orElse(null);
+        String usernameOrEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepo.findByUsername(usernameOrEmail)
+                .or(() -> userRepo.findByEmail(usernameOrEmail))
+                .orElse(null);
     }
 
     /** Devuelve todas las consultas ordenadas por fecha descendente. */

@@ -1,8 +1,8 @@
 package mx.edu.utez.umeca.modules.security.user;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 public record UserRequestDTO(
 
@@ -14,9 +14,17 @@ public record UserRequestDTO(
 
         String apMaterno,
 
-        @NotBlank(message = "El correo es obligatorio")
-        @Email(message = "El correo no tiene un formato válido")
+        @NotBlank(message = "El usuario es obligatorio")
+        @Size(min = 4, max = 50, message = "El usuario debe tener entre 4 y 50 caracteres")
+        String username,
+
+        // Correo electrónico opcional (comentado hasta que sea requerido)
+        // @NotBlank(message = "El correo es obligatorio")
+        // @Email(message = "El correo no tiene un formato válido")
         String email,
+
+        // Contraseña solo se usa al crear; en edición se ignora si viene vacía
+        String password,
 
         String cargo,
 
@@ -34,7 +42,9 @@ public record UserRequestDTO(
         u.setNombre(nombre);
         u.setApPaterno(apPaterno);
         u.setApMaterno(apMaterno);
-        u.setEmail(email);
+        u.setUsername(username);
+        u.setEmail(email);       // puede ser null
+        u.setPassword(password); // texto plano; el servicio la encripta
         u.setCargo(cargo);
         u.setDependencia(dependencia);
         u.setRol(rol);

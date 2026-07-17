@@ -1,0 +1,158 @@
+/* Contenedor Principal */
+.body-map-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #fdfdfd;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 450px;
+  margin: 0 auto 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  gap: 0;
+}
+
+/* Selector de Vistas */
+.view-selector {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.view-btn {
+  background-color: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-btn:hover {
+  background-color: #e2e8f0;
+}
+
+.view-btn.active {
+  background-color: #2e6f40;
+  color: white;
+  border-color: #2e6f40;
+}
+
+/* Contenedor del SVG */
+.svg-wrapper {
+  width: 100%;
+  max-width: 280px;
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 12px;
+  border: 1px dashed #cbd5e1;
+}
+
+.body-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0px 2px 6px rgba(0,0,0,0.08));
+}
+
+/* Partes del cuerpo - estado base */
+.body-part {
+  fill: #dde6f0;
+  stroke: #8fa8c8;
+  stroke-width: 1.2;
+  cursor: pointer;
+  transition: fill 0.2s ease, stroke 0.2s ease, filter 0.15s ease;
+}
+
+/* Hover */
+.body-part:hover {
+  fill: #b8cfe8;
+  stroke: #5580a8;
+  filter: drop-shadow(0 0 4px rgba(46,111,64,0.35));
+}
+
+/* Seleccionado */
+.body-part.selected {
+  fill: #86efac;
+  stroke: #16a34a;
+  stroke-width: 1.8;
+}
+
+.body-part.selected:hover {
+  fill: #4ade80;
+  filter: drop-shadow(0 0 5px rgba(22,163,74,0.45));
+}
+
+/* Textos de ayuda */
+.instruction-text {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 14px;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+/* Tags con botón × */
+.cuerpo-sel-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  justify-content: center;
+  width: 100%;
+}
+
+.cuerpo-sel-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #16a34a;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 3px 8px 3px 10px;
+  border-radius: 20px;
+}
+
+.cuerpo-sel-tag button {
+  background: rgba(255,255,255,0.25);
+  border: none;
+  color: #fff;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  font-size: 0.75rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.1s;
+}
+
+.cuerpo-sel-tag button:hover {
+  background: rgba(255,255,255,0.45);
+}
+
+/* Tooltip flotante */
+.cuerpo-tooltip {
+  position: fixed;
+  background: #1b3324;
+  color: #fff;
+  font-size: 0.76rem;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 9999;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

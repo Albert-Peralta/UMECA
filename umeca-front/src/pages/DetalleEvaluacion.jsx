@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import PrintEvaluacion from './PrintEvaluacion';
 import PrintInformeEval from './PrintInformeEval';
-import PrintOpinionTecnica from './PrintOpinionTecnica';
 import './DetalleEntrevista.css';
 import './EvaluacionRiesgos.css';
 
@@ -32,15 +31,13 @@ const sec = (titulo) => (
 const DetalleEvaluacion = ({ evaluacion: d, onVolver, onEditar, puedeEditar }) => {
     const [imprimiendo, setImprimiendo]         = useState(false);
     const [showInforme, setShowInforme]         = useState(false);
-    const [showOpinion, setShowOpinion]         = useState(false);
     const domAnt = (() => { try { return JSON.parse(d.domiciliosAnterioresJson || '[]'); } catch { return []; } })();
     const empleosAnt = (() => { try { return JSON.parse(d.empleosAnterioresJson || '[]'); } catch { return []; } })();
 
     return (
         <div className="de-container">
-            {imprimiendo  && <PrintEvaluacion    evaluacion={d} onCerrar={() => setImprimiendo(false)} />}
+            {imprimiendo  && <PrintEvaluacion    evaluacion={d} onCerrar={() => setImprimiendo(false)} autoImprimir={true} />}
             {showInforme  && <PrintInformeEval   evaluacion={d} onCerrar={() => setShowInforme(false)} />}
-            {showOpinion  && <PrintOpinionTecnica evaluacion={d} onCerrar={() => setShowOpinion(false)} />}
 
             {/* Toolbar */}
             <div className="de-toolbar">
@@ -66,9 +63,7 @@ const DetalleEvaluacion = ({ evaluacion: d, onVolver, onEditar, puedeEditar }) =
                     <button className="de-btn-imprimir de-btn-informe" onClick={() => setShowInforme(true)}>
                         <i className="bi bi-file-earmark-text"></i> Informe
                     </button>
-                    <button className="de-btn-imprimir de-btn-opinion" onClick={() => setShowOpinion(true)}>
-                        <i className="bi bi-file-earmark-check"></i> Opinión Técnica
-                    </button>
+
                     {puedeEditar && onEditar && (
                         <button className="de-btn-editar" onClick={onEditar}>
                             <i className="bi bi-pencil"></i> Editar

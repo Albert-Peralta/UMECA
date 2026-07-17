@@ -697,33 +697,35 @@
 .scp-grupo-badge-vencido { background: #fee2e2; color: #b91c1c; }
 .scp-grupo-badge-proximo { background: #fef3c7; color: #92400e; }
 
-.scp-btn-mas {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    margin-top: 5px;
-    font-size: 0.73rem;
-    font-weight: 600;
-    color: #2e6040;
-    background: #d0e8d6;
-    border: 1.5px solid #9ecbaa;
-    border-radius: 6px;
-    padding: 3px 10px;
+/* Fila de grupo clickeable */
+.scp-grupo-clickeable {
     cursor: pointer;
-    white-space: nowrap;
-    width: fit-content;
-    transition: background .12s, color .12s, border-color .12s;
+    user-select: none;
 }
-.scp-btn-mas:hover {
-    background: #b8dcc2;
-    border-color: #7ab890;
+.scp-grupo-clickeable:hover td {
+    background: #edf5f0 !important;
 }
-.scp-btn-mas.activo {
-    background: #3d7048;
-    color: #fff;
-    border-color: #3d7048;
+.scp-grupo-expanded.scp-grupo-clickeable:hover td {
+    background: #e2f0e8 !important;
 }
-.scp-btn-mas.activo:hover { background: #2e5837; }
+
+/* Caret antes del nombre */
+.scp-grupo-caret {
+    font-size: 0.65rem;
+    color: #3d7048;
+    flex-shrink: 0;
+    transition: transform .15s;
+}
+
+/* Texto sutil debajo del nombre */
+.scp-grupo-hint-txt {
+    display: block;
+    font-size: 0.71rem;
+    color: #6b9e7a;
+    margin-top: 2px;
+    margin-left: 18px; /* alineado con el nombre, después del caret */
+    font-style: italic;
+}
 
 /* ── Child rows (medidas anteriores) ─────────────────────────────────── */
 .scp-child-row {

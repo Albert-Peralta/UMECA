@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import logoMorelos from '../assets/logo-morelos-nuevo.png';
 import footerDorado from '../assets/footer-dorado.png';
@@ -32,7 +32,7 @@ const FilaVerif = ({ label, metodo, resultado }) => {
     );
 };
 
-const PrintEvaluacion = ({ evaluacion: d, onCerrar }) => {
+const PrintEvaluacion = ({ evaluacion: d, onCerrar, autoImprimir = false }) => {
     const docRef = useRef(null);
     const [imprimiendo, setImprimiendo] = useState(false);
 
@@ -133,6 +133,13 @@ const PrintEvaluacion = ({ evaluacion: d, onCerrar }) => {
         }
     };
 
+    useEffect(() => {
+        import('html2pdf.js').catch(() => {});
+        if (autoImprimir) {
+            handlePrint().then(() => onCerrar && onCerrar());
+        }
+    }, []);
+
     const domAnt  = (() => { try { return JSON.parse(d.domiciliosAnterioresJson || '[]'); } catch { return []; } })();
     const empAnt  = (() => { try { return JSON.parse(d.empleosAnterioresJson   || '[]'); } catch { return []; } })();
     const riesgos = (() => { try { const a = JSON.parse(d.riesgosProcesalesJson || '[]'); return [...a, ...Array(7)].slice(0,7); } catch { return Array(7).fill(''); } })();
@@ -154,7 +161,15 @@ const PrintEvaluacion = ({ evaluacion: d, onCerrar }) => {
     const nombreImputado = `${val(d.apPaternoImputado)} ${val(d.apMaternoImputado || '')} ${val(d.nombreImputado)}`.replace(/—\s*/g,'').trim().toUpperCase();
 
     return createPortal(
-        <div className="pev-overlay">
+        <div className="pev-overlay" style={autoImprimir ? { visibility: 'hidden' } : {}}>
+            {autoImprimir && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, visibility: 'visible' }}>
+                    <style>{`@keyframes pev-spin { to { transform: rotate(360deg); } }`}</style>
+                    <div style={{ width: 52, height: 52, border: '5px solid rgba(255,255,255,0.15)', borderTop: '5px solid #376842', borderRadius: '50%', animation: 'pev-spin 0.8s linear infinite' }} />
+                    <p style={{ color: 'white', fontSize: 15, fontWeight: 600, margin: 0, letterSpacing: 0.5 }}>Generando PDF...</p>
+                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, margin: 0 }}>Por favor espera un momento</p>
+                </div>
+            )}
             {/* Toolbar */}
             <div className="pev-toolbar no-print">
                 <span className="pev-toolbar-title">Vista previa de impresión — Evaluación de Riesgos</span>
@@ -285,10 +300,10 @@ const PrintEvaluacion = ({ evaluacion: d, onCerrar }) => {
 
                         {/* ── INFORMACIÓN LABORAL ── */}
                         <tr className="pev-tv-grupo pev-grupo-avoid"><td colSpan={4}>6. INFORMACIÓN LABORAL / OCUPACIONAL</td></tr>
-                        <tr className="pev-grupo-avoid"><td className="pev-tv-factor">Empresa</td><td>{val(d.empresaImp)}</td><td className="pev-tv-metodo" rowSpan={3}>{val(d.verifS6Metodo)}</td><td rowSpan={3}>{val(d.verifS6Resultado)}</td></tr>
+                        <tr className="pev-grupo-avoid"><td className="pev-tv-factor">Empresa</td><td>{val(d.empresaImp)}</td><td className="pev-tv-metodo" rowSpan={2}>{val(d.verifS6Metodo)}</td><td rowSpan={2}>{val(d.verifS6Resultado)}</td></tr>
                         <tr><td className="pev-tv-factor">Puesto</td><td>{val(d.puestoImp)}</td></tr>
-                        <tr><td className="pev-tv-factor">Horario</td><td>{val(d.horarioTrabajoImp)}</td></tr>
-                        <tr><td className="pev-tv-factor">Salario</td><td>{d.salarioMensualImp ? `$${d.salarioMensualImp}` : '—'}</td><td className="pev-tv-metodo" rowSpan={3 + empAnt.length}></td><td rowSpan={3 + empAnt.length}></td></tr>
+                        <tr><td className="pev-tv-factor">Horario</td><td>{val(d.horarioTrabajoImp)}</td><td className="pev-tv-metodo" rowSpan={4 + empAnt.length}></td><td rowSpan={4 + empAnt.length}></td></tr>
+                        <tr><td className="pev-tv-factor">Salario</td><td>{d.salarioMensualImp ? `$${d.salarioMensualImp}` : '—'}</td></tr>
                         <tr><td className="pev-tv-factor">Temporalidad</td><td>{val(d.ultimoEmpleoImp)}</td></tr>
                         <tr><td className="pev-tv-factor">Domicilio trabajo</td><td>{val(d.domicilioTrabajoImp)}</td></tr>
                         {empAnt.length > 0 && empAnt.map((ea, i) => (

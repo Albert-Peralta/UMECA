@@ -31,10 +31,10 @@ public class AuthService {
     public ApiResponse login(AuthDTO dto) {
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(dto.getEmail(), dto.getPassword())
+                    new UsernamePasswordAuthenticationToken(dto.getUsername(), dto.getPassword())
             );
 
-            User user = userRepository.findByEmail(dto.getEmail())
+            User user = userRepository.findByUsername(dto.getUsername())
                     .orElseThrow();
 
             String token = jwtService.generateToken(user);
@@ -58,12 +58,13 @@ public class AuthService {
         } catch (DisabledException e) {
             return new ApiResponse(false, "Tu cuenta está desactivada. Contacta al administrador.");
         } catch (AuthenticationException e) {
-            return new ApiResponse(false, "Correo o contraseña incorrectos");
+            return new ApiResponse(false, "Usuario o contraseña incorrectos");
         }
     }
 
-    public boolean verificarPassword(String email, String password) {
-        return userRepository.findByEmail(email)
+    public boolean verificarPassword(String usernameOrEmail, String password) {
+        return userRepository.findByUsername(usernameOrEmail)
+                .or(() -> userRepository.findByEmail(usernameOrEmail))
                 .map(u -> passwordEncoder.matches(password, u.getPassword()))
                 .orElse(false);
     }

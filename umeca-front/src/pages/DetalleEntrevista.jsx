@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { actualizarEntrevista } from '../api/entrevistasApi';
 import { actualizarFotoImputado, getImputadoById } from '../api/imputadosApi';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import PrintEntrevista from './PrintEntrevista';
 import HistorialRegistro from '../components/HistorialRegistro';
 import './DetalleEntrevista.css';
@@ -49,12 +50,17 @@ const initConsumo = (existing) => {
 
 const DetalleEntrevista = ({ entrevista, onVolver }) => {
     const { user } = useAuth();
+    const { showToast } = useToast();
     const [editando, setEditando] = useState(false);
     const [form, setForm] = useState({ ...entrevista });
     const [domicilios, setDomicilios] = useState(entrevista.domicilios?.length ? [...entrevista.domicilios] : []);
     const [personasHabita, setPersonasHabita] = useState(entrevista.personasHabita?.length ? [...entrevista.personasHabita] : []);
     const [referencias, setReferencias] = useState(entrevista.referencias?.length ? [...entrevista.referencias] : []);
     const [consumoSustancias, setConsumoSustancias] = useState(initConsumo(entrevista.consumoSustancias));
+    const [tatuajes, setTatuajes] = useState(() => {
+        try { return entrevista.tatuajesJson ? JSON.parse(entrevista.tatuajesJson) : [{ parteCuerpo: '', descripcion: '' }]; }
+        catch { return [{ parteCuerpo: '', descripcion: '' }]; }
+    });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -135,11 +141,17 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
         setError('');
         try {
             const payload = Object.fromEntries(
-                Object.entries({ ...form, domicilios, personasHabita, referencias, consumoSustancias })
-                    .map(([k, v]) => [k, v === '' ? null : v])
+                Object.entries({
+                    ...form,
+                    tatuajesJson: form.tieneTatuajes && tatuajes.some(t => t.parteCuerpo || t.descripcion)
+                        ? JSON.stringify(tatuajes.filter(t => t.parteCuerpo || t.descripcion))
+                        : null,
+                    domicilios, personasHabita, referencias, consumoSustancias
+                }).map(([k, v]) => [k, v === '' ? null : v])
             );
             await actualizarEntrevista(entrevista.id, payload);
             setEditando(false);
+            showToast('Entrevista actualizada correctamente');
             onVolver();
         } catch (e) {
             setError(e.response?.data?.message || 'Error al actualizar');
@@ -181,7 +193,7 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
 
     return (
         <div className="de-container">
-            {imprimiendo && <PrintEntrevista entrevista={form} onCerrar={() => setImprimiendo(false)} />}
+            {imprimiendo && <PrintEntrevista entrevista={form} onCerrar={() => setImprimiendo(false)} autoImprimir={true} />}
             <div className="de-toolbar">
                 <div style={{ display: 'flex', gap: '8px' }}>
                     <button className="de-btn-volver" onClick={onVolver}>← Volver</button>
@@ -271,8 +283,11 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
             <div className="de-grid-2">
                 {editando ? (
                     <>
+                        {campoEdit('Folio', form.folio, v => set('folio', v))}
                         {campoEdit('Causa Penal', form.causaPenal, v => set('causaPenal', v))}
                         {campoEdit('Fecha Registro', form.fechaRegistro, v => set('fechaRegistro', v), 'date')}
+                        {campoEdit('Libro', form.libro, v => set('libro', v))}
+                        {campoEdit('Foja', form.foja, v => set('foja', v))}
                         {campoEdit('Nombre(s)', form.nombre, v => set('nombre', v))}
                         {campoEdit('Apellido Paterno', form.apPaterno, v => set('apPaterno', v))}
                         {campoEdit('Apellido Materno', form.apMaterno, v => set('apMaterno', v))}
@@ -297,8 +312,11 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
                     </>
                 ) : (
                     <>
+                        {campo('Folio', entrevista.folio)}
                         {campo('Causa Penal', entrevista.causaPenal)}
                         {campo('Fecha Registro', entrevista.fechaRegistro)}
+                        {campo('Libro', entrevista.libro)}
+                        {campo('Foja', entrevista.foja)}
                         {campo('Nombre(s)', entrevista.nombre)}
                         {campo('Apellido Paterno', entrevista.apPaterno)}
                         {campo('Apellido Materno', entrevista.apMaterno)}
@@ -343,6 +361,26 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
                                 <option value="true">Sí</option>
                             </select>
                         </div>
+                        {form.tieneTatuajes && (
+                            <div className="de-campo-edit de-campo-full">
+                                <label>Detalle de Tatuajes/Cicatrices</label>
+                                <table className="de-tatuajes-table">
+                                    <thead>
+                                        <tr><th>Parte del Cuerpo</th><th>Descripción</th><th></th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {tatuajes.map((t, i) => (
+                                            <tr key={i}>
+                                                <td><input value={t.parteCuerpo} placeholder="Ej: Brazo izquierdo" onChange={e => { const n=[...tatuajes]; n[i]={...n[i],parteCuerpo:e.target.value}; setTatuajes(n); }} /></td>
+                                                <td><input value={t.descripcion} placeholder="Descripción" onChange={e => { const n=[...tatuajes]; n[i]={...n[i],descripcion:e.target.value}; setTatuajes(n); }} /></td>
+                                                <td>{tatuajes.length > 1 && <button className="de-btn-eliminar-fila" onClick={() => setTatuajes(tatuajes.filter((_,idx)=>idx!==i))}>✕</button>}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                <button className="de-btn-agregar-fila" onClick={() => setTatuajes([...tatuajes, { parteCuerpo: '', descripcion: '' }])}>+ Agregar fila</button>
+                            </div>
+                        )}
                         {campoEdit('Alias', form.alias, v => set('alias', v))}
                         {campoEdit('Documentos Migratorios', form.documentosMigratorios, v => set('documentosMigratorios', v))}
                     </>
@@ -358,6 +396,25 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
                         {campo('Tamaño de Labios', entrevista.tamLabios)}
                         {campo('Señas en la Cara', entrevista.senasCara)}
                         {campo('Tatuajes/Cicatrices', entrevista.tieneTatuajes ? 'Sí' : 'No')}
+                        {entrevista.tieneTatuajes && entrevista.tatuajesJson && (() => {
+                            try {
+                                const lista = JSON.parse(entrevista.tatuajesJson);
+                                if (!lista.length) return null;
+                                return (
+                                    <div className="de-campo de-campo-full">
+                                        <span className="de-label">Detalle de Tatuajes/Cicatrices</span>
+                                        <table className="de-tatuajes-table de-tatuajes-view">
+                                            <thead><tr><th>#</th><th>Parte del Cuerpo</th><th>Descripción</th></tr></thead>
+                                            <tbody>
+                                                {lista.map((t, i) => (
+                                                    <tr key={i}><td>{i+1}</td><td>{t.parteCuerpo || '—'}</td><td>{t.descripcion || '—'}</td></tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                );
+                            } catch { return null; }
+                        })()}
                         {campo('Alias', entrevista.alias)}
                         {campo('Documentos Migratorios', entrevista.documentosMigratorios)}
                     </>

@@ -92,7 +92,7 @@ const Perfil = () => {
         setPassMsg(null);
         try {
             // 1. Verificar contraseña actual
-            const verif = await api.post('/auth/verificar-password', { email: user.email, password: passForm.actual });
+            const verif = await api.post('/auth/verificar-password', { password: passForm.actual });
             if (!verif.data.ok || !verif.data.data) {
                 setPassMsg({ ok: false, texto: 'La contraseña actual es incorrecta.' });
                 setLoading(false);
@@ -143,7 +143,7 @@ const Perfil = () => {
                 <div className="pf-header-info">
                     <h2 className="pf-nombre">{nombreCompleto}</h2>
                     <span className="pf-rol-badge">{ROL_LABEL[user?.rol] ?? user?.rol}</span>
-                    <span className="pf-email">{user?.email}</span>
+                    {/* <span className="pf-email">{user?.email}</span> */}
                 </div>
             </div>
 
@@ -159,7 +159,8 @@ const Perfil = () => {
                         <Campo label="Nombre"             valor={user?.nombre} />
                         <Campo label="Apellido paterno"   valor={user?.apPaterno} />
                         <Campo label="Apellido materno"   valor={user?.apMaterno} />
-                        <Campo label="Correo electrónico" valor={user?.email} />
+                        {/* Correo electrónico comentado — el acceso es por usuario/contraseña definidos por el administrador */}
+                        {/* <Campo label="Correo electrónico" valor={user?.email} /> */}
                         <Campo label="Identificador"      valor={user?.identificador} />
                     </div>
                 </div>

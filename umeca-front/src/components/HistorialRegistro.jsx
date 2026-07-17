@@ -109,8 +109,8 @@ export default function HistorialRegistro({ entidad, id }) {
                                         <div className="hlog-usuario">
                                             <i className="bi bi-person-fill" />
                                             {r.usuario || 'Sistema'}
-                                            {r.usuarioEmail && (
-                                                <span className="hlog-email"> · {r.usuarioEmail}</span>
+                                            {r.usuarioUsername && (
+                                                <span className="hlog-email"> · {r.usuarioUsername}</span>
                                             )}
                                         </div>
                                     </div>

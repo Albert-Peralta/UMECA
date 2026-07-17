@@ -221,22 +221,22 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, onVolver, onEditar, onActual
                 </div>
                 {/* Fila 2: Botones de acción */}
                 <div className="dm-header-actions">
-                    {puedeRegistrar && (
+                    {puedeRegistrar && !m.imputadoFallecido && (
                         <button className="dm-btn-editar" onClick={onEditar}>
                             <i className="bi bi-pencil" /> Editar
                         </button>
                     )}
-                    {puedeRegistrar && m.estado === 'ACTIVO' && (
+                    {puedeRegistrar && m.estado === 'ACTIVO' && !m.imputadoFallecido && (
                         <button className="btn-fallecimiento" onClick={() => { setFallForm(FALL_VACIO); setFallError(''); setShowFallecimiento(true); }}>
                             <i className="bi bi-heartbreak" /> Fallecimiento
                         </button>
                     )}
-                    {tieneFraccionV && (
+                    {tieneFraccionV && !m.imputadoFallecido && (
                         <button className="btn-oficio-migracion" onClick={() => setShowOficioMigracion(true)} title="Generar oficio para el INM">
                             <i className="bi bi-file-earmark-text" /> Oficio Migración
                         </button>
                     )}
-                    {puedeRegistrar && esMC && m.estado === 'ACTIVO' && (
+                    {puedeRegistrar && esMC && m.estado === 'ACTIVO' && !m.imputadoFallecido && (
                         <>
                             {!m.cambiadoAScp && (
                                 <button className="btn-scp" onClick={() => setShowConfirmSCP(true)}>
@@ -248,7 +248,7 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, onVolver, onEditar, onActual
                             </button>
                         </>
                     )}
-                    {puedeRegistrar && !esMC && m.estado === 'ACTIVO' && (
+                    {puedeRegistrar && !esMC && m.estado === 'ACTIVO' && !m.imputadoFallecido && (
                         <>
                             <button className="btn-amp" onClick={() => setShowAmpliacion(true)}>
                                 <i className="bi bi-calendar-plus" /> Ampliación
@@ -266,6 +266,12 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, onVolver, onEditar, onActual
 
             <div className="dm-body">
                 {/* ── Banner: alerta de vencimiento SCP ── */}
+                {m.imputadoFallecido && (
+                    <div className="dm-banner-alerta dm-banner-fallecido">
+                        <i className="bi bi-heartbreak-fill" />
+                        <span>El imputado <strong>{m.nombreImputado}</strong> ha fallecido. No es posible realizar modificaciones en este expediente.</span>
+                    </div>
+                )}
                 {alertaVencimientoDetalle && (
                     <div className={`dm-banner-alerta ${alertaVencimientoDetalle.clase}`}>
                         <i className="bi bi-exclamation-triangle-fill" />

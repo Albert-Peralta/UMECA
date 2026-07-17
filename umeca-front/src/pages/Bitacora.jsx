@@ -222,8 +222,8 @@ export default function Bitacora() {
                                                 </span>
                                                 <div>
                                                     <div className="bit-usuario-nombre">{r.usuario || 'Sistema'}</div>
-                                                    {r.usuarioEmail && (
-                                                        <div className="bit-usuario-email">{r.usuarioEmail}</div>
+                                                    {r.usuarioUsername && (
+                                                        <div className="bit-usuario-email">{r.usuarioUsername}</div>
                                                     )}
                                                 </div>
                                             </div>

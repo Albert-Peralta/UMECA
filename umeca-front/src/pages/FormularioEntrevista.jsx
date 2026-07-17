@@ -52,6 +52,7 @@ const ESTADOS_MX = [
 ];
 
 const initialForm = {
+    folio: '',
     causaPenal: '',
     libro: '',
     foja: '',
@@ -294,6 +295,9 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                 Object.entries({
                     ...form,
                     documentosMigratorios: form.documentosMigratorios.join(', ') || null,
+                    tatuajesJson: form.tieneTatuajes && tatuajes.some(t => t.parteCuerpo || t.descripcion)
+                        ? JSON.stringify(tatuajes.filter(t => t.parteCuerpo || t.descripcion))
+                        : null,
                     domicilios,
                     consumoSustancias,
                     personasHabita,
@@ -361,6 +365,10 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
             <div className="fe-titulo-principal">
                 {/* <h2>ENTREVISTA DE ENCUADRE</h2> */}
                 <div className="fe-libro-foja">
+                    <div className="fe-campo-inline">
+                        <label>FOLIO:</label>
+                        <input value={form.folio} onChange={e => set('folio', e.target.value)} placeholder="Ej. ENT-2026-001" style={{ minWidth: 180 }} />
+                    </div>
                     <div className="fe-campo-inline">
                         <label>LIBRO:</label>
                         <input value={form.libro} onChange={e => set('libro', e.target.value)} />

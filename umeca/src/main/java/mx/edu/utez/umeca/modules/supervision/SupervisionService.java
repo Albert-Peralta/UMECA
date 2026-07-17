@@ -92,8 +92,10 @@ public class SupervisionService {
         }
 
         // Usuario autenticado
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        userRepo.findByEmail(email).ifPresent(s::setRegistradoPor);
+        String usernameOrEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        userRepo.findByUsername(usernameOrEmail)
+                .or(() -> userRepo.findByEmail(usernameOrEmail))
+                .ifPresent(s::setRegistradoPor);
 
         repo.save(s);
         String nombreS = imputado.getNombre() + " " + imputado.getApPaterno();

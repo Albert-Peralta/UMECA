@@ -13,6 +13,7 @@ public class UserResponseDTO {
     private String nombre;
     private String apPaterno;
     private String apMaterno;
+    private String username;
     private String cargo;
     private String dependencia;
     private String email;
@@ -30,6 +31,7 @@ public class UserResponseDTO {
         dto.setNombre(u.getNombre());
         dto.setApPaterno(u.getApPaterno());
         dto.setApMaterno(u.getApMaterno());
+        dto.setUsername(u.getUsername());
         dto.setCargo(u.getCargo());
         dto.setDependencia(u.getDependencia());
         dto.setEmail(u.getEmail());

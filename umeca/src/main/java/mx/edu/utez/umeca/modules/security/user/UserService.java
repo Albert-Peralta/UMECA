@@ -25,10 +25,12 @@ public class UserService implements UserDetailsService {
     private final BitacoraService bitacoraService;
 
     // ── UserDetailsService ───────────────────────────────
+    // Acepta username O email para compatibilidad con tokens generados antes del cambio
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + email));
+    public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
+        return userRepository.findByUsername(usernameOrEmail)
+                .or(() -> userRepository.findByEmail(usernameOrEmail))
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + usernameOrEmail));
     }
 
     // ── Listar todos ─────────────────────────────────────
@@ -50,41 +52,46 @@ public class UserService implements UserDetailsService {
     // ── Registrar usuario ────────────────────────────────
     @Transactional
     public ApiResponse save(User user) {
-        if (userRepository.existsByEmail(user.getEmail()))
-            return new ApiResponse(false, "El correo ya está registrado");
+        if (userRepository.existsByUsername(user.getUsername()))
+            return new ApiResponse(false, "El usuario ya está registrado");
 
-        // Generar contraseña temporal
-        String passwordTemporal = generarPasswordTemporal();
+        // La contraseña viene establecida desde el DTO (ya encriptada abajo)
+        if (user.getPassword() == null || user.getPassword().isBlank())
+            return new ApiResponse(false, "La contraseña es obligatoria");
+
+        if (!passwordValida(user.getPassword()))
+            return new ApiResponse(false, "La contraseña debe tener mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial (!@#$%&*?)");
 
         // Generar identificador único
         String identificador = generarIdentificador(user.getZona(), user.getRol());
         user.setIdentificador(identificador);
 
-        // Configurar primer login
-        user.setPrimerLogin(true);
+        user.setPrimerLogin(false);
         user.setActivo(true);
 
         // Guardar con contraseña encriptada
-        user.setPassword(passwordEncoder.encode(passwordTemporal));
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         User saved = userRepository.save(user);
 
-        // Enviar correo con credenciales (no bloquea si falla el SMTP)
+        // Envío de correo comentado (el acceso ahora es por usuario/contraseña definidos por el admin)
+        /*
         try {
             mailService.enviarCredenciales(
                     user.getEmail(),
                     user.getNombre() + " " + user.getApPaterno(),
-                    passwordTemporal,
+                    user.getPassword(),
                     identificador
             );
         } catch (Exception e) {
             // El correo es informativo; si falla, el usuario ya fue guardado
         }
+        */
 
         bitacoraService.registrar(Bitacora.Entidad.USUARIO, saved.getId(),
                 saved.getNombre() + " " + saved.getApPaterno(),
                 Bitacora.Accion.CREAR,
                 "Usuario creado. Rol: " + saved.getRol() + ". Zona: " + saved.getZona()
-                        + ". ID: " + saved.getIdentificador());
+                        + ". ID: " + saved.getIdentificador() + ". Usuario: " + saved.getUsername());
         return new ApiResponse(true, "Usuario registrado correctamente", UserResponseDTO.from(saved));
     }
 
@@ -92,6 +99,20 @@ public class UserService implements UserDetailsService {
     @Transactional
     public ApiResponse update(Long id, User user) {
         return userRepository.findById(id).map(existing -> {
+            java.util.List<String> cambiosU = new java.util.ArrayList<>();
+            if (!java.util.Objects.equals(existing.getNombre(), user.getNombre())
+                    || !java.util.Objects.equals(existing.getApPaterno(), user.getApPaterno()))
+                cambiosU.add("Nombre actualizado");
+            if (!java.util.Objects.equals(existing.getRol(), user.getRol()))
+                cambiosU.add("Rol: " + (existing.getRol() != null ? existing.getRol().name() : "—") + " → " + user.getRol().name());
+            if (!java.util.Objects.equals(existing.getZona(), user.getZona()))
+                cambiosU.add("Zona: " + user.getZona());
+            if (!java.util.Objects.equals(existing.getCargo(), user.getCargo()))
+                cambiosU.add("Cargo: " + user.getCargo());
+            if (!java.util.Objects.equals(existing.getDependencia(), user.getDependencia()))
+                cambiosU.add("Dependencia: " + user.getDependencia());
+            String descCambiosU = cambiosU.isEmpty() ? "Usuario actualizado" : String.join(". ", cambiosU);
+
             existing.setNombre(user.getNombre());
             existing.setApPaterno(user.getApPaterno());
             existing.setApMaterno(user.getApMaterno());
@@ -99,11 +120,23 @@ public class UserService implements UserDetailsService {
             existing.setDependencia(user.getDependencia());
             existing.setRol(user.getRol());
             existing.setZona(user.getZona());
+            // Actualizar username solo si viene y el usuario aún no tenía uno
+            if (user.getUsername() != null && !user.getUsername().isBlank()
+                    && (existing.getUsername() == null || existing.getUsername().isBlank())) {
+                if (userRepository.existsByUsername(user.getUsername()))
+                    return new ApiResponse(false, "El usuario ya está en uso");
+                existing.setUsername(user.getUsername());
+                cambiosU.add("Usuario asignado: " + user.getUsername());
+            }
+            // Si viene contraseña nueva, se actualiza; si no, se conserva la actual
+            if (user.getPassword() != null && !user.getPassword().isBlank()) {
+                existing.setPassword(passwordEncoder.encode(user.getPassword()));
+                cambiosU.add("Contraseña actualizada");
+            }
             User updatedU = userRepository.save(existing);
             bitacoraService.registrar(Bitacora.Entidad.USUARIO, updatedU.getId(),
                     updatedU.getNombre() + " " + updatedU.getApPaterno(),
-                    Bitacora.Accion.EDITAR,
-                    "Datos actualizados. Rol: " + updatedU.getRol() + ". Zona: " + updatedU.getZona());
+                    Bitacora.Accion.EDITAR, descCambiosU);
             return new ApiResponse(true, "Usuario actualizado", UserResponseDTO.from(updatedU));
         }).orElse(new ApiResponse(false, "Usuario no encontrado"));
     }
@@ -127,7 +160,7 @@ public class UserService implements UserDetailsService {
     public ApiResponse cambiarPassword(Long id, String nuevaPassword,
                                        String emailAutenticado, boolean esAdmin) {
         return userRepository.findById(id).map(u -> {
-            if (!esAdmin && !u.getEmail().equals(emailAutenticado))
+            if (!esAdmin && !u.getUsername().equals(emailAutenticado))
                 return new ApiResponse(false, "No tienes permiso para cambiar esta contraseña");
             u.setPassword(passwordEncoder.encode(nuevaPassword));
             u.setPrimerLogin(false);
@@ -166,6 +199,14 @@ public class UserService implements UserDetailsService {
         StringBuilder result = new StringBuilder();
         for (char c : chars) result.append(c);
         return result.toString();
+    }
+
+    private boolean passwordValida(String pwd) {
+        return pwd.length() >= 8
+                && pwd.chars().anyMatch(Character::isUpperCase)
+                && pwd.chars().anyMatch(Character::isLowerCase)
+                && pwd.chars().anyMatch(Character::isDigit)
+                && pwd.chars().anyMatch(c -> "!@#$%&*?".indexOf(c) >= 0);
     }
 
     private String generarIdentificador(User.Zona zona, User.Rol rol) {

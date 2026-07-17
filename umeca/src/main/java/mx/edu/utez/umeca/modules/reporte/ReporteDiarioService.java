@@ -28,8 +28,10 @@ public class ReporteDiarioService {
 
     /** Extrae el usuario autenticado del contexto de seguridad. Lanza excepción si no existe. */
     private User usuarioActual() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepo.findByEmail(email).orElseThrow();
+        String usernameOrEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepo.findByUsername(usernameOrEmail)
+                .or(() -> userRepo.findByEmail(usernameOrEmail))
+                .orElseThrow();
     }
 
     /**

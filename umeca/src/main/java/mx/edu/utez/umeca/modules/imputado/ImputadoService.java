@@ -205,6 +205,17 @@ public class ImputadoService {
     @Transactional
     public ApiResponse update(Long id, Imputado datos) {
         return imputadoRepository.findById(id).map(existing -> {
+            java.util.List<String> cambios = new java.util.ArrayList<>();
+            if (!java.util.Objects.equals(existing.getNombre(), datos.getNombre())
+                    || !java.util.Objects.equals(existing.getApPaterno(), datos.getApPaterno())
+                    || !java.util.Objects.equals(existing.getApMaterno(), datos.getApMaterno()))
+                cambios.add("Nombre actualizado");
+            if (!java.util.Objects.equals(existing.getDelito(), datos.getDelito()) && datos.getDelito() != null)
+                cambios.add("Delito: " + datos.getDelito());
+            if (!java.util.Objects.equals(existing.getUbicacionFisica(), datos.getUbicacionFisica()))
+                cambios.add("Ubicación física: " + datos.getUbicacionFisica());
+            String descCambios = cambios.isEmpty() ? "Imputado actualizado" : String.join(". ", cambios);
+
             existing.setNombre(datos.getNombre());
             existing.setApPaterno(datos.getApPaterno());
             existing.setApMaterno(datos.getApMaterno());
@@ -214,7 +225,7 @@ public class ImputadoService {
             Imputado updated = imputadoRepository.save(existing);
             bitacoraService.registrar(Bitacora.Entidad.IMPUTADO, updated.getId(),
                     updated.getNombre() + " " + updated.getApPaterno(),
-                    Bitacora.Accion.EDITAR, "Datos del imputado actualizados");
+                    Bitacora.Accion.EDITAR, descCambios);
             return new ApiResponse(true, "Imputado actualizado",
                     ImputadoResponseDTO.fromSimple(updated));
         }).orElse(new ApiResponse(false, "Imputado no encontrado"));

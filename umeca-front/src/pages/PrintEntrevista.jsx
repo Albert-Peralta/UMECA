@@ -1,3 +1,4 @@
+import { useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import logoMorelos from '../assets/logo-morelos-nuevo.png';
 import footerDorado from '../assets/footer-dorado.png';
@@ -22,29 +23,131 @@ const SectionTitle = ({ children }) => (
     <div className="pr-section-title">{children}</div>
 );
 
-const PrintEntrevista = ({ entrevista: e, onCerrar }) => {
-    const handlePrint = () => window.print();
+const PrintEntrevista = ({ entrevista: e, onCerrar, autoImprimir = false }) => {
+    const docRef = useRef(null);
+    const [imprimiendo, setImprimiendo] = useState(false);
+
+    const handlePrint = async () => {
+        setImprimiendo(true);
+        try {
+            const { default: html2pdf } = await import('html2pdf.js');
+            const el = docRef.current;
+            const h2cOpts = { scale: 1.5, useCORS: true, logging: false, windowWidth: 720 };
+
+            el.style.width = '720px'; el.style.margin = '0';
+            el.style.boxShadow = 'none'; el.style.padding = '14px 22px';
+            el.style.minHeight = 'unset';
+
+            // Capturar header como imagen (desde dentro del documento para respetar el padding)
+            const headerWrapEl = el.querySelector('.pr-header-wrap');
+            const headerCanvas = await html2pdf().set({ html2canvas: h2cOpts }).from(headerWrapEl).toCanvas().get('canvas');
+            const headerImgData = headerCanvas.toDataURL('image/jpeg', 0.98);
+            headerWrapEl.style.display = 'none';
+
+            const marginL = 10, marginR = 10, marginTop = 11;
+            const contentW = 215.9 - marginL - marginR;
+            // El pr-documento tiene padding 7mm izq y 7mm der — el header se captura desde adentro
+            // así que la imagen ocupa (contentW - 14mm) y se desplaza 7mm a la derecha
+            const docPadL = 6;
+            const docPadR = 11.5;
+            const headerX = marginL + docPadL;
+            const headerW = contentW - docPadL - docPadR;
+            const headerH = (headerCanvas.height / headerCanvas.width) * headerW;
+            const topMargin = marginTop + headerH + 1;
+
+            // Cargar footer como imagen
+            let footerImgData = null; let footerHMm = 0;
+            await new Promise((res) => {
+                const img = new Image();
+                img.onload = () => {
+                    const fc = document.createElement('canvas');
+                    fc.width = img.naturalWidth; fc.height = img.naturalHeight;
+                    fc.getContext('2d').drawImage(img, 0, 0);
+                    footerImgData = fc.toDataURL('image/jpeg', 0.98);
+                    footerHMm = (img.naturalHeight / img.naturalWidth) * contentW;
+                    res();
+                };
+                img.onerror = () => res();
+                img.src = footerDorado;
+            });
+
+            const footerEl = el.querySelector('.pr-footer');
+            if (footerEl) footerEl.style.display = 'none';
+            const bottomMargin = 10 + footerHMm + 2;
+
+            const pdfInstance = await html2pdf().set({
+                margin: [topMargin, marginR, bottomMargin, marginL],
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: h2cOpts,
+                jsPDF: { unit: 'mm', format: 'legal', orientation: 'portrait' },
+                pagebreak: { mode: ['css', 'legacy'], avoid: ['.pr-firmas', 'tr'] },
+            }).from(el).toPdf().get('pdf');
+
+            const pageH = pdfInstance.internal.pageSize.getHeight();
+            const totalPages = pdfInstance.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                pdfInstance.setPage(i);
+                pdfInstance.addImage(headerImgData, 'JPEG', headerX, marginTop, headerW, headerH);
+                if (footerImgData) {
+                    const fH = footerHMm * 0.75;
+                    pdfInstance.addImage(footerImgData, 'JPEG', marginL, pageH - 10 - fH, contentW, fH);
+                }
+            }
+
+            const blobUrl = pdfInstance.output('bloburl');
+
+            // Restaurar estilos
+            headerWrapEl.style.display = '';
+            if (footerEl) footerEl.style.display = '';
+            el.style.width = ''; el.style.margin = ''; el.style.boxShadow = '';
+            el.style.padding = ''; el.style.minHeight = '';
+
+            window.open(blobUrl, '_blank');
+        } catch (err) {
+            console.error('Error al generar PDF:', err);
+        } finally {
+            setImprimiendo(false);
+        }
+    };
+
+    useEffect(() => {
+        // Pre-cargar html2pdf para que esté en caché cuando se use
+        import('html2pdf.js').catch(() => {});
+        if (autoImprimir) {
+            handlePrint().then(() => onCerrar && onCerrar());
+        }
+    }, []);
 
     const dom = e.domicilios?.[0];
     const imputado = e.imputado || {};
 
     return createPortal(
+        <div className="pr-overlay" style={autoImprimir ? { visibility: 'hidden' } : {}}>
+        {autoImprimir && (
+            <div style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, visibility: 'visible' }}>
+                <style>{`@keyframes pr-spin { to { transform: rotate(360deg); } }`}</style>
+                <div style={{ width: 52, height: 52, border: '5px solid rgba(255,255,255,0.15)', borderTop: '5px solid #376842', borderRadius: '50%', animation: 'pr-spin 0.8s linear infinite' }} />
+                <p style={{ color: 'white', fontSize: 15, fontWeight: 600, margin: 0, letterSpacing: 0.5 }}>Generando PDF...</p>
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, margin: 0 }}>Por favor espera un momento</p>
+            </div>
+        )}
         <div className="pr-overlay">
             {/* Toolbar — se oculta al imprimir */}
             <div className="pr-toolbar no-print">
                 <span className="pr-toolbar-title">Vista previa de impresión</span>
                 <div className="pr-toolbar-actions">
                     <button className="pr-btn-cerrar" onClick={onCerrar}>✕ Cerrar</button>
-                    <button className="pr-btn-imprimir" onClick={handlePrint}>
-                        <i className="bi bi-printer-fill" /> Imprimir
+                    <button className="pr-btn-imprimir" onClick={handlePrint} disabled={imprimiendo}>
+                        <i className="bi bi-printer-fill" /> {imprimiendo ? 'Generando...' : 'Imprimir'}
                     </button>
                 </div>
             </div>
 
             {/* Documento */}
-            <div className="pr-documento" id="pr-documento">
+            <div className="pr-documento" id="pr-documento" ref={docRef}>
 
                 {/* Encabezado */}
+                <div className="pr-header-wrap">
                 <div className="pr-header">
                     <div className="pr-header-izq">
                         <img src={logoMorelos} alt="Morelos" className="pr-logo" />
@@ -81,9 +184,10 @@ const PrintEntrevista = ({ entrevista: e, onCerrar }) => {
                         <span className="cb-val">{TIPO_SEGUIMIENTO_NOMBRE[e.tipoSeguimiento] || val(e.tipoSeguimiento)}</span>
                     </div>
                 </div>
+                </div>{/* fin pr-header-wrap */}
 
                 {/* 1. Datos personales */}
-                <SectionTitle>1. DATOS PERSONALES</SectionTitle>
+                <div className="pr-section-title pr-first-section">1. DATOS PERSONALES</div>
                 <div className="pr-grid">
                     <Row label="Nombre(s)" value={e.nombre} />
                     <Row label="Apellido Paterno" value={e.apPaterno} half />
@@ -185,6 +289,7 @@ const PrintEntrevista = ({ entrevista: e, onCerrar }) => {
                 </div>
 
                 {/* 6. Referencias personales */}
+                <div style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
                 <SectionTitle>6. REFERENCIAS PERSONALES</SectionTitle>
                 {e.referencias?.length > 0 ? (
                     <table className="pr-tabla">
@@ -208,8 +313,10 @@ const PrintEntrevista = ({ entrevista: e, onCerrar }) => {
                         </tbody>
                     </table>
                 ) : <p className="pr-sin-datos">Sin referencias registradas</p>}
+                </div>
 
                 {/* 7. Consumo de sustancias */}
+                <div style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
                 <SectionTitle>7. CONSUMO DE SUSTANCIAS</SectionTitle>
                 {e.consumoSustancias?.some(s => s.consume) ? (
                     <table className="pr-tabla">
@@ -235,8 +342,10 @@ const PrintEntrevista = ({ entrevista: e, onCerrar }) => {
                         </tbody>
                     </table>
                 ) : <p className="pr-sin-datos">No consume sustancias</p>}
+                </div>
 
                 {/* 8. Seguimiento */}
+                <div style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
                 <SectionTitle>8. PREGUNTAS DE SEGUIMIENTO</SectionTitle>
                 <div className="pr-grid">
                     <Row label="¿Tratamiento de adicciones?" value={yesno(e.tratamientoAdicciones)} half />
@@ -247,6 +356,7 @@ const PrintEntrevista = ({ entrevista: e, onCerrar }) => {
                     {e.buenaBase && <Row label="Especificar" value={e.buenaBaseEsp} half />}
                     <Row label="¿Obligaciones difíciles?" value={yesno(e.obligacionesDificiles)} half />
                     {e.obligacionesDificiles && <Row label="Especificar" value={e.obligacionesDificilesEsp} half />}
+                </div>
                 </div>
 
                 {/* 9. Víctima */}
@@ -283,6 +393,7 @@ const PrintEntrevista = ({ entrevista: e, onCerrar }) => {
                     </p>
                 </div>
             </div>
+        </div>
         </div>
     , document.body);
 };

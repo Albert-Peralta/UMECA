@@ -55,7 +55,7 @@ const PrimerLogin = ({ onCompletado }) => {
                     {error && <div className="pl-error">{error}</div>}
 
                     <div className="pl-field">
-                        <label>Contraseña temporal (recibida por correo)</label>
+                        <label>Contraseña temporal (asignada por el administrador)</label>
                         <div className="pl-input-wrapper">
                             <input
                                 type={verPass.actual ? 'text' : 'password'}
