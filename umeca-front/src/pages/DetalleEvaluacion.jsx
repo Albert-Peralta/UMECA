@@ -36,7 +36,7 @@ const sec = (titulo) => (
 const DetalleEvaluacion = ({ evaluacion: d, onVolver, onEditar, puedeEditar }) => {
     const { user } = useAuth();
     const { showToast } = useToast();
-    const esAdmin = user?.rol === 'ADMINISTRADOR';
+    const esAdmin = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN';
     const [imprimiendo, setImprimiendo]         = useState(false);
     const [showInforme, setShowInforme]         = useState(false);
 

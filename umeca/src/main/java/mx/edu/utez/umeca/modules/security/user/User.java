@@ -69,7 +69,7 @@ public class User extends BaseEntity implements UserDetails {
     private LocalDateTime resetTokenExpiry;
 
     public enum Rol {
-        SUPERVISION, EVALUADOR_RIESGO, ADMINISTRADOR, CORRESPONDENCIA
+        SUPERVISION, EVALUADOR_RIESGO, ADMINISTRADOR, CORRESPONDENCIA, SUPERADMIN
     }
 
     public enum Zona {

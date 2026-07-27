@@ -58,7 +58,7 @@ export default function ReporteDiario() {
     const { showToast } = useToast();
     const rol = user?.rol;
 
-    const esAdmin = rol === 'ADMINISTRADOR';
+    const esAdmin = rol === 'ADMINISTRADOR' || rol === 'SUPERADMIN';
     const esSuper = rol === 'SUPERVISION';
     const esEval  = rol === 'EVALUADOR_RIESGO';
 

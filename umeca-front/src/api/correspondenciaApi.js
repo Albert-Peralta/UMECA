@@ -18,6 +18,18 @@ export const crearCorrespondencia = (datos, archivo) => {
     });
 };
 
+export const editarCorrespondencia = (id, datos, archivo) => {
+    const form = new FormData();
+    form.append('datos', JSON.stringify(datos));
+    if (archivo) form.append('archivo', archivo);
+    return api.put(`/correspondencia/${id}`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+};
+
+export const eliminarCorrespondencia = (id) =>
+    api.delete(`/correspondencia/${id}`);
+
 export const getPersonalAsignable = () =>
     api.get('/correspondencia/personal-asignable');
 

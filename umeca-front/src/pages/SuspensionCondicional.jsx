@@ -19,7 +19,7 @@ const campoVacio = {
 export default function SuspensionCondicional() {
     const { showToast } = useToast();
     const { user } = useAuth();
-    const esAdmin = user?.rol === 'ADMINISTRADOR';
+    const esAdmin = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN';
     const puedeEditar = esAdmin || user?.rol === 'SUPERVISION' || user?.rol === 'EVALUADOR_RIESGO';
 
     const [lista,   setLista]   = useState([]);

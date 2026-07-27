@@ -22,7 +22,7 @@ public class ExpedienteAnteriorController {
      * Params: tipo (MC|SCP|HISTORICO), zona (XOCHITEPEC|CUAUTLA|JOJUTLA)
      */
     @PostMapping("/importar-excel")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR')")
     public ResponseEntity<ApiResponse> importarExcel(
             @RequestParam("archivo") MultipartFile archivo,
             @RequestParam("zona") String zona) {
@@ -39,7 +39,7 @@ public class ExpedienteAnteriorController {
      * El archivo tiene formato simple 4 columnas (CAUSA PENAL, NOMBRE, FECHA, SITUACION JURIDICA).
      */
     @PostMapping("/importar-registro-historico")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR')")
     public ResponseEntity<ApiResponse> importarRegistroHistorico(
             @RequestParam("archivo") MultipartFile archivo,
             @RequestParam(value = "zona", required = false) String zona) {
@@ -51,7 +51,7 @@ public class ExpedienteAnteriorController {
      * El archivo contiene 3 hojas (CUERNAVACA/JOJUTLA/CUAUTLA) con zona en el nombre de la hoja.
      */
     @PostMapping("/importar-sustraidos")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR')")
     public ResponseEntity<ApiResponse> importarSustraidos(
             @RequestParam("archivo") MultipartFile archivo) {
         return ResponseEntity.ok(service.importarSustraidos(archivo));
@@ -61,21 +61,21 @@ public class ExpedienteAnteriorController {
      * Importación masiva por JSON — solo ADMINISTRADOR.
      */
     @PostMapping("/importar")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR')")
     public ResponseEntity<ApiResponse> importar(@RequestBody List<ExpedienteAnteriorDTO> dtos) {
         return ResponseEntity.ok(service.importar(dtos, "manual"));
     }
 
     /** Lista todos los lotes de importación — solo ADMINISTRADOR */
     @GetMapping("/lotes")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR')")
     public ResponseEntity<ApiResponse> listarLotes() {
         return ResponseEntity.ok(service.listarLotes());
     }
 
     /** Elimina un lote completo y todos sus expedientes — solo ADMINISTRADOR */
     @DeleteMapping("/lotes/{id}")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR')")
     public ResponseEntity<ApiResponse> eliminarLote(@PathVariable Long id) {
         return ResponseEntity.ok(service.eliminarLote(id));
     }

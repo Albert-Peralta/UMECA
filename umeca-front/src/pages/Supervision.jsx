@@ -71,8 +71,8 @@ const FORM_VACIO = {
 const Supervision = () => {
     const { user } = useAuth();
     const { showToast } = useToast();
-    const puedeEditar  = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERVISION';
-    const puedeEliminar = user?.rol === 'ADMINISTRADOR';
+    const puedeEditar  = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION';
+    const puedeEliminar = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN';
 
     // Vista: 'agenda' | 'buscar'
     const [vista, setVista] = useState('agenda');

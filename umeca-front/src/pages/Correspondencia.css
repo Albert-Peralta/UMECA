@@ -193,16 +193,22 @@
 
 /* ── Acciones tabla ─────────────────────────────────────── */
 .corr-acciones { display: flex; gap: 6px; align-items: center; justify-content: center; }
-.corr-btn-ver, .corr-btn-asignar, .corr-btn-quitar {
+.corr-btn-ver, .corr-btn-asignar, .corr-btn-quitar, .corr-btn-editar, .corr-btn-eliminar {
     border: none; border-radius: 6px; padding: 5px 9px; cursor: pointer;
     font-size: 0.85rem; display: inline-flex; align-items: center; transition: opacity 0.15s;
 }
-.corr-btn-ver     { background: #e0f2fe; color: #0369a1; }
-.corr-btn-ver:hover { background: #bae6fd; }
-.corr-btn-asignar { background: #d1fae5; color: #065f46; }
+.corr-btn-ver      { background: #e0f2fe; color: #0369a1; }
+.corr-btn-ver:hover  { background: #bae6fd; }
+.corr-btn-asignar  { background: #d1fae5; color: #065f46; }
 .corr-btn-asignar:hover { background: #a7f3d0; }
-.corr-btn-quitar  { background: #fee2e2; color: #991b1b; }
+.corr-btn-quitar   { background: #fee2e2; color: #991b1b; }
 .corr-btn-quitar:hover { background: #fecaca; }
+.corr-btn-editar   { background: #fef9c3; color: #854d0e; }
+.corr-btn-editar:hover { background: #fef08a; }
+.corr-btn-eliminar { background: #fee2e2; color: #7f1d1d; }
+.corr-btn-eliminar:hover { background: #fca5a5; }
+
+.corr-modal-icon-danger { background: #fee2e2; color: #dc2626; }
 
 
 /* ── Formulario ─────────────────────────────────────────── */
@@ -265,6 +271,21 @@
 }
 .corr-field { display: flex; flex-direction: column; gap: 5px; }
 .corr-field-full { grid-column: 1 / -1; }
+.corr-field-error input,
+.corr-field-error select,
+.corr-field-error textarea { border-color: #ef4444 !important; background: #fff5f5 !important; }
+.corr-field-error label { color: #ef4444; }
+.corr-field-error label i { color: #ef4444; }
+.corr-field-msg-error { font-size: 0.75rem; color: #ef4444; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+.corr-field-msg-error::before { content: '⚠'; }
+.corr-dropzone-error { border-color: #ef4444 !important; background: #fff5f5 !important; }
+.corr-btn-quitar-pdf {
+    margin-top: 8px; padding: 5px 12px; border-radius: 6px; border: 1.5px solid #dc2626;
+    background: #fff; color: #dc2626; font-size: 0.78rem; font-weight: 600;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+    transition: background 0.15s, color 0.15s; z-index: 2; position: relative;
+}
+.corr-btn-quitar-pdf:hover { background: #fee2e2; }
 .corr-field label {
     font-size: 0.75rem; font-weight: 700; color: #4b5563;
     text-transform: uppercase; letter-spacing: 0.4px;
@@ -357,10 +378,12 @@
 .corr-modal-icon-asig   { background: #dbeafe; color: #1e40af; }
 .corr-modal-icon-danger { background: #fee2e2; color: #b91c1c; }
 .corr-modal-btn-danger {
-    flex: 1; padding: 9px; border: none; background: #dc2626;
+    flex: 1; padding: 9px 14px; border: none; background: #dc2626;
     color: #fff; border-radius: 8px; font-size: 0.88rem; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
 }
 .corr-modal-btn-danger:hover { background: #b91c1c; }
+.corr-modal-btn-danger:disabled { opacity: 0.6; cursor: not-allowed; }
 .corr-modal-titulo { font-size: 1.1rem; font-weight: 700; color: #1a2e22; margin: 0 0 0.5rem; }
 .corr-modal-desc { font-size: 0.88rem; color: #4a5568; margin: 0 0 1rem; }
 .corr-modal-archivo { font-size: 0.8rem; color: #6b7280; margin-bottom: 1rem; }
@@ -384,6 +407,58 @@
 .corr-modal-info-label i { margin-right: 3px; }
 .corr-modal-info-val { color: #1f2937; font-weight: 500; line-height: 1.4; }
 .corr-modal-info-asunto { color: #374151; line-height: 1.5; font-size: 0.8rem; }
+
+/* ── Modal Danger (eliminar) ─────────────────────────────── */
+.corr-modal-box-danger {
+    padding: 0; overflow: hidden; text-align: left;
+    border-top: 4px solid #dc2626;
+}
+.corr-modal-danger-header {
+    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+    padding: 1.2rem 1.5rem;
+    display: flex; align-items: center; gap: 14px;
+}
+.corr-modal-danger-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: rgba(255,255,255,0.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; color: #fff; flex-shrink: 0;
+}
+.corr-modal-danger-titulo {
+    font-size: 1.05rem; font-weight: 700; color: #fff;
+    margin: 0 0 2px;
+}
+.corr-modal-danger-sub {
+    font-size: 0.78rem; color: rgba(255,255,255,0.8); margin: 0;
+}
+.corr-modal-danger-body { padding: 1.3rem 1.5rem 1.5rem; }
+.corr-modal-danger-aviso {
+    font-size: 0.83rem; color: #7f1d1d; background: #fff5f5;
+    border: 1px solid #fecaca; border-radius: 8px;
+    padding: 9px 12px; margin: 0 0 1rem;
+    display: flex; align-items: flex-start; gap: 7px; line-height: 1.4;
+}
+.corr-modal-danger-aviso i { color: #dc2626; flex-shrink: 0; margin-top: 1px; }
+.corr-modal-danger-card {
+    background: #fafafa; border: 1.5px solid #fecaca; border-radius: 10px;
+    overflow: hidden; margin-bottom: 1.3rem;
+}
+.corr-modal-danger-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; font-size: 0.83rem;
+}
+.corr-modal-danger-row-col { flex-direction: column; align-items: flex-start; gap: 4px; }
+.corr-modal-danger-divider { height: 1px; background: #fecaca; }
+.corr-modal-danger-lbl {
+    font-size: 0.72rem; font-weight: 700; color: #9f1239;
+    text-transform: uppercase; letter-spacing: 0.4px;
+    display: flex; align-items: center; gap: 4px; white-space: nowrap;
+}
+.corr-modal-danger-val { color: #1f2937; font-weight: 500; line-height: 1.4; font-size: 0.85rem; }
+.corr-modal-danger-turno {
+    background: #fee2e2; color: #991b1b; font-weight: 700;
+    padding: 2px 10px; border-radius: 20px; font-size: 0.82rem;
+}
 .corr-modal-select-label {
     display: block; font-size: 0.82rem; font-weight: 600; color: #374151; margin-bottom: 6px;
     text-align: left;
@@ -395,8 +470,9 @@
 }
 .corr-modal-acciones { display: flex; gap: 10px; justify-content: center; }
 .corr-modal-btn-cancelar {
-    flex: 1; padding: 9px; border: 1.5px solid #d1d5db; background: #fff;
+    flex: 1; padding: 9px 14px; border: 1.5px solid #d1d5db; background: #fff;
     color: #374151; border-radius: 8px; font-size: 0.88rem; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
 }
 .corr-modal-btn-cancelar:hover { background: #f3f4f6; }
 .corr-modal-btn-confirmar {

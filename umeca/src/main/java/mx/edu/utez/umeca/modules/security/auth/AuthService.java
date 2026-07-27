@@ -64,6 +64,7 @@ public class AuthService {
             data.put("identificador", user.getIdentificador());
             data.put("rol", user.getRol());
             data.put("zona", user.getZona());
+            data.put("username", user.getUsername());
             data.put("primerLogin", user.isPrimerLogin());
 
             return new ApiResponse(true, "Inicio de sesión exitoso", data);

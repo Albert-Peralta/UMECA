@@ -65,8 +65,8 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const puedeEditar  = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERVISION';
-    const esAdmin      = user?.rol === 'ADMINISTRADOR';
+    const puedeEditar  = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION';
+    const esAdmin      = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN';
     const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
 
     // ── Acciones exclusivas del Admin ──

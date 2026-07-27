@@ -20,20 +20,20 @@ public class EvaluacionRiesgoController {
 
     /** Lista todas las evaluaciones, más recientes primero. */
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')")
     public ResponseEntity<ApiResponse> findAll() {
         return ResponseEntity.ok(evaluacionService.findAll());
     }
 
     /** Búsqueda por nombre, apellido o causa penal. */
     @GetMapping("/buscar")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')")
     public ResponseEntity<ApiResponse> buscar(@RequestParam String termino) {
         return ResponseEntity.ok(evaluacionService.buscar(termino));
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')")
     public ResponseEntity<ApiResponse> save(@RequestBody EvaluacionRiesgoDTO dto) {
         ApiResponse response = evaluacionService.save(dto);
         return response.isOk()
@@ -42,7 +42,7 @@ public class EvaluacionRiesgoController {
     }
 
     @PatchMapping("/{id}/estatus")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> cambiarEstatus(@PathVariable Long id,
                                                       @RequestParam String estatus) {
         ApiResponse response = evaluacionService.cambiarEstatus(id, estatus);
@@ -52,7 +52,7 @@ public class EvaluacionRiesgoController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')")
     public ResponseEntity<ApiResponse> findById(@PathVariable Long id) {
         ApiResponse response = evaluacionService.findById(id);
         return response.isOk()
@@ -61,7 +61,7 @@ public class EvaluacionRiesgoController {
     }
 
     @PatchMapping("/{id}/evaluador")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> asignarEvaluador(@PathVariable Long id) {
         ApiResponse response = evaluacionService.asignarEvaluador(id);
         return response.isOk()
@@ -70,7 +70,7 @@ public class EvaluacionRiesgoController {
     }
 
     @PatchMapping("/{id}/resultado")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> asignarResultado(@PathVariable Long id,
                                                         @RequestParam String resultado) {
         ApiResponse response = evaluacionService.asignarResultado(id, resultado);
@@ -81,7 +81,7 @@ public class EvaluacionRiesgoController {
 
     /** Registra que el imputado se negó a ser entrevistado. */
     @PostMapping("/negacion")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')")
     public ResponseEntity<ApiResponse> saveNegacion(@RequestBody NegacionDTO dto) {
         ApiResponse response = evaluacionService.saveNegacion(dto);
         return response.isOk()
@@ -90,13 +90,13 @@ public class EvaluacionRiesgoController {
     }
 
     @GetMapping("/imputado/{imputadoId}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')")
     public ResponseEntity<ApiResponse> findByImputado(@PathVariable Long imputadoId) {
         return ResponseEntity.ok(evaluacionService.findByImputado(imputadoId));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')")
     public ResponseEntity<ApiResponse> update(@PathVariable Long id,
                                               @RequestBody EvaluacionRiesgoDTO dto) {
         ApiResponse response = evaluacionService.update(id, dto);
@@ -106,7 +106,7 @@ public class EvaluacionRiesgoController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
     public ResponseEntity<ApiResponse> eliminar(@PathVariable Long id) {
         ApiResponse response = evaluacionService.eliminar(id);
         return response.isOk()

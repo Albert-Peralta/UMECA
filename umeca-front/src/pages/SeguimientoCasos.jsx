@@ -23,8 +23,8 @@ const estadoConfig = {
 const SeguimientoCasos = () => {
     const { user } = useAuth();
     const { showToast } = useToast();
-    const puedeRegistrar   = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERVISION';
-    const puedeSeguimiento = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERVISION' || user?.rol === 'EVALUADOR_RIESGO';
+    const puedeRegistrar   = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION';
+    const puedeSeguimiento = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION' || user?.rol === 'EVALUADOR_RIESGO';
 
     // ── Alerta de vencimiento SCP ─────────────────────────────────────────────
     // Prioridad de plazo: nuevo plazo acordado > vencimiento calculado > plazo original

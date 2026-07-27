@@ -19,7 +19,7 @@ public class SeguimientoController {
 
     // Registrar seguimiento (desde cualquier sección)
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> registrar(@RequestBody SeguimientoDTO dto) {
         ApiResponse res = service.registrar(dto);
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
@@ -27,35 +27,35 @@ public class SeguimientoController {
 
     // Todos los seguimientos de un imputado (para expediente)
     @GetMapping("/imputado/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> porImputado(@PathVariable Long id) {
         return ResponseEntity.ok(service.getPorImputado(id));
     }
 
     // Seguimientos de una medida
     @GetMapping("/medida/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> porMedida(@PathVariable Long id) {
         return ResponseEntity.ok(service.getPorMedida(id));
     }
 
     // Seguimientos de una entrevista
     @GetMapping("/entrevista/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> porEntrevista(@PathVariable Long id) {
         return ResponseEntity.ok(service.getPorEntrevista(id));
     }
 
     // Seguimientos de una evaluación
     @GetMapping("/evaluacion/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> porEvaluacion(@PathVariable Long id) {
         return ResponseEntity.ok(service.getPorEvaluacion(id));
     }
 
     // Reporte automático por fecha y zona (vista propia del usuario)
     @GetMapping("/reporte-automatico")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> reporteAutomatico(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
             @RequestParam User.Zona zona) {
@@ -64,7 +64,7 @@ public class SeguimientoController {
 
     // Reporte consolidado por zona para el admin (rango de fechas)
     @GetMapping("/reporte-consolidado")
-    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
     public ResponseEntity<ApiResponse> reporteConsolidado(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {

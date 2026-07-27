@@ -16,19 +16,19 @@ public class ConsultaRegistroController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> listar() {
         return ResponseEntity.ok(service.listar());
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> obtener(@PathVariable Long id) {
         return ResponseEntity.ok(service.obtener(id));
     }
 
     @GetMapping("/antecedentes")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> antecedentes(
             @RequestParam(required = false) String curp,
             @RequestParam(required = false) String nombre,
@@ -37,19 +37,19 @@ public class ConsultaRegistroController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> crear(@RequestBody ConsultaRegistroDTO dto) {
         return ResponseEntity.ok(service.crear(dto));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> actualizar(@PathVariable Long id, @RequestBody ConsultaRegistroDTO dto) {
         return ResponseEntity.ok(service.actualizar(id, dto));
     }
 
     @GetMapping("/registros")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> buscarRegistros(
             @RequestParam(required = false) String curp,
             @RequestParam(required = false) String nombre,
@@ -59,7 +59,7 @@ public class ConsultaRegistroController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR')")
     public ResponseEntity<ApiResponse> eliminar(@PathVariable Long id) {
         return ResponseEntity.ok(service.eliminar(id));
     }

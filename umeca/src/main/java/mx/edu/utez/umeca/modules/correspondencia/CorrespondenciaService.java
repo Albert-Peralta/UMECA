@@ -120,6 +120,36 @@ public class CorrespondenciaService {
         return new ApiResponse(true, "Correspondencia registrada correctamente", CorrespondenciaResponseDTO.from(saved));
     }
 
+    // ── Editar ────────────────────────────────────────────────────────────────
+    @Transactional
+    public ApiResponse editar(Long id, CorrespondenciaDTO dto, MultipartFile archivo) {
+        return repository.findById(id).map(c -> {
+            String cambios = "Oficio editado. Asunto: " + dto.getAsunto();
+            mapDto(dto, c);
+            if (archivo != null && !archivo.isEmpty()) {
+                try { c.setArchivoPdf(guardarPdf(archivo)); }
+                catch (IOException e) { return new ApiResponse(false, "Error al guardar el archivo PDF"); }
+            }
+            Correspondencia saved = repository.save(c);
+            bitacoraService.registrar(Bitacora.Entidad.CORRESPONDENCIA, saved.getId(),
+                    saved.getNoTurno(), Bitacora.Accion.EDITAR, cambios);
+            return new ApiResponse(true, "Correspondencia actualizada correctamente", CorrespondenciaResponseDTO.from(saved));
+        }).orElse(new ApiResponse(false, "Registro no encontrado"));
+    }
+
+    // ── Eliminar ──────────────────────────────────────────────────────────────
+    @Transactional
+    public ApiResponse eliminar(Long id) {
+        return repository.findById(id).map(c -> {
+            String turno = c.getNoTurno();
+            bitacoraService.registrar(Bitacora.Entidad.CORRESPONDENCIA, id,
+                    turno, Bitacora.Accion.ELIMINAR,
+                    "Correspondencia eliminada. Asunto: " + c.getAsunto());
+            repository.deleteById(id);
+            return new ApiResponse(true, "Correspondencia eliminada correctamente");
+        }).orElse(new ApiResponse(false, "Registro no encontrado"));
+    }
+
     // ── Obtener personal asignable ────────────────────────────────────────────
     @Transactional(readOnly = true)
     public ApiResponse getPersonalAsignable() {

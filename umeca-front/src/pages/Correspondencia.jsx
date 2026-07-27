@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import {
     getCorrespondencia, getMisAsignados, getMisRegistros, crearCorrespondencia,
+    editarCorrespondencia, eliminarCorrespondencia,
     getPersonalAsignable, asignarCorrespondencia, quitarAsignacion,
     cambiarEstadoCorrespondencia, getContadoresCorrespondencia, exportarCorrespondenciaExcel,
     SEDES, TIPOS, PRIORIDADES, ESTADOS_PERSONAL, ESTADO_CONFIG, PRIORIDAD_CONFIG,
@@ -20,9 +21,10 @@ const FORM_VACIO = {
 export default function Correspondencia() {
     const { user } = useAuth();
     const { showToast } = useToast();
-    const esAdmin        = user?.rol === 'ADMINISTRADOR';
-    const esCorrespondencia = user?.rol === 'CORRESPONDENCIA';
-    const esPersonal     = user?.rol === 'SUPERVISION' || user?.rol === 'EVALUADOR_RIESGO';
+    const esAdmin           = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN';
+    const esCorrespondencia = user?.rol === 'CORRESPONDENCIA'; // solo para ver "mis registros"
+    const puedeRegistrar    = esCorrespondencia || esAdmin;    // puede crear nuevo oficio
+    const esPersonal        = user?.rol === 'SUPERVISION' || user?.rol === 'EVALUADOR_RIESGO';
 
     const [lista,    setLista]    = useState([]);
     const [buscar,   setBuscar]   = useState('');
@@ -38,6 +40,7 @@ export default function Correspondencia() {
     const [archivo,  setArchivo]  = useState(null);
     const [showConfirm, setShowConfirm] = useState(false);
     const [loadingGuardar, setLoadingGuardar] = useState(false);
+    const [erroresCampo, setErroresCampo] = useState({});
 
     // Asignación (admin)
     const [personal,      setPersonal]      = useState([]);
@@ -47,6 +50,13 @@ export default function Correspondencia() {
     const [registroAsig,    setRegistroAsig]    = useState(null);
     const [showQuitarModal, setShowQuitarModal] = useState(false);
     const [registroQuitar,  setRegistroQuitar]  = useState(null);
+
+    // Editar / Eliminar (solo admin y superadmin)
+    const [modoEditar,       setModoEditar]       = useState(false);
+    const [registroEditar,   setRegistroEditar]   = useState(null);
+    const [showEliminarModal,setShowEliminarModal] = useState(false);
+    const [registroEliminar, setRegistroEliminar] = useState(null);
+    const [loadingEliminar,  setLoadingEliminar]  = useState(false);
 
     // PDF con auth
     const [loadingPdf, setLoadingPdf] = useState(false);
@@ -111,13 +121,82 @@ export default function Correspondencia() {
     };
 
     const validarForm = () => {
-        if (!form.sede) return 'Selecciona una sede';
-        if (!form.tipo) return 'Selecciona el tipo';
-        if (!form.remitente?.trim()) return 'El remitente es requerido';
-        if (!form.asunto?.trim()) return 'El asunto es requerido';
-        if (!form.prioridad) return 'Selecciona la prioridad';
-        if (!archivo) return 'El archivo PDF es obligatorio';
+        const errs = {};
+        if (!form.sede)              errs.sede      = 'Selecciona una sede';
+        if (!form.tipo)              errs.tipo      = 'Selecciona el tipo';
+        if (!form.remitente?.trim()) errs.remitente = 'El remitente es requerido';
+        if (!form.asunto?.trim())    errs.asunto    = 'El asunto es requerido';
+        if (!form.prioridad)         errs.prioridad = 'Selecciona la prioridad';
+        if (!modoEditar && !archivo) errs.archivo   = 'El archivo PDF es obligatorio';
+        setErroresCampo(errs);
+        const primerCampo = Object.keys(errs)[0];
+        if (primerCampo) {
+            const el = document.getElementById(`corr-field-${primerCampo}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return Object.values(errs)[0];
+        }
         return null;
+    };
+
+    // ── Editar (admin/superadmin) ───────────────────────────────────────────
+    const abrirEditar = (reg) => {
+        setRegistroEditar(reg);
+        setForm({
+            sede:                reg.sede || '',
+            noOficio:            reg.noOficio || '',
+            fechaOficio:         reg.fechaOficio || '',
+            fechaRecibido:       reg.fechaRecibido || '',
+            tipo:                reg.tipo || '',
+            remitente:           reg.remitente || '',
+            asunto:              reg.asunto || '',
+            terminoRespuestaHoras: reg.terminoRespuestaHoras || '',
+            requiereRespuesta:   reg.requiereRespuesta || false,
+            prioridad:           reg.prioridad || '',
+        });
+        setArchivo(null);
+        setModoEditar(true);
+        setVista('form');
+    };
+
+    const handleEditar = async () => {
+        setLoadingGuardar(true);
+        try {
+            const res = await editarCorrespondencia(
+                registroEditar.id,
+                { ...form, terminoRespuestaHoras: form.terminoRespuestaHoras || null },
+                archivo
+            );
+            if (res.data.ok) {
+                showToast('Registro actualizado correctamente');
+                setVista('lista');
+                setForm(FORM_VACIO);
+                setArchivo(null);
+                setModoEditar(false);
+                setRegistroEditar(null);
+                cargar();
+            } else showToast(res.data.message || 'Error al editar', 'error');
+        } catch { showToast('Error de conexión', 'error'); }
+        finally { setLoadingGuardar(false); }
+    };
+
+    // ── Eliminar (admin/superadmin) ─────────────────────────────────────────
+    const abrirEliminar = (reg) => {
+        setRegistroEliminar(reg);
+        setShowEliminarModal(true);
+    };
+
+    const handleEliminar = async () => {
+        setLoadingEliminar(true);
+        try {
+            const res = await eliminarCorrespondencia(registroEliminar.id);
+            if (res.data.ok) {
+                showToast('Registro eliminado correctamente');
+                setShowEliminarModal(false);
+                setRegistroEliminar(null);
+                cargar();
+            } else showToast(res.data.message || 'Error al eliminar', 'error');
+        } catch { showToast('Error de conexión', 'error'); }
+        finally { setLoadingEliminar(false); }
     };
 
     // ── Asignar (admin) ─────────────────────────────────────────────────────
@@ -253,7 +332,7 @@ export default function Correspondencia() {
         return (
             <div className="corr-container">
                 <div className="corr-form-header">
-                    <button className="corr-btn-volver" onClick={() => { setVista('lista'); setForm(FORM_VACIO); setArchivo(null); }}>
+                    <button className="corr-btn-volver" onClick={() => { setVista('lista'); setForm(FORM_VACIO); setArchivo(null); setModoEditar(false); setRegistroEditar(null); setErroresCampo({}); }}>
                         <i className="bi bi-arrow-left" /> Cancelar
                     </button>
                 </div>
@@ -261,11 +340,11 @@ export default function Correspondencia() {
                 {/* Banner */}
                 <div className="corr-form-banner">
                     <div className="corr-form-banner-icon">
-                        <i className="bi bi-envelope-paper-fill" />
+                        <i className={`bi ${modoEditar ? 'bi-pencil-square' : 'bi-envelope-paper-fill'}`} />
                     </div>
                     <div className="corr-form-banner-texto">
-                        <h3>Nuevo Registro de Correspondencia</h3>
-                        <p>Completa los datos del oficio o documento recibido</p>
+                        <h3>{modoEditar ? `Editar Registro — ${registroEditar?.noTurno}` : 'Nuevo Registro de Correspondencia'}</h3>
+                        <p>{modoEditar ? 'Modifica los datos del oficio o documento' : 'Completa los datos del oficio o documento recibido'}</p>
                     </div>
                 </div>
 
@@ -275,12 +354,13 @@ export default function Correspondencia() {
                     {/* Sección: Identificación */}
                     <div className="corr-form-seccion"><span><i className="bi bi-building" /> Identificación del documento</span></div>
 
-                    <div className="corr-field">
+                    <div id="corr-field-sede" className={`corr-field ${erroresCampo.sede ? 'corr-field-error' : ''}`}>
                         <label><i className="bi bi-geo-alt" /> Sede *</label>
-                        <select value={form.sede} onChange={e => setForm(f => ({ ...f, sede: e.target.value }))}>
+                        <select value={form.sede} onChange={e => { setForm(f => ({ ...f, sede: e.target.value })); setErroresCampo(er => ({ ...er, sede: '' })); }}>
                             <option value="">Seleccionar sede...</option>
                             {SEDES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                         </select>
+                        {erroresCampo.sede && <span className="corr-field-msg-error">{erroresCampo.sede}</span>}
                     </div>
                     <div className="corr-field">
                         <label><i className="bi bi-hash" /> No. de Oficio</label>
@@ -294,30 +374,34 @@ export default function Correspondencia() {
                         <label><i className="bi bi-calendar-check" /> Fecha de Recibido</label>
                         <input type="date" value={form.fechaRecibido} onChange={e => setForm(f => ({ ...f, fechaRecibido: e.target.value }))} />
                     </div>
-                    <div className="corr-field">
+                    <div id="corr-field-tipo" className={`corr-field ${erroresCampo.tipo ? 'corr-field-error' : ''}`}>
                         <label><i className="bi bi-tag" /> Tipo *</label>
-                        <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}>
+                        <select value={form.tipo} onChange={e => { setForm(f => ({ ...f, tipo: e.target.value })); setErroresCampo(er => ({ ...er, tipo: '' })); }}>
                             <option value="">Seleccionar tipo...</option>
                             {TIPOS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                         </select>
+                        {erroresCampo.tipo && <span className="corr-field-msg-error">{erroresCampo.tipo}</span>}
                     </div>
-                    <div className="corr-field">
+                    <div id="corr-field-prioridad" className={`corr-field ${erroresCampo.prioridad ? 'corr-field-error' : ''}`}>
                         <label><i className="bi bi-flag" /> Prioridad *</label>
-                        <select value={form.prioridad} onChange={e => setForm(f => ({ ...f, prioridad: e.target.value }))}>
+                        <select value={form.prioridad} onChange={e => { setForm(f => ({ ...f, prioridad: e.target.value })); setErroresCampo(er => ({ ...er, prioridad: '' })); }}>
                             {PRIORIDADES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
                         </select>
+                        {erroresCampo.prioridad && <span className="corr-field-msg-error">{erroresCampo.prioridad}</span>}
                     </div>
 
                     {/* Sección: Contenido */}
                     <div className="corr-form-seccion"><span><i className="bi bi-file-text" /> Contenido</span></div>
 
-                    <div className="corr-field corr-field-full">
+                    <div id="corr-field-remitente" className={`corr-field corr-field-full ${erroresCampo.remitente ? 'corr-field-error' : ''}`}>
                         <label><i className="bi bi-person" /> Remitente *</label>
-                        <input value={form.remitente} onChange={e => setForm(f => ({ ...f, remitente: e.target.value }))} placeholder="Nombre o institución que envía" />
+                        <input value={form.remitente} onChange={e => { setForm(f => ({ ...f, remitente: e.target.value })); setErroresCampo(er => ({ ...er, remitente: '' })); }} placeholder="Nombre o institución que envía" />
+                        {erroresCampo.remitente && <span className="corr-field-msg-error">{erroresCampo.remitente}</span>}
                     </div>
-                    <div className="corr-field corr-field-full">
+                    <div id="corr-field-asunto" className={`corr-field corr-field-full ${erroresCampo.asunto ? 'corr-field-error' : ''}`}>
                         <label><i className="bi bi-chat-text" /> Asunto *</label>
-                        <textarea rows={3} value={form.asunto} onChange={e => setForm(f => ({ ...f, asunto: e.target.value }))} placeholder="Descripción del asunto o motivo del documento..." />
+                        <textarea rows={3} value={form.asunto} onChange={e => { setForm(f => ({ ...f, asunto: e.target.value })); setErroresCampo(er => ({ ...er, asunto: '' })); }} placeholder="Descripción del asunto o motivo del documento..." />
+                        {erroresCampo.asunto && <span className="corr-field-msg-error">{erroresCampo.asunto}</span>}
                     </div>
 
                     {/* Sección: Respuesta y archivo */}
@@ -333,36 +417,65 @@ export default function Correspondencia() {
                             {form.requiereRespuesta ? 'Requiere Término de Respuesta: SÍ' : 'Requiere Término de Respuesta: NO'}
                         </button>
                     </div>
-                    <div className="corr-field corr-field-full">
-                        <label><i className="bi bi-file-earmark-pdf" /> Archivo PDF *</label>
-                        <label className="corr-dropzone">
+                    <div id="corr-field-archivo" className={`corr-field corr-field-full ${erroresCampo.archivo ? 'corr-field-error' : ''}`}>
+                        <label><i className="bi bi-file-earmark-pdf" /> Archivo PDF {!modoEditar && '*'}</label>
+                        <label className={`corr-dropzone ${erroresCampo.archivo ? 'corr-dropzone-error' : ''}`}>
                             <input type="file" accept="application/pdf"
-                                onChange={e => setArchivo(e.target.files[0] || null)} />
+                                onChange={e => { setArchivo(e.target.files[0] || null); setErroresCampo(er => ({ ...er, archivo: '' })); }} />
                             {archivo ? (
                                 <>
                                     <i className="bi bi-file-earmark-pdf-fill corr-dropzone-icon corr-dropzone-icon-ok" />
                                     <span className="corr-dropzone-nombre">{archivo.name}</span>
-                                    <span className="corr-dropzone-sub">Haz clic para cambiar el archivo</span>
+                                    <span className="corr-dropzone-sub">
+                                        {modoEditar
+                                            ? '✅ Este archivo reemplazará al PDF actual al guardar'
+                                            : 'Haz clic para cambiar el archivo'}
+                                    </span>
+                                    {modoEditar && registroEditar?.archivoPdf && (
+                                        <button
+                                            className="corr-btn-quitar-pdf"
+                                            onClick={e => { e.preventDefault(); e.stopPropagation(); setArchivo(null); }}
+                                        >
+                                            <i className="bi bi-arrow-counterclockwise" /> Restaurar PDF original
+                                        </button>
+                                    )}
+                                </>
+                            ) : modoEditar && registroEditar?.archivoPdf ? (
+                                <>
+                                    <i className="bi bi-file-earmark-pdf-fill corr-dropzone-icon" style={{ color: '#2d6a4f' }} />
+                                    <span className="corr-dropzone-nombre">
+                                        {registroEditar.archivoPdf.split('/').pop().split('_').slice(1).join('_') || registroEditar.archivoPdf.split('/').pop()}
+                                    </span>
+                                    <span className="corr-dropzone-sub">📎 PDF actual · Haz clic para reemplazarlo por uno nuevo</span>
                                 </>
                             ) : (
                                 <>
                                     <i className="bi bi-cloud-upload corr-dropzone-icon" />
                                     <span className="corr-dropzone-titulo">Arrastra o haz clic para subir</span>
-                                    <span className="corr-dropzone-sub">Solo archivos PDF · Obligatorio</span>
+                                    <span className="corr-dropzone-sub">Solo archivos PDF · {modoEditar ? 'Sin PDF adjunto actualmente' : 'Obligatorio'}</span>
                                 </>
                             )}
                         </label>
+                        {erroresCampo.archivo && <span className="corr-field-msg-error">{erroresCampo.archivo}</span>}
                     </div>
                 </div>
                 </div>
 
                 <div className="corr-form-actions">
                     <button className="corr-btn-guardar" onClick={() => {
-                        const err = validarForm();
+                        const err = modoEditar
+                            ? (!form.sede || !form.tipo || !form.remitente?.trim() || !form.asunto?.trim() || !form.prioridad ? 'Completa los campos obligatorios' : null)
+                            : validarForm();
                         if (err) { showToast(err, 'error'); return; }
-                        setShowConfirm(true);
-                    }}>
-                        <i className="bi bi-send-fill" /> Enviar al Administrador
+                        if (modoEditar) handleEditar();
+                        else setShowConfirm(true);
+                    }} disabled={loadingGuardar}>
+                        {loadingGuardar
+                            ? <><i className="bi bi-arrow-repeat corr-spin" /> Guardando...</>
+                            : modoEditar
+                                ? <><i className="bi bi-floppy-fill" /> Guardar Cambios</>
+                                : <><i className="bi bi-send-fill" /> Enviar al Administrador</>
+                        }
                     </button>
                 </div>
 
@@ -606,7 +719,7 @@ export default function Correspondencia() {
                     onChange={e => { setBuscar(e.target.value); setPagina(1); }}
                 />
                 {/* Contador con filtro de periodo — solo admin y correspondencia */}
-                {(esAdmin || esCorrespondencia) && <div className="corr-hoy-wrap" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setShowContMenu(false); }} tabIndex={-1}>
+                {puedeRegistrar && <div className="corr-hoy-wrap" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setShowContMenu(false); }} tabIndex={-1}>
                     <button className="corr-hoy-badge" onClick={() => setShowContMenu(v => !v)}>
                         <div className="corr-hoy-top">
                             <i className="bi bi-calendar-day" />
@@ -671,12 +784,12 @@ export default function Correspondencia() {
                     )}
                 </div>}
                 {/* Exportar Excel — solo admin y correspondencia */}
-                {(esAdmin || esCorrespondencia) && <button className="corr-btn-exportar" onClick={handleExportar} disabled={exportando} title="Exportar a Excel">
+                {puedeRegistrar && <button className="corr-btn-exportar" onClick={handleExportar} disabled={exportando} title="Exportar a Excel">
                     {exportando
                         ? <><i className="bi bi-arrow-repeat corr-spin" /> Exportando...</>
                         : <><i className="bi bi-file-earmark-excel" /> Excel</>}
                 </button>}
-                {esCorrespondencia && (
+                {puedeRegistrar && (
                     <button className="corr-btn-nuevo" onClick={() => setVista('form')}>
                         <i className="bi bi-plus-lg" /> Nuevo Registro
                     </button>
@@ -754,6 +867,18 @@ export default function Correspondencia() {
                                                     <i className="bi bi-person-check" />
                                                 </button>
                                             )
+                                        )}
+                                        {esAdmin && (
+                                            <>
+                                                <button className="corr-btn-editar" title="Editar"
+                                                    onClick={() => abrirEditar(r)}>
+                                                    <i className="bi bi-pencil-fill" />
+                                                </button>
+                                                <button className="corr-btn-eliminar" title="Eliminar"
+                                                    onClick={() => abrirEliminar(r)}>
+                                                    <i className="bi bi-trash-fill" />
+                                                </button>
+                                            </>
                                         )}
                                     </td>
                                 </tr>
@@ -874,6 +999,62 @@ export default function Correspondencia() {
                             <button className="corr-modal-btn-danger" onClick={confirmarQuitarAsignacion}>
                                 Sí, quitar
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        {/* Modal eliminar */}
+            {showEliminarModal && (
+                <div className="corr-modal-overlay">
+                    <div className="corr-modal-box corr-modal-box-danger">
+                        {/* Header rojo */}
+                        <div className="corr-modal-danger-header">
+                            <div className="corr-modal-danger-icon">
+                                <i className="bi bi-trash3-fill" />
+                            </div>
+                            <div>
+                                <h3 className="corr-modal-danger-titulo">Eliminar registro</h3>
+                                <p className="corr-modal-danger-sub">Esta acción es permanente y no se puede deshacer</p>
+                            </div>
+                        </div>
+
+                        {/* Cuerpo */}
+                        <div className="corr-modal-danger-body">
+                            <p className="corr-modal-danger-aviso">
+                                <i className="bi bi-exclamation-triangle-fill" /> Estás a punto de eliminar el siguiente registro del sistema:
+                            </p>
+
+                            <div className="corr-modal-danger-card">
+                                <div className="corr-modal-danger-row">
+                                    <span className="corr-modal-danger-lbl"><i className="bi bi-hash" /> No. Turno</span>
+                                    <span className="corr-modal-danger-val corr-modal-danger-turno">{registroEliminar?.noTurno || '—'}</span>
+                                </div>
+                                <div className="corr-modal-danger-divider" />
+                                <div className="corr-modal-danger-row corr-modal-danger-row-col">
+                                    <span className="corr-modal-danger-lbl"><i className="bi bi-chat-left-text" /> Asunto</span>
+                                    <span className="corr-modal-danger-val">{registroEliminar?.asunto || '—'}</span>
+                                </div>
+                                {registroEliminar?.remitente && (
+                                    <>
+                                        <div className="corr-modal-danger-divider" />
+                                        <div className="corr-modal-danger-row corr-modal-danger-row-col">
+                                            <span className="corr-modal-danger-lbl"><i className="bi bi-person" /> Remitente</span>
+                                            <span className="corr-modal-danger-val">{registroEliminar.remitente}</span>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            <div className="corr-modal-acciones">
+                                <button className="corr-modal-btn-cancelar" onClick={() => setShowEliminarModal(false)} disabled={loadingEliminar}>
+                                    <i className="bi bi-x-lg" /> Cancelar
+                                </button>
+                                <button className="corr-modal-btn-danger" onClick={handleEliminar} disabled={loadingEliminar}>
+                                    {loadingEliminar
+                                        ? <><i className="bi bi-hourglass-split" /> Eliminando...</>
+                                        : <><i className="bi bi-trash3-fill" /> Sí, eliminar</>}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

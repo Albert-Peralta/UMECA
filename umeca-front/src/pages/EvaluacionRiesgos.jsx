@@ -35,8 +35,8 @@ const RESULTADOS = [
 const EvaluacionRiesgos = () => {
     const { user } = useAuth();
     const { showToast } = useToast();
-    const puedeEvaluar = user?.rol === 'ADMINISTRADOR' || user?.rol === 'EVALUADOR_RIESGO';
-    const puedeRegistrar = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERVISION' || user?.rol === 'EVALUADOR_RIESGO';
+    const puedeEvaluar = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN' || user?.rol === 'EVALUADOR_RIESGO';
+    const puedeRegistrar = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION' || user?.rol === 'EVALUADOR_RIESGO';
 
     const [datos, setDatos] = useState([]);
     const [busqueda, setBusqueda] = useState('');

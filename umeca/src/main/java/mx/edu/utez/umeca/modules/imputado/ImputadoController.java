@@ -19,7 +19,7 @@ public class ImputadoController {
     private final ImputadoService service;
 
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR', 'ROLE_SUPERVISION', 'ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN', 'ROLE_SUPERVISION', 'ROLE_EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> findAll(@RequestParam(required = false) String buscar) {
         ApiResponse res = (buscar != null && !buscar.isBlank())
                 ? service.buscar(buscar)
@@ -29,28 +29,28 @@ public class ImputadoController {
 
     /** Devuelve todos los imputados que comparten la misma causa penal. */
     @GetMapping("/por-causa")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR', 'ROLE_SUPERVISION', 'ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN', 'ROLE_SUPERVISION', 'ROLE_EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> findByCausaPenal(@RequestParam String causaPenal) {
         ApiResponse res = service.findByCausaPenal(causaPenal);
         return ResponseEntity.ok(res);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR', 'ROLE_SUPERVISION', 'ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN', 'ROLE_SUPERVISION', 'ROLE_EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> findById(@PathVariable Long id) {
         ApiResponse res = service.findById(id);
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.status(404).body(res);
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR', 'ROLE_SUPERVISION')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN', 'ROLE_SUPERVISION')")
     public ResponseEntity<ApiResponse> save(@RequestBody Imputado imputado) {
         ApiResponse res = service.save(imputado);
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
     }
 
     @PatchMapping("/{id}/foto")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR', 'ROLE_SUPERVISION')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN', 'ROLE_SUPERVISION')")
     public ResponseEntity<ApiResponse> actualizarFoto(@PathVariable Long id,
                                                       @RequestBody Map<String, String> body) {
         ApiResponse res = service.actualizarFoto(id, body.get("foto"));
@@ -58,7 +58,7 @@ public class ImputadoController {
     }
 
     @PatchMapping("/{id}/fallecimiento")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR', 'ROLE_SUPERVISION')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN', 'ROLE_SUPERVISION')")
     public ResponseEntity<ApiResponse> registrarFallecimiento(
             @PathVariable Long id,
             @RequestBody(required = false) Map<String, String> body) {
@@ -76,7 +76,7 @@ public class ImputadoController {
     }
 
     @PatchMapping("/{id}/cierre-carpeta")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR', 'ROLE_SUPERVISION')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN', 'ROLE_SUPERVISION')")
     public ResponseEntity<ApiResponse> registrarCierreCarpeta(
             @PathVariable Long id,
             @RequestBody(required = false) Map<String, String> body) {
@@ -92,7 +92,7 @@ public class ImputadoController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR', 'ROLE_SUPERVISION')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN', 'ROLE_SUPERVISION')")
     public ResponseEntity<ApiResponse> update(@PathVariable Long id,
                                               @RequestBody Imputado imputado) {
         ApiResponse res = service.update(id, imputado);

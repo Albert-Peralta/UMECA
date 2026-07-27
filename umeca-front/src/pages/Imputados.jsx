@@ -42,9 +42,9 @@ const CIERRE_INIT = {
 const Imputados = ({ onNavigarEntrevista }) => {
     const { user } = useAuth();
     const { showToast } = useToast();
-    const puedeEditarFoto    = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERVISION';
-    const puedeFallecimiento = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERVISION';
-    const puedeCierreCarpeta = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERVISION';
+    const puedeEditarFoto    = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION';
+    const puedeFallecimiento = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION';
+    const puedeCierreCarpeta = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION';
 
     const [datos, setDatos] = useState([]);
     const [busqueda, setBusqueda] = useState('');
@@ -930,7 +930,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
 
                                         const accionesPorTab = {
                                             entrevistas: {
-                                                nueva: onNavigarEntrevista && (user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERVISION') && {
+                                                nueva: onNavigarEntrevista && (user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION') && {
                                                     label: 'Nueva Entrevista', icon: 'bi-journal-plus',
                                                     action: () => { onNavigarEntrevista(perfil); setShowPerfil(false); setPerfil(null); }
                                                 },
@@ -944,7 +944,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                                 }
                                             },
                                             evaluaciones: {
-                                                nueva: (user?.rol === 'ADMINISTRADOR' || user?.rol === 'EVALUADOR_RIESGO') && {
+                                                nueva: (user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN' || user?.rol === 'EVALUADOR_RIESGO') && {
                                                     label: 'Nueva Evaluación', icon: 'bi-shield-plus',
                                                     action: () => {
                                                         localStorage.setItem('evaluacionPreset', JSON.stringify({ causaPenal: perfil.causaPenal, nombre: perfil.nombreCompleto }));
@@ -962,7 +962,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                                 }
                                             },
                                             medidas: {
-                                                nueva: (user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERVISION') && {
+                                                nueva: (user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION') && {
                                                     label: 'Nueva Medida / SCP', icon: 'bi-card-checklist',
                                                     action: () => {
                                                         localStorage.setItem('medidaPreset', JSON.stringify({ causaPenal: perfil.causaPenal, nombre: perfil.nombreCompleto }));

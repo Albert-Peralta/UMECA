@@ -221,6 +221,7 @@ public class UserService implements UserDetailsService {
             case SUPERVISION      -> "SUP";
             case EVALUADOR_RIESGO -> "EVA";
             case CORRESPONDENCIA  -> "COR";
+            case SUPERADMIN       -> "SAD";
         };
 
         int siguiente = (zona != null

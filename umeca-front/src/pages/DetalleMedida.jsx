@@ -53,7 +53,7 @@ const ESTADO_CLASE  = { ACTIVO: 'dm-badge-activo', SUSPENDIDO: 'dm-badge-suspend
 const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, onEditar, onActualizado, onCambiarSCP, onCambiarMC }) => {
     const { user } = useAuth();
     const { showToast } = useToast();
-    const esAdmin = user?.rol === 'ADMINISTRADOR';
+    const esAdmin = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN';
     const esMC = m.tipo === 'MEDIDA_CAUTELAR';
     const FRAC_LIST = esMC ? FRACCIONES_MC : FRACCIONES_SCP;
 

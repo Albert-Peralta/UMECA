@@ -20,21 +20,21 @@ public class ReporteDiarioController {
 
     /** Guardar o actualizar el reporte del usuario autenticado */
     @PostMapping
-    @PreAuthorize("hasAnyRole('SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR')")
     public ResponseEntity<ApiResponse> guardar(@RequestBody ReporteDiarioDTO dto) {
         return ResponseEntity.ok(service.guardar(dto));
     }
 
     /** Reporte de hoy del usuario actual (para pre-llenar el formulario) */
     @GetMapping("/mi-reporte-hoy")
-    @PreAuthorize("hasAnyRole('SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR')")
     public ResponseEntity<ApiResponse> getMiReporteHoy() {
         return ResponseEntity.ok(service.getMiReporteHoy());
     }
 
     /** Reporte de una fecha específica del usuario actual */
     @GetMapping("/mi-reporte")
-    @PreAuthorize("hasAnyRole('SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR')")
     public ResponseEntity<ApiResponse> getMiReportePorFecha(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
         return ResponseEntity.ok(service.getMiReportePorFecha(fecha));
@@ -42,7 +42,7 @@ public class ReporteDiarioController {
 
     /** Lista de reportes individuales por rango de fechas */
     @GetMapping
-    @PreAuthorize("hasAnyRole('SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR')")
     public ResponseEntity<ApiResponse> getLista(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
@@ -54,7 +54,7 @@ public class ReporteDiarioController {
 
     /** Consolidado por zona para la tabla resumen */
     @GetMapping("/consolidado")
-    @PreAuthorize("hasAnyRole('SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR')")
     public ResponseEntity<ApiResponse> getConsolidado(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
@@ -66,7 +66,7 @@ public class ReporteDiarioController {
 
     /** Cumplimiento: quién entregó su reporte en el período */
     @GetMapping("/cumplimiento")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR')")
     public ResponseEntity<ApiResponse> getCumplimiento(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
@@ -77,7 +77,7 @@ public class ReporteDiarioController {
 
     /** Semana actual: lunes a hoy */
     @GetMapping("/semana-actual")
-    @PreAuthorize("hasAnyRole('SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR')")
     public ResponseEntity<ApiResponse> getSemanaActual() {
         LocalDate hoy   = LocalDate.now();
         LocalDate lunes = hoy.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));

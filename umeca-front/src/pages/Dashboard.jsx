@@ -28,7 +28,7 @@ import { getContadoresCorrespondencia } from '../api/correspondenciaApi';
 // Cada entrada puede ser un ítem de navegación (con key e icon) o un separador visual.
 // La key coincide con el case en renderContent() y se persiste en localStorage.
 const menuPorRol = {
-    ADMINISTRADOR: [
+    SUPERADMIN: [
         { separator: true,   label: 'General' },
         { key: 'imputados',  label: 'Imputados',              icon: 'bi bi-person' },
         { key: 'graficas',   label: 'Estadísticas',           icon: 'bi bi-bar-chart' },
@@ -40,13 +40,32 @@ const menuPorRol = {
         { key: 'medidas',    label: 'Medidas y Suspensiones', icon: 'bi bi-card-checklist' },
         { key: 'supervision',label: 'Supervisión',            icon: 'bi bi-eye' },
         { separator: true,   label: 'Evaluación' },
-        { key: 'evaluacion',  label: 'Evaluación de riesgos',   icon: 'bi bi-shield-check' },
+        { key: 'evaluacion',  label: 'Evaluación de riesgos',  icon: 'bi bi-shield-check' },
         { key: 'consultas',   label: 'Consulta de Registros',  icon: 'bi bi-search' },
         { key: 'suspension',  label: 'Suspensión Condicional', icon: 'bi bi-hourglass-split' },
         { separator: true,   label: 'Oficios' },
-        { key: 'correspondencia',   label: 'Correspondencia',       icon: 'bi bi-envelope-paper' },
+        { key: 'correspondencia', label: 'Correspondencia',    icon: 'bi bi-envelope-paper' },
         { separator: true,   label: 'Histórico' },
-        { key: 'expedientes',       label: 'Expedientes Anteriores', icon: 'bi bi-archive' },
+        { key: 'expedientes', label: 'Expedientes Anteriores', icon: 'bi bi-archive' },
+    ],
+    ADMINISTRADOR: [
+        { separator: true,   label: 'General' },
+        { key: 'imputados',  label: 'Imputados',              icon: 'bi bi-person' },
+        { key: 'graficas',   label: 'Estadísticas',           icon: 'bi bi-bar-chart' },
+        { key: 'reporte',    label: 'Reporte Diario',         icon: 'bi bi-clipboard-data' },
+        { key: 'bitacora',   label: 'Bitácora',               icon: 'bi bi-journal-text' },
+        { separator: true,   label: 'Supervisión' },
+        { key: 'entrevista', label: 'Entrevista de encuadre', icon: 'bi bi-journal-text' },
+        { key: 'medidas',    label: 'Medidas y Suspensiones', icon: 'bi bi-card-checklist' },
+        { key: 'supervision',label: 'Supervisión',            icon: 'bi bi-eye' },
+        { separator: true,   label: 'Evaluación' },
+        { key: 'evaluacion',  label: 'Evaluación de riesgos',  icon: 'bi bi-shield-check' },
+        { key: 'consultas',   label: 'Consulta de Registros',  icon: 'bi bi-search' },
+        { key: 'suspension',  label: 'Suspensión Condicional', icon: 'bi bi-hourglass-split' },
+        { separator: true,   label: 'Oficios' },
+        { key: 'correspondencia', label: 'Correspondencia',    icon: 'bi bi-envelope-paper' },
+        { separator: true,   label: 'Histórico' },
+        { key: 'expedientes', label: 'Expedientes Anteriores', icon: 'bi bi-archive' },
     ],
     SUPERVISION: [
         { separator: true,   label: 'General' },

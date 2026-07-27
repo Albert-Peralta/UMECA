@@ -162,6 +162,7 @@ const Perfil = () => {
                         {/* Correo electrónico comentado — el acceso es por usuario/contraseña definidos por el administrador */}
                         {/* <Campo label="Correo electrónico" valor={user?.email} /> */}
                         <Campo label="Identificador"      valor={user?.identificador} />
+                        <Campo label="Usuario del sistema" valor={user?.username} />
                     </div>
                 </div>
 

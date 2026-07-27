@@ -15,7 +15,7 @@ const MEDIDAS_LABEL = {
 export default function ExpedientesAnteriores() {
     const { showToast } = useToast();
     const { user } = useAuth();
-    const esAdmin = user?.rol === 'ADMINISTRADOR';
+    const esAdmin = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN';
 
     const [lista,   setLista]   = useState([]);
     const [total,   setTotal]   = useState(0);

@@ -289,3 +289,29 @@
     .bit-filtros { padding: .75rem; }
     .bit-nombre, .bit-desc { max-width: 120px; }
 }
+
+/* ── Descripción estructurada ───────────────────────────── */
+.bit-desc-vacio { color: #9ca3af; }
+.bit-desc-texto { color: #374151; font-size: 0.83rem; line-height: 1.4; }
+.bit-desc-wrap  { display: flex; flex-direction: column; gap: 4px; }
+.bit-desc-intro {
+    font-size: 0.82rem; color: #374151; font-weight: 500; line-height: 1.3;
+}
+.bit-desc-pares {
+    display: flex; flex-wrap: wrap; gap: 4px;
+}
+.bit-desc-par {
+    display: inline-flex; align-items: center;
+    border: 1px solid #e5e7eb; border-radius: 6px;
+    overflow: hidden; font-size: 0.74rem; line-height: 1;
+}
+.bit-desc-key {
+    background: #f1f5f9; color: #475569;
+    padding: 3px 6px; font-weight: 700;
+    text-transform: lowercase; letter-spacing: 0.2px;
+    border-right: 1px solid #e5e7eb;
+}
+.bit-desc-val {
+    background: #fff; color: #1e293b;
+    padding: 3px 7px; font-weight: 500;
+}

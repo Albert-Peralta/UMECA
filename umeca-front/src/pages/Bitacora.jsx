@@ -2,6 +2,38 @@ import { useState, useEffect, useCallback } from 'react';
 import { getBitacoraGlobal } from '../api/bitacoraApi';
 import './Bitacora.css';
 
+/** Renderiza la descripción de forma estructurada.
+ *  Detecta el patrón "Texto intro — clave: valor | clave: valor"
+ *  y separa cada par en un mini-chip. Si no hay patrón, muestra texto plano. */
+function DescripcionCell({ texto }) {
+    if (!texto) return <span className="bit-desc-vacio">—</span>;
+
+    const sepIdx = texto.indexOf(' — ');
+    if (sepIdx === -1) return <span className="bit-desc-texto">{texto}</span>;
+
+    const intro  = texto.slice(0, sepIdx);
+    const resto  = texto.slice(sepIdx + 3);
+    const pares  = resto.split(' | ').map(p => {
+        const ci = p.indexOf(': ');
+        if (ci === -1) return { k: p, v: null };
+        return { k: p.slice(0, ci), v: p.slice(ci + 2) };
+    });
+
+    return (
+        <div className="bit-desc-wrap">
+            {intro && <span className="bit-desc-intro">{intro}</span>}
+            <div className="bit-desc-pares">
+                {pares.map((p, i) => (
+                    <span key={i} className="bit-desc-par">
+                        <span className="bit-desc-key">{p.k}</span>
+                        {p.v && <span className="bit-desc-val">{p.v}</span>}
+                    </span>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 const ENTIDADES = ['', 'SESION', 'IMPUTADO', 'MEDIDA_CAUTELAR', 'ENTREVISTA', 'SUPERVISION', 'USUARIO', 'CONSULTA', 'REPORTE_DIARIO'];
 const ACCIONES  = ['', 'LOGIN', 'LOGOUT', 'CREAR', 'EDITAR', 'ELIMINAR', 'CAMBIO_ESTADO', 'FALLECIMIENTO', 'FOTO'];
 
@@ -221,7 +253,7 @@ export default function Bitacora() {
                                             </span>
                                         </td>
                                         <td className="bit-nombre">{r.entidadNombre || '—'}</td>
-                                        <td className="bit-desc">{r.descripcion || '—'}</td>
+                                        <td className="bit-desc"><DescripcionCell texto={r.descripcion} /></td>
                                         <td className="bit-usuario">
                                             <div className="bit-usuario-wrap">
                                                 <span className="bit-avatar">

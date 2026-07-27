@@ -16,7 +16,7 @@ public class EstadisticasController {
     private final EstadisticasService service;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> getEstadisticas(
             @RequestParam(defaultValue = "0") int anio,
             @RequestParam(defaultValue = "0") int mes,
@@ -25,7 +25,7 @@ public class EstadisticasController {
     }
 
     @GetMapping("/exportar")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
     public ResponseEntity<byte[]> exportarExcel(
             @RequestParam(defaultValue = "0") int anio,
             @RequestParam(defaultValue = "0") int mes) throws Exception {

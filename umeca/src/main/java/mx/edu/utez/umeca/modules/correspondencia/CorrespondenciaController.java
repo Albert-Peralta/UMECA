@@ -28,7 +28,7 @@ public class CorrespondenciaController {
 
     /** Admin: ver todos los registros */
     @GetMapping
-    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
     public ResponseEntity<ApiResponse> findAll(@RequestParam(required = false) String buscar) {
         ApiResponse res = (buscar != null && !buscar.isBlank()) ? service.buscar(buscar) : service.findAll();
         return ResponseEntity.ok(res);
@@ -50,14 +50,14 @@ public class CorrespondenciaController {
 
     /** Admin: buscar en todos */
     @GetMapping("/buscar")
-    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
     public ResponseEntity<ApiResponse> buscar(@RequestParam String q) {
         return ResponseEntity.ok(service.buscar(q));
     }
 
     /** CORRESPONDENCIA: crear nuevo registro con PDF */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyAuthority('ROLE_CORRESPONDENCIA','ROLE_ADMINISTRADOR')")
+    @PreAuthorize("hasAnyAuthority('ROLE_CORRESPONDENCIA','ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
     public ResponseEntity<ApiResponse> crear(
             @RequestPart("datos") String datosJson,
             @RequestPart(value = "archivo", required = false) MultipartFile archivo) {
@@ -70,16 +70,40 @@ public class CorrespondenciaController {
         }
     }
 
+    /** Admin/Superadmin: editar registro */
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
+    public ResponseEntity<ApiResponse> editar(
+            @PathVariable Long id,
+            @RequestPart("datos") String datosJson,
+            @RequestPart(value = "archivo", required = false) MultipartFile archivo) {
+        try {
+            CorrespondenciaDTO dto = objectMapper.readValue(datosJson, CorrespondenciaDTO.class);
+            ApiResponse res = service.editar(id, dto, archivo);
+            return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new ApiResponse(false, "Error al procesar la solicitud"));
+        }
+    }
+
+    /** Admin/Superadmin: eliminar registro */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
+    public ResponseEntity<ApiResponse> eliminar(@PathVariable Long id) {
+        ApiResponse res = service.eliminar(id);
+        return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
+    }
+
     /** Admin: obtener lista de personal asignable */
     @GetMapping("/personal-asignable")
-    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
     public ResponseEntity<ApiResponse> personalAsignable() {
         return ResponseEntity.ok(service.getPersonalAsignable());
     }
 
     /** Admin: asignar a un usuario */
     @PatchMapping("/{id}/asignar")
-    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
     public ResponseEntity<ApiResponse> asignar(@PathVariable Long id, @RequestParam Long usuarioId) {
         ApiResponse res = service.asignar(id, usuarioId);
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
@@ -87,7 +111,7 @@ public class CorrespondenciaController {
 
     /** Admin: quitar asignación */
     @PatchMapping("/{id}/quitar-asignacion")
-    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
     public ResponseEntity<ApiResponse> quitarAsignacion(@PathVariable Long id) {
         ApiResponse res = service.quitarAsignacion(id);
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
@@ -95,7 +119,7 @@ public class CorrespondenciaController {
 
     /** Personal: cambiar estado (LEIDO, EN_ESPERA, FINALIZADO) */
     @PatchMapping("/{id}/estado")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO','ROLE_ADMINISTRADOR')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO','ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
     public ResponseEntity<ApiResponse> cambiarEstado(@PathVariable Long id, @RequestParam String estado) {
         ApiResponse res = service.cambiarEstado(id, estado);
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
@@ -103,14 +127,14 @@ public class CorrespondenciaController {
 
     /** Contadores para notificaciones en el dashboard */
     @GetMapping("/contadores")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> contadores() {
         return ResponseEntity.ok(service.getContadores());
     }
 
     /** Estadísticas de correspondencia para el módulo de estadísticas */
     @GetMapping("/estadisticas")
-    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
     public ResponseEntity<ApiResponse> estadisticas(@RequestParam(defaultValue = "0") int anio) {
         int a = anio > 0 ? anio : java.time.Year.now().getValue();
         return ResponseEntity.ok(service.getEstadisticas(a));
@@ -118,7 +142,7 @@ public class CorrespondenciaController {
 
     /** Exportar Excel */
     @GetMapping("/exportar-excel")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_CORRESPONDENCIA','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_CORRESPONDENCIA','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
     public ResponseEntity<byte[]> exportarExcel() {
         try {
             byte[] bytes = service.exportarExcel();
@@ -133,7 +157,7 @@ public class CorrespondenciaController {
 
     /** Descargar/ver PDF — solo archivos dentro del directorio uploads/correspondencia/ */
     @GetMapping("/pdf")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_CORRESPONDENCIA','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_CORRESPONDENCIA','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
     public ResponseEntity<Resource> verPdf(@RequestParam String ruta) {
         try {
             Path baseDir = Paths.get("uploads/correspondencia").toAbsolutePath().normalize();

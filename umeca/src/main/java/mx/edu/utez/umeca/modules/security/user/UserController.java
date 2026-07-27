@@ -16,13 +16,13 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
-    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPERADMIN')")
     public ResponseEntity<ApiResponse> findAll() {
         return ResponseEntity.ok(userService.findAll());
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPERADMIN')")
     public ResponseEntity<ApiResponse> findById(@PathVariable Long id) {
         ApiResponse response = userService.findById(id);
         return response.isOk()
@@ -31,7 +31,7 @@ public class UserController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPERADMIN')")
     public ResponseEntity<ApiResponse> save(@Valid @RequestBody UserRequestDTO dto) {
         ApiResponse response = userService.save(dto.toEntity());
         return response.isOk()
@@ -40,7 +40,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPERADMIN')")
     public ResponseEntity<ApiResponse> update(@PathVariable Long id,
                                               @RequestBody UserRequestDTO dto) {
         ApiResponse response = userService.update(id, dto.toEntity());
@@ -50,7 +50,7 @@ public class UserController {
     }
 
     @PatchMapping("/{id}/toggle")
-    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPERADMIN')")
     public ResponseEntity<ApiResponse> toggle(@PathVariable Long id) {
         ApiResponse response = userService.toggleActivo(id);
         return response.isOk()
@@ -67,7 +67,8 @@ public class UserController {
             return ResponseEntity.badRequest().body(new ApiResponse(false, "La contraseña no puede estar vacía"));
 
         boolean esAdmin = auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMINISTRADOR"));
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMINISTRADOR")
+                            || a.getAuthority().equals("ROLE_SUPERADMIN"));
 
         ApiResponse response = userService.cambiarPassword(id, nuevaPassword, auth.getName(), esAdmin);
         return response.isOk()

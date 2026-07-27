@@ -3,8 +3,9 @@ import { getUsuarios, crearUsuario, actualizarUsuario, toggleUsuario } from '../
 import { useToast } from '../context/ToastContext';
 import './GestionUsuarios.css';
 
-const ROLES = ['ADMINISTRADOR', 'SUPERVISION', 'EVALUADOR_RIESGO', 'CORRESPONDENCIA'];
+const ROLES = ['SUPERADMIN', 'ADMINISTRADOR', 'SUPERVISION', 'EVALUADOR_RIESGO', 'CORRESPONDENCIA'];
 const ETIQUETA_ROL = {
+    SUPERADMIN:      'Superadmin',
     ADMINISTRADOR:   'Administrador',
     SUPERVISION:     'Supervisión',
     EVALUADOR_RIESGO:'Evaluador de Riesgos',

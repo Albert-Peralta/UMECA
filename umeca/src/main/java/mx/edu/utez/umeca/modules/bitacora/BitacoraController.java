@@ -21,7 +21,7 @@ public class BitacoraController {
      * GET /api/bitacora?entidad=IMPUTADO&accion=CREAR&usuarioId=1&desde=...&hasta=...&pagina=0&tamano=20
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR')")
     public ResponseEntity<ApiResponse> global(
             @RequestParam(required = false) String entidad,
             @RequestParam(required = false) String accion,

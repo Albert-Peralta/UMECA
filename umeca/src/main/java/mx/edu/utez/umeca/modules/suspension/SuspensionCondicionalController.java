@@ -15,7 +15,7 @@ public class SuspensionCondicionalController {
     private final SuspensionCondicionalService service;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> listar(
             @RequestParam(required = false) String fuero,
             @RequestParam(required = false) Integer anio,
@@ -26,38 +26,38 @@ public class SuspensionCondicionalController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> detalle(@PathVariable Long id) {
         return ResponseEntity.ok(service.detalle(id));
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> crear(@RequestBody SuspensionCondicionalDTO dto) {
         return ResponseEntity.ok(service.crear(dto));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> actualizar(@PathVariable Long id,
                                                    @RequestBody SuspensionCondicionalDTO dto) {
         return ResponseEntity.ok(service.actualizar(id, dto));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR')")
     public ResponseEntity<ApiResponse> eliminar(@PathVariable Long id) {
         return ResponseEntity.ok(service.eliminar(id));
     }
 
     @PostMapping("/importar")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR','SUPERVISION')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION')")
     public ResponseEntity<ApiResponse> importar(@RequestParam("archivo") MultipartFile archivo) {
         return ResponseEntity.ok(service.importar(archivo));
     }
 
     @GetMapping("/anios")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
     public ResponseEntity<ApiResponse> anios() {
         return ResponseEntity.ok(service.aniosDisponibles());
     }
