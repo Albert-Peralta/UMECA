@@ -88,4 +88,11 @@ public class MedidaCautelarController {
         ApiResponse res = service.agregarSeguimiento(id, dto);
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.status(404).body(res);
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
+    public ResponseEntity<ApiResponse> eliminar(@PathVariable Long id) {
+        ApiResponse res = service.eliminar(id);
+        return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.status(404).body(res);
+    }
 }

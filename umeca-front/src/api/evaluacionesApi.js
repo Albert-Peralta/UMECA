@@ -26,3 +26,5 @@ export const getEvaluacionesByImputado = (imputadoId) =>
 
 // Registra que el imputado se negó a ser entrevistado (documento tipo NEGACION)
 export const crearNegacion = (data) => api.post('/evaluaciones/negacion', data);
+
+export const eliminarEvaluacion = (id) => api.delete(`/evaluaciones/${id}`);

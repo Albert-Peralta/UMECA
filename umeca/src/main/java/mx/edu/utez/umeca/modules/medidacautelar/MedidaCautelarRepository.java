@@ -16,8 +16,14 @@ public interface MedidaCautelarRepository extends JpaRepository<MedidaCautelar, 
 
     List<MedidaCautelar> findByImputadoIdOrderByCreatedAtDesc(Long imputadoId);
 
+    // Excluye medidas que ya fueron convertidas (cambiadoAScp=true o vieneDeMC=true)
+    @Query("SELECT COUNT(m) > 0 FROM MedidaCautelar m WHERE m.imputado.id = :imputadoId " +
+           "AND LOWER(m.causaPenal) = LOWER(:causaPenal) AND m.tipo = :tipo " +
+           "AND m.cambiadoAScp = false AND m.vieneDeMC = false")
     boolean existsByImputadoIdAndCausaPenalIgnoreCaseAndTipo(
-            Long imputadoId, String causaPenal, MedidaCautelar.TipoMedida tipo);
+            @org.springframework.data.repository.query.Param("imputadoId") Long imputadoId,
+            @org.springframework.data.repository.query.Param("causaPenal") String causaPenal,
+            @org.springframework.data.repository.query.Param("tipo") MedidaCautelar.TipoMedida tipo);
 
     /** Devuelve [imputadoId, tipo, estado] de la medida más reciente por imputado (para la lista general) */
     @Query("SELECT m.imputado.id, m.tipo, m.estado FROM MedidaCautelar m WHERE m.imputado.id IN :ids AND m.createdAt = (SELECT MAX(m2.createdAt) FROM MedidaCautelar m2 WHERE m2.imputado.id = m.imputado.id)")

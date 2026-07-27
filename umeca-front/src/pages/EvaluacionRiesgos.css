@@ -241,3 +241,32 @@
 /* ── Hovers Evaluación ── */
 .btn-cargar:hover { background: #2a5233; }
 .btn-nueva-eval:hover { background: #2a5233; }
+
+/* ── Zona pills & tags ─────────────────────────────────────────────────── */
+.zona-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.zona-pill { border: 1.5px solid; border-radius: 20px; padding: 4px 14px; font-size: 0.78rem; font-weight: 600; cursor: pointer; background: #fff; transition: all 0.15s; }
+.zona-pill-todas { border-color: #d1d5db; color: #6b7280; }
+.zona-pill-todas:hover, .zona-pill-todas.zona-pill-active { background: #f3f4f6; color: #374151; border-color: #9ca3af; }
+.zona-pill-xochitepec { border-color: #93c5fd; color: #1d4ed8; }
+.zona-pill-xochitepec:hover, .zona-pill-xochitepec.zona-pill-active { background: #dbeafe; }
+.zona-pill-cuautla { border-color: #6ee7b7; color: #065f46; }
+.zona-pill-cuautla:hover, .zona-pill-cuautla.zona-pill-active { background: #d1fae5; }
+.zona-pill-jojutla { border-color: #fca5a5; color: #991b1b; }
+.zona-pill-jojutla:hover, .zona-pill-jojutla.zona-pill-active { background: #fee2e2; }
+.zona-tag { display: inline-block; border-radius: 12px; padding: 1px 8px; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.3px; white-space: nowrap; }
+.zona-tag-xochitepec { background: #dbeafe; color: #1d4ed8; }
+.zona-tag-cuautla { background: #d1fae5; color: #065f46; }
+.zona-tag-jojutla { background: #fee2e2; color: #991b1b; }
+
+/* ── Fila sin evaluador asignado ─────────────────────────────────────────── */
+.eval-fila-sin-asignar {
+    background: #fffbeb !important;
+}
+.eval-fila-sin-asignar:hover {
+    background: #fef3c7 !important;
+}
+.eval-sin-eval {
+    color: #b45309 !important;
+    font-weight: 600;
+    font-size: 0.78rem;
+}

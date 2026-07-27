@@ -297,6 +297,12 @@
     overflow: hidden;
 }
 
+.rd-filtro-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+}
+
 .rd-tab {
     background: none;
     border: none;
@@ -319,6 +325,12 @@
     gap: 8px;
     color: #6b7280;
     font-size: 13px;
+}
+
+.rd-rango-sep {
+    font-weight: 700;
+    color: #9ca3af;
+    font-size: 16px;
 }
 
 .rd-btn-refrescar {
@@ -511,3 +523,83 @@
 
 .rd-cumpl-estado i { font-size: 18px; }
 .rd-cumpl-estado span { font-size: 10.5px; font-weight: 600; }
+
+/* ── Modo automático (read-only) ─────────────────────────────────────── */
+
+.rd-badge-auto {
+    margin-left: 8px;
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+    border-radius: 999px;
+    padding: 2px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.rd-info-auto {
+    font-size: 12.5px;
+    color: #4b5563;
+    background: #f0f9ff;
+    border-left: 3px solid #38bdf8;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.rd-seccion-total-badge {
+    margin-left: auto;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--rd-color, #1565c0);
+    background: color-mix(in srgb, var(--rd-color, #1565c0) 10%, white);
+    border-radius: 999px;
+    padding: 2px 10px;
+}
+
+.rd-campo-readonly {
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    background: #f9fafb;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.rd-campo-readonly.rd-campo-activo {
+    border-color: color-mix(in srgb, var(--rd-color, #1565c0) 40%, white);
+    background: color-mix(in srgb, var(--rd-color, #1565c0) 5%, white);
+}
+
+.rd-valor-auto {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+}
+
+.rd-num-grande {
+    font-size: 28px;
+    font-weight: 800;
+    color: #111827;
+    line-height: 1;
+}
+
+.rd-campo-activo .rd-num-grande {
+    color: var(--rd-color, #1565c0);
+}
+
+.rd-cargando-mini {
+    font-size: 18px;
+    color: #9ca3af;
+    animation: rd-pulse 1s infinite;
+}
+
+@keyframes rd-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}

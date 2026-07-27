@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { getBitacoraGlobal } from '../api/bitacoraApi';
 import './Bitacora.css';
 
-const ENTIDADES = ['', 'IMPUTADO', 'MEDIDA_CAUTELAR', 'ENTREVISTA', 'SUPERVISION', 'USUARIO', 'CONSULTA', 'REPORTE_DIARIO'];
-const ACCIONES  = ['', 'CREAR', 'EDITAR', 'ELIMINAR', 'CAMBIO_ESTADO', 'FALLECIMIENTO', 'FOTO'];
+const ENTIDADES = ['', 'SESION', 'IMPUTADO', 'MEDIDA_CAUTELAR', 'ENTREVISTA', 'SUPERVISION', 'USUARIO', 'CONSULTA', 'REPORTE_DIARIO'];
+const ACCIONES  = ['', 'LOGIN', 'LOGOUT', 'CREAR', 'EDITAR', 'ELIMINAR', 'CAMBIO_ESTADO', 'FALLECIMIENTO', 'FOTO'];
 
 const ETIQUETA_ENTIDAD = {
+    SESION:         'Sesión',
     IMPUTADO:       'Imputado',
     MEDIDA_CAUTELAR:'Medida Cautelar',
     ENTREVISTA:     'Entrevista',
@@ -16,6 +17,8 @@ const ETIQUETA_ENTIDAD = {
 };
 
 const ETIQUETA_ACCION = {
+    LOGIN:         'Inicio de sesión',
+    LOGOUT:        'Cierre de sesión',
     CREAR:         'Creación',
     EDITAR:        'Edición',
     ELIMINAR:      'Eliminación',
@@ -25,6 +28,8 @@ const ETIQUETA_ACCION = {
 };
 
 const COLOR_ACCION = {
+    LOGIN:         '#0891b2',
+    LOGOUT:        '#0f766e',
     CREAR:         '#16a34a',
     EDITAR:        '#2563eb',
     ELIMINAR:      '#dc2626',
@@ -34,6 +39,8 @@ const COLOR_ACCION = {
 };
 
 const ICON_ACCION = {
+    LOGIN:         'bi-box-arrow-in-right',
+    LOGOUT:        'bi-box-arrow-left',
     CREAR:         'bi-plus-circle-fill',
     EDITAR:        'bi-pencil-fill',
     ELIMINAR:      'bi-trash-fill',
@@ -64,7 +71,7 @@ export default function Bitacora() {
     const [filtroAccion, setFiltroAccion]   = useState('');
     const [filtroBusqueda, setFiltroBusqueda] = useState('');
 
-    const TAMANO = 20;
+    const TAMANO = 50;
 
     const cargar = useCallback(async (pag = 0) => {
         setCargando(true);

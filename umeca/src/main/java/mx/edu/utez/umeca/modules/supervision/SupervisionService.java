@@ -147,26 +147,27 @@ public class SupervisionService {
 
     /** Obtiene domicilio y coordenadas del imputado desde su última entrevista */
     private String[] getDomicilioYCoordenadas(Long imputadoId) {
-        return entrevistaRepo.findTopByImputadoIdOrderByCreatedAtDesc(imputadoId)
-                .map(e -> {
-                    if (e.getDomicilios() == null || e.getDomicilios().isEmpty()) return null;
-                    DomicilioEntrevista d = e.getDomicilios().get(0);
+        java.util.List<mx.edu.utez.umeca.modules.entrevista.EntrevistaEncuadre> lista =
+                entrevistaRepo.findTopByImputadoIdOrderByCreatedAtDesc(imputadoId);
+        if (lista.isEmpty()) return null;
+        mx.edu.utez.umeca.modules.entrevista.EntrevistaEncuadre e = lista.get(0);
+        if (e.getDomicilios() == null || e.getDomicilios().isEmpty()) return null;
+        DomicilioEntrevista d = e.getDomicilios().get(0);
 
-                    // Construir dirección legible
-                    StringBuilder sb = new StringBuilder();
-                    String calle = d.getCalle() != null ? d.getCalle() : d.getCalleNumero();
-                    if (calle != null) sb.append(calle);
-                    if (d.getNumero() != null) sb.append(" ").append(d.getNumero());
-                    if (d.getColonia() != null)   sb.append(", Col. ").append(d.getColonia());
-                    if (d.getMunicipio() != null)  sb.append(", ").append(d.getMunicipio());
-                    if (d.getEstado() != null)     sb.append(", ").append(d.getEstado());
-                    String direccion = sb.length() > 0 ? sb.toString() : null;
+        // Construir dirección legible
+        StringBuilder sb = new StringBuilder();
+        String calle = d.getCalle() != null ? d.getCalle() : d.getCalleNumero();
+        if (calle != null) sb.append(calle);
+        if (d.getNumero() != null) sb.append(" ").append(d.getNumero());
+        if (d.getColonia() != null)   sb.append(", Col. ").append(d.getColonia());
+        if (d.getMunicipio() != null)  sb.append(", ").append(d.getMunicipio());
+        if (d.getEstado() != null)     sb.append(", ").append(d.getEstado());
+        String direccion = sb.length() > 0 ? sb.toString() : null;
 
-                    // Coordenadas exactas si existen
-                    String coords = d.getCoordenadas();
+        // Coordenadas exactas si existen
+        String coords = d.getCoordenadas();
 
-                    return new String[]{ direccion, coords };
-                }).orElse(null);
+        return new String[]{ direccion, coords };
     }
 
     /** Convierte a DTO incluyendo domicilio, coordenadas y teléfono del imputado */
@@ -174,7 +175,10 @@ public class SupervisionService {
         SupervisionResponseDTO dto = SupervisionResponseDTO.from(s);
         Long imputadoId = s.getImputado().getId();
 
-        entrevistaRepo.findTopByImputadoIdOrderByCreatedAtDesc(imputadoId).ifPresent(e -> {
+        java.util.List<mx.edu.utez.umeca.modules.entrevista.EntrevistaEncuadre> listaE =
+                entrevistaRepo.findTopByImputadoIdOrderByCreatedAtDesc(imputadoId);
+        if (!listaE.isEmpty()) {
+            mx.edu.utez.umeca.modules.entrevista.EntrevistaEncuadre e = listaE.get(0);
             // Teléfono del imputado (celular preferido)
             String tel = e.getCelular() != null ? e.getCelular() : e.getTelefonoCasa();
             dto.setTelefonoImputado(tel);
@@ -194,7 +198,7 @@ public class SupervisionService {
                     dto.setCoordenadasImputado(d.getCoordenadas());
                 }
             }
-        });
+        }
         return dto;
     }
 

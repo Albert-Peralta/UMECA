@@ -56,6 +56,31 @@ public class Imputado extends BaseEntity {
     @Column(name = "observaciones_fallecimiento", length = 500)
     private String observacionesFallecimiento;
 
+    // ── Cierre de Carpeta ────────────────────────────────────
+    @Column(name = "carpeta_cerrada", nullable = false)
+    private boolean carpetaCerrada = false;
+
+    @Column(name = "numero_cierre_carpeta", length = 30)
+    private String numeroCierreCarpeta;
+
+    @Column(name = "fecha_cierre_carpeta")
+    private LocalDate fechaCierreCarpeta;
+
+    @Column(name = "responsable_cierre_carpeta", length = 200)
+    private String responsableCierreCarpeta;
+
+    @Column(name = "motivo_cierre_carpeta", columnDefinition = "TEXT")
+    private String motivoCierreCarpeta;
+
+    @Column(name = "estatus_cumplimiento_cierre", length = 50)
+    private String estatusCumplimientoCierre;
+
+    @Column(name = "fecha_ingreso_cierre")
+    private LocalDate fechaIngresoCierre;
+
+    @Column(name = "notas_cierre", columnDefinition = "TEXT")
+    private String notasCierre;
+
     public enum UbicacionFisica {
         FGR, FGE, CERESO, DOMICILIO, UMECA
     }

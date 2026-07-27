@@ -104,4 +104,13 @@ public class EvaluacionRiesgoController {
                 ? ResponseEntity.ok(response)
                 : ResponseEntity.status(400).body(response);
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ROLE_ADMINISTRADOR')")
+    public ResponseEntity<ApiResponse> eliminar(@PathVariable Long id) {
+        ApiResponse response = evaluacionService.eliminar(id);
+        return response.isOk()
+                ? ResponseEntity.ok(response)
+                : ResponseEntity.status(404).body(response);
+    }
 }

@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { getImputados, getImputadoById, actualizarFotoImputado, registrarFallecimiento } from '../api/imputadosApi';
+import { getImputados, getImputadoById, actualizarFotoImputado, registrarFallecimiento, registrarCierreCarpeta } from '../api/imputadosApi';
+import { getSeguimientosPorImputado } from '../api/seguimientosApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import SeguimientosPanel from '../components/SeguimientosPanel';
 import './Historico.css';
 import './Imputados.css';
 
-const ITEMS_POR_PAGINA = 10;
+const ITEMS_POR_PAGINA = 50;
 
 const estatusEntrevistaConfig = {
     PENDIENTE:   { label: 'Pendiente',   clase: 'estatus-pendiente' },
@@ -30,15 +32,24 @@ const FALLECIMIENTO_INIT = {
     comoSeComprobo: '', noActaDefuncion: '', observacionesFallecimiento: ''
 };
 
+const CIERRE_INIT = {
+    motivoCierreCarpeta: '',
+    estatusCumplimientoCierre: '',
+    fechaIngresoCierre: '',
+    notasCierre: ''
+};
+
 const Imputados = ({ onNavigarEntrevista }) => {
     const { user } = useAuth();
     const { showToast } = useToast();
     const puedeEditarFoto    = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERVISION';
     const puedeFallecimiento = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERVISION';
+    const puedeCierreCarpeta = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERVISION';
 
     const [datos, setDatos] = useState([]);
     const [busqueda, setBusqueda] = useState('');
-    const [tabVista, setTabVista] = useState('activos'); // 'activos' | 'fallecidos'
+    const [tabVista, setTabVista] = useState('activos'); // 'activos' | 'cerrados'
+    const [zonaFiltro, setZonaFiltro] = useState('TODAS');
     const [pagina, setPagina] = useState(1);
     const [cargando, setCargando] = useState(true);
 
@@ -52,10 +63,18 @@ const Imputados = ({ onNavigarEntrevista }) => {
     const fotoInputRef = useRef(null);
 
     // Fallecimiento
+    const [conteoSeg, setConteoSeg] = useState(0);
     const [showFallecimiento, setShowFallecimiento] = useState(false);
     const [formFall, setFormFall] = useState(FALLECIMIENTO_INIT);
     const [guardandoFall, setGuardandoFall] = useState(false);
     const [fallMsg, setFallMsg] = useState(null);
+
+    // Cierre de carpeta
+    const [showCierre, setShowCierre] = useState(false);
+    const [formCierre, setFormCierre] = useState(CIERRE_INIT);
+    const [guardandoCierre, setGuardandoCierre] = useState(false);
+    const [cierreMsg, setCierreMsg] = useState(null);
+    const [cierreConfirmando, setCierreConfirmando] = useState(false);
 
     useEffect(() => { cargarDatos(); }, []);
 
@@ -65,8 +84,12 @@ const Imputados = ({ onNavigarEntrevista }) => {
         if (id) {
             localStorage.removeItem('abrirExpedienteId');
             cargarDatos().then ? null : null; // asegurar datos cargados
-            getImputadoById(Number(id)).then(res => {
+            Promise.all([
+                getImputadoById(Number(id)),
+                getSeguimientosPorImputado(Number(id)).catch(() => ({ data: { data: [] } })),
+            ]).then(([res, resSeg]) => {
                 if (res.data.ok) { setPerfil(res.data.data); setShowPerfil(true); }
+                setConteoSeg(resSeg.data?.data?.length ?? 0);
             }).catch(err => console.warn("Error al cargar datos:", err));
         }
     }, []);
@@ -82,21 +105,29 @@ const Imputados = ({ onNavigarEntrevista }) => {
             const res = await getImputados();
             if (res.data.ok) setDatos(res.data.data);
         } catch (err) {
-            // silenced
+            showToast('Error al cargar imputados. Verifica la conexión.', 'error');
         } finally {
             setCargando(false);
         }
     };
 
-    const filtrados = datos.filter(i => {
-        if (tabVista === 'activos' && i.fallecido) return false;
-        if (tabVista === 'fallecidos' && !i.fallecido) return false;
-        return (
-            i.nombreCompleto?.toLowerCase().includes(busqueda.toLowerCase()) ||
-            i.causaPenal?.toLowerCase().includes(busqueda.toLowerCase()) ||
-            i.delito?.toLowerCase().includes(busqueda.toLowerCase())
-        );
-    });
+    const filtrados = datos
+        .filter(i => {
+            if (tabVista === 'activos'  && (i.fallecido || i.carpetaCerrada)) return false;
+            if (tabVista === 'cerrados' && !i.carpetaCerrada && !i.fallecido)  return false;
+            if (zonaFiltro !== 'TODAS' && i.zona !== zonaFiltro) return false;
+            return (
+                i.nombreCompleto?.toLowerCase().includes(busqueda.toLowerCase()) ||
+                i.causaPenal?.toLowerCase().includes(busqueda.toLowerCase()) ||
+                i.delito?.toLowerCase().includes(busqueda.toLowerCase())
+            );
+        })
+        .sort((a, b) => {
+            if (tabVista === 'cerrados') {
+                return (b.numeroCierreCarpeta || b.fechaFallecimiento || '').localeCompare(a.numeroCierreCarpeta || a.fechaFallecimiento || '');
+            }
+            return 0;
+        });
 
     const totalPaginas = Math.max(1, Math.ceil(filtrados.length / ITEMS_POR_PAGINA));
     const inicio = (pagina - 1) * ITEMS_POR_PAGINA;
@@ -106,11 +137,16 @@ const Imputados = ({ onNavigarEntrevista }) => {
         setShowPerfil(true);
         setCargandoPerfil(true);
         setTabActiva('entrevistas');
+        setConteoSeg(0);
         try {
-            const res = await getImputadoById(item.id);
-            if (res.data.ok) setPerfil(res.data.data);
+            const [resPerfil, resSeg] = await Promise.all([
+                getImputadoById(item.id),
+                getSeguimientosPorImputado(item.id).catch(() => ({ data: { data: [] } })),
+            ]);
+            if (resPerfil.data.ok) setPerfil(resPerfil.data.data);
+            setConteoSeg(resSeg.data?.data?.length ?? 0);
         } catch (err) {
-            // silenced
+            showToast('Error al cargar el perfil del imputado.', 'error');
         } finally {
             setCargandoPerfil(false);
         }
@@ -164,7 +200,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
             const res = await registrarFallecimiento(perfil.id, {
                 fechaFallecimiento:        formFall.fechaFallecimiento,
                 quienAviso:                formFall.quienAviso || null,
-                parentesco:                formFall.parentesco || null,
+                parentescoInformante:      formFall.parentesco || null,
                 comoSeComprobo:            formFall.comoSeComprobo || null,
                 noActaDefuncion:           formFall.noActaDefuncion || null,
                 observacionesFallecimiento:formFall.observacionesFallecimiento || null,
@@ -183,6 +219,41 @@ const Imputados = ({ onNavigarEntrevista }) => {
             setFallMsg({ tipo: 'error', texto: 'No se pudo conectar con el servidor' });
         } finally {
             setGuardandoFall(false);
+        }
+    };
+
+    const handleGuardarCierre = async () => {
+        if (!formCierre.motivoCierreCarpeta.trim()) {
+            setCierreMsg({ tipo: 'error', texto: 'El motivo del cierre es requerido' });
+            return;
+        }
+        if (!formCierre.estatusCumplimientoCierre) {
+            setCierreMsg({ tipo: 'error', texto: 'Selecciona el estatus de cumplimiento al cierre' });
+            return;
+        }
+        setGuardandoCierre(true);
+        setCierreMsg(null);
+        try {
+            const res = await registrarCierreCarpeta(perfil.id, {
+                motivoCierreCarpeta:       formCierre.motivoCierreCarpeta,
+                estatusCumplimientoCierre: formCierre.estatusCumplimientoCierre,
+                fechaIngresoCierre:        formCierre.fechaIngresoCierre || null,
+                notasCierre:               formCierre.notasCierre || null,
+            });
+            if (res.data.ok) {
+                setShowCierre(false);
+                setFormCierre(CIERRE_INIT);
+                setShowPerfil(false);
+                setPerfil(null);
+                cargarDatos();
+                showToast('Cierre de carpeta registrado correctamente');
+            } else {
+                setCierreMsg({ tipo: 'error', texto: res.data.message || 'No se pudo registrar el cierre' });
+            }
+        } catch {
+            setCierreMsg({ tipo: 'error', texto: 'No se pudo conectar con el servidor' });
+        } finally {
+            setGuardandoCierre(false);
         }
     };
 
@@ -270,8 +341,8 @@ const Imputados = ({ onNavigarEntrevista }) => {
         win.document.close();
     };
 
-    const totalActivos    = datos.filter(i => !i.fallecido).length;
-    const totalFallecidos = datos.filter(i =>  i.fallecido).length;
+    const totalActivos  = datos.filter(i => !i.fallecido && !i.carpetaCerrada).length;
+    const totalCerrados = datos.filter(i =>  i.carpetaCerrada || i.fallecido).length;
 
     return (
         <div className="historico-wrapper">
@@ -286,11 +357,11 @@ const Imputados = ({ onNavigarEntrevista }) => {
                     <span className="imp-tab-count">{totalActivos}</span>
                 </button>
                 <button
-                    className={`imp-tab${tabVista === 'fallecidos' ? ' imp-tab-activa imp-tab-fallecida' : ''}`}
-                    onClick={() => { setTabVista('fallecidos'); setPagina(1); setBusqueda(''); }}
+                    className={`imp-tab${tabVista === 'cerrados' ? ' imp-tab-activa imp-tab-cerrada' : ''}`}
+                    onClick={() => { setTabVista('cerrados'); setPagina(1); setBusqueda(''); }}
                 >
-                    <i className="bi bi-heartbreak"></i> Fallecidos
-                    <span className="imp-tab-count">{totalFallecidos}</span>
+                    <i className="bi bi-folder-x"></i> Cierre de Carpeta
+                    <span className="imp-tab-count">{totalCerrados}</span>
                 </button>
             </div>
 
@@ -311,8 +382,8 @@ const Imputados = ({ onNavigarEntrevista }) => {
                 </div>
             </div>
 
-            <div className="historico-actions">
-                <div className="historico-search">
+            <div className="imp-toolbar">
+                <div className="historico-search imp-search-grow">
                     <i className="bi bi-search"></i>
                     <input
                         type="text"
@@ -324,6 +395,15 @@ const Imputados = ({ onNavigarEntrevista }) => {
                 <button className="btn-refresh" onClick={cargarDatos} title="Actualizar lista">
                     <i className="bi bi-arrow-clockwise"></i>
                 </button>
+                <div className="zona-pills">
+                    {['TODAS','XOCHITEPEC','CUAUTLA','JOJUTLA'].map(z => (
+                        <button key={z}
+                            className={`zona-pill zona-pill-${z.toLowerCase()} ${zonaFiltro === z ? 'zona-pill-active' : ''}`}
+                            onClick={() => { setZonaFiltro(z); setPagina(1); }}>
+                            {z === 'TODAS' ? 'Todas' : z.charAt(0) + z.slice(1).toLowerCase()}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Leyenda de medidas */}
@@ -337,7 +417,19 @@ const Imputados = ({ onNavigarEntrevista }) => {
             </div>
 
             <div className="historico-tabla-wrapper">
-                <table className="historico-tabla">
+                <table className="historico-tabla imp-tabla-fixed">
+                    <colgroup>
+                        <col style={{ width: '42px' }} />
+                        <col style={{ width: '200px' }} />
+                        <col style={{ width: '110px' }} />
+                        <col style={{ width: '140px' }} />
+                        <col style={{ width: '110px' }} />
+                        {tabVista === 'cerrados' && <col style={{ width: '140px' }} />}
+                        <col style={{ width: '95px' }} />
+                        <col style={{ width: '100px' }} />
+                        <col style={{ width: '90px' }} />
+                        <col style={{ width: '90px' }} />
+                    </colgroup>
                     <thead>
                         <tr>
                             <th>NO.</th>
@@ -345,7 +437,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
                             <th>CAUSA PENAL</th>
                             <th>DELITO</th>
                             <th>FECHA REGISTRO</th>
-                            {tabVista === 'fallecidos' && <th>FECHA FALLECIMIENTO</th>}
+                            {tabVista === 'cerrados' && <th>TIPO / NO. CIERRE</th>}
                             <th>ENTREVISTAS</th>
                             <th>EVALUACIONES</th>
                             <th style={{ textAlign: 'center' }}>MEDIDA</th>
@@ -354,19 +446,43 @@ const Imputados = ({ onNavigarEntrevista }) => {
                     </thead>
                     <tbody>
                         {cargando ? (
-                            <tr><td colSpan={tabVista === 'fallecidos' ? 9 : 8} className="tabla-vacia">Cargando...</td></tr>
+                            <tr><td colSpan={tabVista === 'cerrados' ? 9 : 8} className="tabla-vacia">Cargando...</td></tr>
                         ) : paginados.length === 0 ? (
-                            <tr><td colSpan={tabVista === 'fallecidos' ? 9 : 8} className="tabla-vacia">No hay registros</td></tr>
+                            <tr><td colSpan={tabVista === 'cerrados' ? 9 : 8} className="tabla-vacia">No hay registros</td></tr>
                         ) : (
                             paginados.map((item, index) => (
                                 <tr key={item.id}>
                                     <td>{inicio + index + 1}</td>
-                                    <td className="td-nombre">{item.nombreCompleto}</td>
+                                    <td className="td-nombre">
+                                        <div style={{ display:'flex', alignItems:'center', gap:'7px' }}>
+                                            {item.nombreCompleto}
+                                            {item.zona
+                                                ? <span className={`zona-tag zona-tag-${item.zona.toLowerCase()}`}>
+                                                    {({'XOCHITEPEC':'Xochi','CUAUTLA':'Cuat','JOJUTLA':'Jojut'})[item.zona] ?? item.zona}
+                                                  </span>
+                                                : <span className="zona-tag zona-tag-sin">Sin entrevista</span>
+                                            }
+                                        </div>
+                                    </td>
                                     <td>{item.causaPenal}</td>
                                     <td className="td-delito">{item.delito || '—'}</td>
                                     <td>{item.createdAt ? new Date(item.createdAt).toLocaleDateString('es-MX') : '—'}</td>
-                                    {tabVista === 'fallecidos' && (
-                                        <td>{item.fechaFallecimiento ? new Date(item.fechaFallecimiento + 'T00:00:00').toLocaleDateString('es-MX') : '—'}</td>
+                                    {tabVista === 'cerrados' && (
+                                        <td>
+                                            {item.fallecido ? (
+                                                <div style={{ lineHeight: 1.3 }}>
+                                                    <span style={{ display:'inline-block', background:'#fee2e2', color:'#b91c1c', borderRadius:6, fontSize:11, fontWeight:700, padding:'2px 8px', marginBottom:2 }}>
+                                                        <i className="bi bi-heartbreak-fill" /> Fallecido
+                                                    </span>
+                                                    <div style={{ fontSize: 11, color: '#6b7280' }}>{item.fechaFallecimiento ? new Date(item.fechaFallecimiento + 'T00:00:00').toLocaleDateString('es-MX') : ''}</div>
+                                                </div>
+                                            ) : (
+                                                <div style={{ lineHeight: 1.3 }}>
+                                                    <div style={{ fontWeight: 600, fontSize: 12 }}>{item.numeroCierreCarpeta || '—'}</div>
+                                                    <div style={{ fontSize: 11, color: '#6b7280' }}>{item.fechaCierreCarpeta ? new Date(item.fechaCierreCarpeta + 'T00:00:00').toLocaleDateString('es-MX') : ''}</div>
+                                                </div>
+                                            )}
+                                        </td>
                                     )}
                                     <td>
                                         <span className={`count-badge ${(item.totalEntrevistas ?? 0) === 0 ? 'count-badge-cero' : ''}`}>
@@ -481,6 +597,11 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                                                 <i className="bi bi-heartbreak-fill"></i> Fallecido
                                                             </span>
                                                         )}
+                                                        {perfil.carpetaCerrada && (
+                                                            <span className="exp-badge-cierre">
+                                                                <i className="bi bi-folder-x"></i> Carpeta Cerrada
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 );
                                             })()}
@@ -587,12 +708,50 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                     );
                                 })()}
 
+                                {/* Banner cierre de carpeta */}
+                                {perfil.carpetaCerrada && (
+                                    <div className="exp-banner-cierre">
+                                        <i className="bi bi-folder-x"></i>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
+                                                <strong style={{ fontSize: 13 }}>Carpeta Cerrada</strong>
+                                                <span className="cierre-banner-num">{perfil.numeroCierreCarpeta}</span>
+                                                {perfil.estatusCumplimientoCierre && (
+                                                    <span className="cierre-banner-estatus">
+                                                        {({ CUMPLIENDO: 'Cumpliendo', CUMPLIENDO_PARCIALMENTE: 'Cumpliendo Parcialmente', CUMPLIDO_TOTALMENTE: 'Cumplido Totalmente', CUMPLIMIENTO_DE_CONDICIONES: 'Cumplimiento de Condiciones', CUMPLIMIENTO_DE_ACUERDO_REPARATORIO: 'Cumplimiento de Acuerdo Reparatorio', NO_VINCULACION_A_PROCESO: 'No Vinculación a Proceso', REVOCACION_POR_INCUMPLIMIENTO: 'Revocación por Incumplimiento', CESE_POR_SENTENCIA: 'Cese por Sentencia', SUSTITUCION_O_MODIFICACION: 'Sustitución o Modificación', SOBRESEIMIENTO: 'Sobreseimiento', SUSTRACCION_DE_ACCION_DE_LA_JUSTICIA: 'Sustracción de Acción de la Justicia' })[perfil.estatusCumplimientoCierre] ?? perfil.estatusCumplimientoCierre}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="cierre-banner-meta">
+                                                {perfil.fechaCierreCarpeta && (
+                                                    <span><i className="bi bi-calendar3"></i> Cierre: {new Date(perfil.fechaCierreCarpeta + 'T00:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
+                                                )}
+                                                {perfil.fechaIngresoCierre && (
+                                                    <span><i className="bi bi-calendar-event"></i> Ingreso: {new Date(perfil.fechaIngresoCierre + 'T00:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
+                                                )}
+                                                {perfil.responsableCierreCarpeta && (
+                                                    <span><i className="bi bi-person-fill"></i> {perfil.responsableCierreCarpeta}</span>
+                                                )}
+                                            </div>
+                                            {perfil.motivoCierreCarpeta && (
+                                                <div className="cierre-banner-motivo">"{perfil.motivoCierreCarpeta}"</div>
+                                            )}
+                                            {perfil.notasCierre && (
+                                                <div className="cierre-banner-notas">
+                                                    <i className="bi bi-sticky"></i> <strong>Notas:</strong> {perfil.notasCierre}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Tabs */}
                                 <div className="exp-tabs">
                                     {[
-                                        { id: 'entrevistas', icon: 'bi-journal-text',  label: 'Entrevistas',  count: perfil.entrevistas?.length ?? 0 },
-                                        { id: 'evaluaciones', icon: 'bi-shield-check', label: 'Evaluaciones', count: perfil.evaluaciones?.length ?? 0 },
-                                        { id: 'medidas',     icon: 'bi-card-checklist',label: 'Medidas / SCP',count: perfil.medidas?.length ?? 0 },
+                                        { id: 'entrevistas',  icon: 'bi-journal-text',   label: 'Entrevistas',   count: perfil.entrevistas?.length ?? 0 },
+                                        { id: 'evaluaciones', icon: 'bi-shield-check',  label: 'Evaluaciones',  count: perfil.evaluaciones?.length ?? 0 },
+                                        { id: 'medidas',      icon: 'bi-card-checklist', label: 'Medidas / SCP', count: perfil.medidas?.length ?? 0 },
+                                        { id: 'seguimientos', icon: 'bi-clock-history',  label: 'Seguimientos',  count: conteoSeg },
                                     ].map(t => (
                                         <button
                                             key={t.id}
@@ -753,17 +912,25 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                             </table>
                                         );
                                     })()}
+
+                                    {tabActiva === 'seguimientos' && (
+                                        <SeguimientosPanel
+                                            imputadoId={perfil.id}
+                                            seccion="EXPEDIENTE"
+                                            referenciaId={null}
+                                        />
+                                    )}
                                 </div>
 
                                 {/* ── Footer de acciones ── */}
                                 <div className="exp-footer">
-                                    {!perfil.fallecido && (() => {
+                                    {!perfil.fallecido && !perfil.carpetaCerrada && (() => {
                                         const ultimaEntrevista = perfil.entrevistas?.[perfil.entrevistas.length - 1];
                                         const ultimaEvaluacion = perfil.evaluaciones?.[perfil.evaluaciones.length - 1];
 
                                         const accionesPorTab = {
                                             entrevistas: {
-                                                nueva: onNavigarEntrevista && {
+                                                nueva: onNavigarEntrevista && (user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERVISION') && {
                                                     label: 'Nueva Entrevista', icon: 'bi-journal-plus',
                                                     action: () => { onNavigarEntrevista(perfil); setShowPerfil(false); setPerfil(null); }
                                                 },
@@ -820,7 +987,16 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                             </button>
                                         ) : null;
                                     })()}
-                                    {puedeFallecimiento && !perfil.fallecido && (
+                                    {puedeCierreCarpeta && !perfil.fallecido && !perfil.carpetaCerrada && (
+                                        <button className="exp-action-btn exp-btn-cierre" onClick={() => {
+                                            setShowCierre(true);
+                                            setFormCierre(CIERRE_INIT);
+                                            setCierreMsg(null);
+                                        }}>
+                                            <i className="bi bi-folder-x"></i> Cierre de Carpeta
+                                        </button>
+                                    )}
+                                    {puedeFallecimiento && !perfil.fallecido && !perfil.carpetaCerrada && (
                                         <button className="exp-action-btn exp-btn-fallecimiento" onClick={() => {
                                             setShowFallecimiento(true);
                                             setFormFall(FALLECIMIENTO_INIT);
@@ -831,6 +1007,186 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                     )}
                                 </div>
                             </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* ── Modal Cierre de Carpeta ── */}
+            {showCierre && perfil && (
+                <div className="fall-overlay">
+                    <div className="fall-modal">
+                        <div className="fall-header fall-header-cierre">
+                            <div className="fall-header-icon fall-header-icon-cierre"><i className="bi bi-folder-x" style={{ color: '#fff' }}></i></div>
+                            <div>
+                                <h3 className="fall-header-title">{cierreConfirmando ? 'Confirmar Cierre de Carpeta' : 'Cierre de Carpeta'}</h3>
+                                <p className="fall-header-sub">{perfil.nombreCompleto}</p>
+                            </div>
+                            <button className="fall-close" onClick={() => { setShowCierre(false); setCierreConfirmando(false); }}>
+                                <i className="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+
+                        {!cierreConfirmando ? (
+                            <>
+                                <div className="fall-aviso fall-aviso-cierre">
+                                    <i className="bi bi-info-circle-fill"></i>
+                                    Esta acción cierra la carpeta del imputado y finaliza automáticamente todas sus medidas activas. El número de cierre se genera automáticamente.
+                                </div>
+
+                                <div className="fall-body">
+                                    <div className="fall-field fall-field-full">
+                                        <label>Motivo del cierre <span className="fall-req">*</span></label>
+                                        <textarea rows={3} placeholder="Describe el motivo del cierre de carpeta..."
+                                            value={formCierre.motivoCierreCarpeta}
+                                            onChange={e => setFormCierre(p => ({ ...p, motivoCierreCarpeta: e.target.value }))} />
+                                    </div>
+                                    <div className="fall-field fall-field-full" style={{ maxWidth: 260 }}>
+                                        <label>Fecha de ingreso</label>
+                                        <input type="date"
+                                            value={formCierre.fechaIngresoCierre}
+                                            onChange={e => setFormCierre(p => ({ ...p, fechaIngresoCierre: e.target.value }))} />
+                                    </div>
+                                    <div className="fall-field fall-field-full">
+                                        <label>Estatus al cierre <span className="fall-req">*</span></label>
+                                        <select
+                                            className="cierre-estatus-select"
+                                            value={formCierre.estatusCumplimientoCierre}
+                                            onChange={e => setFormCierre(p => ({ ...p, estatusCumplimientoCierre: e.target.value }))}
+                                        >
+                                            <option value="">— Seleccionar estatus —</option>
+                                            <option value="CUMPLIENDO">Cumpliendo</option>
+                                            <option value="CUMPLIENDO_PARCIALMENTE">Cumpliendo Parcialmente</option>
+                                            <option value="CUMPLIDO_TOTALMENTE">Cumplido Totalmente</option>
+                                            <option value="CUMPLIMIENTO_DE_CONDICIONES">Cumplimiento de Condiciones</option>
+                                            <option value="CUMPLIMIENTO_DE_ACUERDO_REPARATORIO">Cumplimiento de Acuerdo Reparatorio</option>
+                                            <option value="NO_VINCULACION_A_PROCESO">No Vinculación a Proceso</option>
+                                            {perfil?.medidas?.some(m => m.tipo === 'SUSPENSION_CONDICIONAL') && (
+                                                <option value="REVOCACION_POR_INCUMPLIMIENTO">Revocación por Incumplimiento</option>
+                                            )}
+                                            <option value="CESE_POR_SENTENCIA">Cese por Sentencia</option>
+                                            <option value="SUSTITUCION_O_MODIFICACION">Sustitución o Modificación</option>
+                                            <option value="SOBRESEIMIENTO">Sobreseimiento</option>
+                                            <option value="SUSTRACCION_DE_ACCION_DE_LA_JUSTICIA">Sustracción de Acción de la Justicia</option>
+                                        </select>
+                                    </div>
+                                    <div className="fall-field fall-field-full">
+                                        <label>Notas adicionales</label>
+                                        <textarea rows={2} placeholder="Observaciones o notas del cierre (opcional)..."
+                                            value={formCierre.notasCierre}
+                                            onChange={e => setFormCierre(p => ({ ...p, notasCierre: e.target.value }))} />
+                                    </div>
+                                </div>
+
+                                <div className="fall-footer">
+                                    <button className="fall-btn-cancelar" onClick={() => { setShowCierre(false); setCierreConfirmando(false); }}>
+                                        Cancelar
+                                    </button>
+                                    <button className="fall-btn-cierre" onClick={() => {
+                                        if (!formCierre.motivoCierreCarpeta.trim()) {
+                                            setCierreMsg({ tipo: 'error', texto: 'El motivo del cierre es requerido' });
+                                            return;
+                                        }
+                                        if (!formCierre.estatusCumplimientoCierre) {
+                                            setCierreMsg({ tipo: 'error', texto: 'Selecciona el estatus de cumplimiento al cierre' });
+                                            return;
+                                        }
+                                        setCierreMsg(null);
+                                        setCierreConfirmando(true);
+                                    }}>
+                                        <i className="bi bi-arrow-right"></i> Continuar
+                                    </button>
+                                </div>
+
+                                {cierreMsg && (
+                                    <div className={`fall-msg fall-msg--${cierreMsg.tipo}`} style={{ margin: '0 24px 16px' }}>
+                                        <i className={`bi ${cierreMsg.tipo === 'ok' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'}`} />
+                                        {cierreMsg.texto}
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                <div className="fall-body-resumen">
+                                    <div className="cierre-resumen">
+                                        <div className="cierre-resumen-titulo">
+                                            <i className="bi bi-exclamation-triangle-fill"></i>
+                                            Esta acción no se puede deshacer. Revisa los datos antes de confirmar.
+                                        </div>
+                                        <div className="cierre-resumen-fila">
+                                            <span className="cierre-resumen-label">Imputado</span>
+                                            <span className="cierre-resumen-valor">{perfil.nombreCompleto}</span>
+                                        </div>
+                                        <div className="cierre-resumen-fila">
+                                            <span className="cierre-resumen-label">Causa penal</span>
+                                            <span className="cierre-resumen-valor">{perfil.causaPenal}</span>
+                                        </div>
+                                        <div className="cierre-resumen-fila">
+                                            <span className="cierre-resumen-label">Estatus al cierre</span>
+                                            <span className="cierre-resumen-valor">
+                                                {({
+                                                    CUMPLIENDO: 'Cumpliendo',
+                                                    CUMPLIENDO_PARCIALMENTE: 'Cumpliendo Parcialmente',
+                                                    CUMPLIDO_TOTALMENTE: 'Cumplido Totalmente',
+                                                    CUMPLIMIENTO_DE_CONDICIONES: 'Cumplimiento de Condiciones',
+                                                    CUMPLIMIENTO_DE_ACUERDO_REPARATORIO: 'Cumplimiento de Acuerdo Reparatorio',
+                                                    NO_VINCULACION_A_PROCESO: 'No Vinculación a Proceso',
+                                                    REVOCACION_POR_INCUMPLIMIENTO: 'Revocación por Incumplimiento',
+                                                    CESE_POR_SENTENCIA: 'Cese por Sentencia',
+                                                    SUSTITUCION_O_MODIFICACION: 'Sustitución o Modificación',
+                                                    SOBRESEIMIENTO: 'Sobreseimiento',
+                                                    SUSTRACCION_DE_ACCION_DE_LA_JUSTICIA: 'Sustracción de Acción de la Justicia',
+                                                })[formCierre.estatusCumplimientoCierre] || formCierre.estatusCumplimientoCierre}
+                                            </span>
+                                        </div>
+                                        <div className="cierre-resumen-fila">
+                                            <span className="cierre-resumen-label">Motivo</span>
+                                            <span className="cierre-resumen-valor cierre-resumen-motivo">{formCierre.motivoCierreCarpeta}</span>
+                                        </div>
+                                        {formCierre.fechaIngresoCierre && (
+                                            <div className="cierre-resumen-fila">
+                                                <span className="cierre-resumen-label">Fecha de ingreso</span>
+                                                <span className="cierre-resumen-valor">{new Date(formCierre.fechaIngresoCierre + 'T00:00:00').toLocaleDateString('es-MX')}</span>
+                                            </div>
+                                        )}
+                                        {formCierre.notasCierre && (
+                                            <div className="cierre-resumen-fila">
+                                                <span className="cierre-resumen-label">Notas</span>
+                                                <span className="cierre-resumen-valor cierre-resumen-motivo">{formCierre.notasCierre}</span>
+                                            </div>
+                                        )}
+                                        <div className="cierre-resumen-fila">
+                                            <span className="cierre-resumen-label">Medidas</span>
+                                            <span className="cierre-resumen-valor">
+                                                {(() => {
+                                                    const activas = perfil.medidas?.filter(m => !['FINALIZADO','LEVANTADO','REVOCADO'].includes(m.estado)) ?? [];
+                                                    return activas.length > 0
+                                                        ? `${activas.length} medida(s) en curso serán finalizadas automáticamente`
+                                                        : `${perfil.medidas?.length ?? 0} medida(s) registrada(s) — ninguna activa al momento del cierre`;
+                                                })()}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {cierreMsg && (
+                                        <div className={`fall-msg fall-msg--${cierreMsg.tipo}`} style={{ marginTop: 12 }}>
+                                            <i className={`bi ${cierreMsg.tipo === 'ok' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'}`} />
+                                            {cierreMsg.texto}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="fall-footer">
+                                    <button className="fall-btn-cancelar" onClick={() => setCierreConfirmando(false)}>
+                                        <i className="bi bi-arrow-left"></i> Regresar
+                                    </button>
+                                    <button className="fall-btn-cierre" onClick={handleGuardarCierre} disabled={guardandoCierre}>
+                                        {guardandoCierre
+                                            ? <><i className="bi bi-arrow-repeat imp-spin"></i> Guardando…</>
+                                            : <><i className="bi bi-folder-x"></i> Confirmar Cierre</>}
+                                    </button>
+                                </div>
+                            </>
                         )}
                     </div>
                 </div>

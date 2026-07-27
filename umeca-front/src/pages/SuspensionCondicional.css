@@ -1,0 +1,294 @@
+/* ── Wrap general ─────────────────────────────────────────── */
+.scp-wrap { padding: 0 0 2rem; }
+.scp-loading { display: flex; justify-content: center; padding: 4rem; }
+
+/* ── Spinner ──────────────────────────────────────────────── */
+.scp-spinner {
+    width: 36px; height: 36px;
+    border: 4px solid #e2e8f0;
+    border-top-color: #2d6a4f;
+    border-radius: 50%;
+    animation: scp-spin .7s linear infinite;
+}
+@keyframes scp-spin { to { transform: rotate(360deg); } }
+
+/* ── Topbar ───────────────────────────────────────────────── */
+.scp-topbar {
+    display: flex; align-items: center; flex-wrap: wrap;
+    gap: 0.6rem; padding: 12px 20px; margin-bottom: 0.75rem;
+    justify-content: space-between;
+    background: #fff; border: 1px solid #e0e0e0; border-radius: 8px;
+}
+.scp-topbar-left  { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.scp-topbar-right { display: flex; align-items: center; gap: 0.5rem; }
+.scp-total { font-size: 0.85rem; color: #64748b; white-space: nowrap; }
+
+/* ── Pills fuero ──────────────────────────────────────────── */
+.scp-fuero-pills { display: flex; gap: 4px; }
+.scp-pill {
+    padding: 4px 12px; border-radius: 999px; font-size: 0.78rem; font-weight: 600;
+    border: 1.5px solid #cbd5e1; background: white; cursor: pointer; transition: all .15s;
+    color: #475569;
+}
+.scp-pill:hover { background: #f1f5f9; }
+.scp-pill-active { background: #2d6a4f !important; color: white !important; border-color: #2d6a4f !important; }
+.scp-pill-federal  { border-color: #93c5fd; color: #1d4ed8; }
+.scp-pill-federal:hover  { background: #eff6ff; }
+.scp-pill-federal.scp-pill-active  { background: #1d4ed8 !important; border-color: #1d4ed8 !important; }
+.scp-pill-estatal  { border-color: #86efac; color: #15803d; }
+.scp-pill-estatal:hover  { background: #f0fdf4; }
+.scp-pill-estatal.scp-pill-active  { background: #15803d !important; border-color: #15803d !important; }
+
+/* ── Select año ───────────────────────────────────────────── */
+.scp-select-anio {
+    padding: 4px 8px; border-radius: 8px; border: 1.5px solid #cbd5e1;
+    font-size: 0.82rem; color: #374151; background: white; cursor: pointer;
+}
+
+/* ── Botones topbar ───────────────────────────────────────── */
+.scp-btn-import {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: 8px; font-size: 0.83rem; font-weight: 600;
+    border: 1.5px solid #16a34a; color: #16a34a; background: white; cursor: pointer;
+    transition: all .15s;
+}
+.scp-btn-import:hover { background: #f0fdf4; }
+
+.scp-btn-nuevo {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: 8px; font-size: 0.83rem; font-weight: 600;
+    border: none; color: white; background: #2d6a4f; cursor: pointer; transition: all .15s;
+}
+.scp-btn-nuevo:hover { background: #1e4d39; }
+
+.scp-btn-nuevo-grande {
+    display: flex; align-items: center; gap: 8px; white-space: nowrap;
+    padding: 9px 24px; border-radius: 10px; font-size: 0.92rem; font-weight: 700;
+    border: none; color: white; background: #2d6a4f; cursor: pointer; transition: all .15s;
+}
+.scp-btn-nuevo-grande:hover { background: #1e4d39; }
+
+/* ── Paginación ───────────────────────────────────────────── */
+.scp-paginacion {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 12px; border: 1px solid #e5e7eb;
+    border-radius: 8px; background: white; font-size: 13px;
+}
+.scp-paginacion button {
+    width: 30px; height: 30px; border-radius: 50%;
+    border: 1px solid #d1d5db; background: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: #374151; transition: background .15s; font-size: 1rem;
+}
+.scp-paginacion button:hover:not(:disabled) { background: #f3f4f6; }
+.scp-paginacion button:disabled { opacity: .35; cursor: default; }
+.scp-paginacion span { font-weight: 600; color: #111; min-width: 36px; text-align: center; white-space: nowrap; }
+
+/* ── Buscador ─────────────────────────────────────────────── */
+.scp-search-row {
+    display: flex; align-items: center; gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+.scp-search-box {
+    display: flex; align-items: center; gap: 8px;
+    background: white; border: 1.5px solid #cbd5e1; border-radius: 10px;
+    padding: 8px 14px; flex: 1;
+}
+.scp-search-box i { color: #94a3b8; font-size: 0.9rem; }
+.scp-search-box input { border: none; outline: none; flex: 1; font-size: 0.88rem; color: #1e293b; background: transparent; }
+.scp-clear { border: none; background: none; color: #94a3b8; font-size: 1.1rem; cursor: pointer; line-height: 1; }
+
+/* ── Tabla ────────────────────────────────────────────────── */
+.scp-table-wrap { overflow-x: auto; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.scp-table { width: 100%; border-collapse: collapse; background: white; font-size: 0.85rem; }
+.scp-table thead tr { background: #2d6a4f; color: white; }
+.scp-table th { padding: 11px 14px; text-align: left; font-size: 0.75rem; font-weight: 700; letter-spacing: .04em; white-space: nowrap; }
+.scp-table td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.scp-table tbody tr:hover { background: #f8fafc; }
+.scp-table tbody tr:last-child td { border-bottom: none; }
+
+.scp-fecha   { white-space: nowrap; color: #475569; font-size: 0.82rem; }
+.scp-imputado { font-weight: 600; color: #1e293b; }
+.scp-loading-row { text-align: center; padding: 2rem !important; }
+.scp-empty { text-align: center; padding: 2rem !important; color: #94a3b8; font-style: italic; }
+
+/* ── Badges fuero ─────────────────────────────────────────── */
+.scp-fuero-badge {
+    display: inline-block; padding: 2px 10px; border-radius: 999px;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: .04em;
+}
+.scp-fuero-federal { background: #dbeafe; color: #1d4ed8; }
+.scp-fuero-estatal { background: #dcfce7; color: #15803d; }
+.scp-anio-badge {
+    display: inline-block; padding: 2px 10px; border-radius: 999px;
+    font-size: 0.72rem; font-weight: 700; background: #f1f5f9; color: #475569;
+}
+
+/* ── Botones de acción en tabla ───────────────────────────── */
+.scp-acciones-cell { display: flex; gap: 6px; align-items: center; }
+.scp-btn-ver, .scp-btn-edit-sm, .scp-btn-del-sm {
+    width: 30px; height: 30px; border-radius: 7px; border: none;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.82rem; cursor: pointer; transition: all .15s;
+}
+.scp-btn-ver     { background: #d1fae5; color: #065f46; }
+.scp-btn-ver:hover { background: #a7f3d0; }
+.scp-btn-edit-sm { background: #e0f2fe; color: #0369a1; }
+.scp-btn-edit-sm:hover { background: #bae6fd; }
+.scp-btn-del-sm  { background: #fee2e2; color: #b91c1c; }
+.scp-btn-del-sm:hover  { background: #fecaca; }
+
+/* ── Detalle ──────────────────────────────────────────────── */
+.scp-detalle-wrap { padding: 0 0 2rem; }
+.scp-btn-volver {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 16px; border-radius: 8px; border: 1.5px solid #cbd5e1;
+    background: white; color: #374151; font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; margin-bottom: 1.2rem; transition: all .15s;
+}
+.scp-btn-volver:hover { background: #f8fafc; }
+
+.scp-detalle-header {
+    background: #2d6a4f; color: white; border-radius: 12px;
+    padding: 1.2rem 1.5rem; margin-bottom: 1.2rem;
+    display: flex; align-items: center; flex-wrap: wrap; gap: 0.8rem;
+}
+.scp-detalle-nombre { font-size: 1.35rem; font-weight: 700; flex: 1; }
+.scp-detalle-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.scp-detalle-acciones { display: flex; gap: 8px; margin-left: auto; }
+
+.scp-btn-edit {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 16px; border-radius: 8px; border: none;
+    background: white; color: #2d6a4f; font-size: 0.82rem;
+    font-weight: 700; cursor: pointer; transition: all .15s;
+    box-shadow: 0 1px 4px rgba(0,0,0,.15);
+}
+.scp-btn-edit:hover { background: #f0fdf4; }
+.scp-btn-del {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 8px; border: none;
+    background: #fee2e2; color: #b91c1c; font-size: 0.82rem;
+    font-weight: 600; cursor: pointer; transition: all .15s;
+}
+.scp-btn-del:hover { background: #fecaca; }
+
+.scp-detalle-grid { display: flex; flex-direction: column; gap: 1rem; }
+.scp-seccion {
+    background: white; border-radius: 12px; padding: 1rem 1.2rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    border-left: 4px solid #2d6a4f;
+}
+.scp-seccion-titulo {
+    font-size: 0.8rem; font-weight: 700; color: #2d6a4f;
+    text-transform: uppercase; letter-spacing: .05em; margin-bottom: 0.7rem;
+    display: flex; align-items: center; gap: 6px;
+}
+.scp-campos { display: flex; flex-direction: column; gap: 0.4rem; }
+.scp-fila { display: flex; gap: 0.8rem; align-items: baseline; }
+.scp-fila-label { min-width: 130px; font-size: 0.78rem; color: #64748b; font-weight: 600; flex-shrink: 0; }
+.scp-fila-valor { font-size: 0.88rem; color: #1e293b; }
+.scp-texto-libre { font-size: 0.88rem; color: #374151; line-height: 1.6; margin: 0; white-space: pre-wrap; }
+
+/* ── Modales ──────────────────────────────────────────────── */
+.scp-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.45);
+    display: flex; align-items: center; justify-content: center; z-index: 1000;
+}
+.scp-modal {
+    background: white; border-radius: 16px; padding: 2rem 2rem 1.5rem;
+    width: 90%; max-width: 480px; position: relative;
+    box-shadow: 0 8px 40px rgba(0,0,0,.18); max-height: 90vh; overflow-y: auto;
+    text-align: center;
+}
+.scp-modal-form { max-width: 600px; text-align: left; }
+.scp-modal h2 { font-size: 1.2rem; font-weight: 700; color: #1e293b; margin: 0 0 0.5rem; }
+.scp-modal h3 { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin: 0 0 0.4rem; }
+.scp-modal p  { color: #64748b; font-size: 0.88rem; line-height: 1.5; margin: 0 0 1rem; }
+.scp-modal-close {
+    position: absolute; top: 12px; right: 14px; background: none; border: none;
+    font-size: 1.4rem; color: #94a3b8; cursor: pointer; line-height: 1;
+}
+.scp-modal-icon { font-size: 2.5rem; color: #2d6a4f; margin-bottom: 0.8rem; }
+.scp-modal-icon-ok     { color: #16a34a; }
+.scp-modal-icon-danger { color: #b91c1c; }
+.scp-modal-desc { font-size: 0.82rem; color: #64748b; background: #f8fafc; border-radius: 8px; padding: 0.7rem 1rem; margin-bottom: 1rem; text-align: left; }
+
+.scp-modal-btns { display: flex; gap: 0.7rem; justify-content: center; margin-top: 1rem; }
+.scp-btn-cancel {
+    padding: 8px 20px; border-radius: 8px; border: 1.5px solid #cbd5e1;
+    background: white; color: #374151; font-size: 0.88rem; font-weight: 600; cursor: pointer;
+}
+.scp-btn-save {
+    padding: 8px 20px; border-radius: 8px; border: none;
+    background: #2d6a4f; color: white; font-size: 0.88rem; font-weight: 600; cursor: pointer;
+}
+.scp-btn-save:hover { background: #1e4d39; }
+.scp-btn-save:disabled { opacity: .6; cursor: default; }
+.scp-btn-danger {
+    padding: 8px 20px; border-radius: 8px; border: none;
+    background: #dc2626; color: white; font-size: 0.88rem; font-weight: 600; cursor: pointer;
+}
+.scp-btn-danger:hover { background: #b91c1c; }
+.scp-btn-danger:disabled { opacity: .6; cursor: default; }
+
+/* ── File label ───────────────────────────────────────────── */
+.scp-file-label {
+    display: flex; align-items: center; gap: 8px; justify-content: center;
+    border: 2px dashed #86efac; border-radius: 10px; padding: 1rem;
+    color: #2d6a4f; font-size: 0.88rem; font-weight: 600;
+    cursor: pointer; margin-bottom: 0.5rem; transition: background .15s;
+}
+.scp-file-label:hover { background: #f0fdf4; }
+.scp-import-error {
+    background: #fee2e2; color: #b91c1c; border-radius: 8px;
+    padding: 0.6rem 1rem; font-size: 0.83rem; margin-bottom: 0.5rem;
+}
+
+/* ── Form header ──────────────────────────────────────────── */
+.scp-form-header {
+    display: flex; align-items: center; gap: 1rem;
+    padding-bottom: 1rem; margin-bottom: 0.5rem;
+    border-bottom: 1.5px solid #f1f5f9;
+}
+.scp-form-header-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: #d1fae5; color: #065f46;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; flex-shrink: 0;
+}
+.scp-form-header h2 { font-size: 1.15rem; font-weight: 700; color: #1e293b; margin: 0; }
+.scp-form-subtitle  { font-size: 0.78rem; color: #94a3b8; margin: 2px 0 0; }
+.scp-form-header .scp-modal-close { margin-left: auto; }
+
+/* ── Form secciones ───────────────────────────────────────── */
+.scp-form-seccion {
+    display: flex; flex-direction: column; gap: 0.65rem;
+    background: #f8fafc; border-radius: 10px; padding: 0.9rem 1rem;
+    border: 1px solid #e2e8f0;
+}
+.scp-form-seccion-titulo {
+    font-size: 0.75rem; font-weight: 700; color: #2d6a4f;
+    text-transform: uppercase; letter-spacing: .05em;
+    display: flex; align-items: center; gap: 5px; margin-bottom: 0.2rem;
+}
+
+/* ── Formulario ───────────────────────────────────────────── */
+.scp-form { display: flex; flex-direction: column; gap: 0.75rem; }
+.scp-form-row { display: flex; gap: 0.75rem; }
+.scp-form-row label { flex: 1; }
+.scp-form label { display: flex; flex-direction: column; gap: 4px; font-size: 0.82rem; font-weight: 600; color: #374151; }
+.scp-form input, .scp-form select, .scp-form textarea {
+    padding: 8px 11px; border: 1.5px solid #cbd5e1; border-radius: 8px;
+    font-size: 0.88rem; color: #1e293b; background: white;
+    outline: none; transition: border-color .15s; resize: vertical;
+}
+.scp-form input:focus, .scp-form select:focus, .scp-form textarea:focus {
+    border-color: #2d6a4f; box-shadow: 0 0 0 3px rgba(45,106,79,.08);
+}
+.scp-form-footer {
+    display: flex; gap: 0.7rem; justify-content: flex-end;
+    margin-top: 0.5rem; padding-top: 1rem; border-top: 1.5px solid #f1f5f9;
+}
+.scp-btn-cancel { display: flex; align-items: center; gap: 5px; }
+.scp-btn-save   { display: flex; align-items: center; gap: 5px; }

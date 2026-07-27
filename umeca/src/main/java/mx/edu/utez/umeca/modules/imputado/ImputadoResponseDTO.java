@@ -29,8 +29,17 @@ public class ImputadoResponseDTO {
     private String celular;  // teléfono de la última entrevista
     private boolean fallecido;
     private LocalDate fechaFallecimiento;
+    private boolean carpetaCerrada;
+    private String numeroCierreCarpeta;
+    private LocalDate fechaCierreCarpeta;
+    private String responsableCierreCarpeta;
+    private String motivoCierreCarpeta;
+    private String estatusCumplimientoCierre;
+    private LocalDate fechaIngresoCierre;
+    private String notasCierre;
     private String tipoMedidaActiva;   // null = sin medida, "MEDIDA_CAUTELAR" | "SUSPENSION_CONDICIONAL"
     private String estadoMedidaActiva; // "ACTIVO" | "LEVANTADO" | "FINALIZADO" | etc.
+    private String zona;               // zona de la última entrevista del imputado
 
     // Resúmenes relacionados
     private List<EntrevistaResumen> entrevistas;
@@ -122,6 +131,14 @@ public class ImputadoResponseDTO {
         dto.setCreatedAt(i.getCreatedAt());
         dto.setFallecido(i.isFallecido());
         dto.setFechaFallecimiento(i.getFechaFallecimiento());
+        dto.setCarpetaCerrada(i.isCarpetaCerrada());
+        dto.setNumeroCierreCarpeta(i.getNumeroCierreCarpeta());
+        dto.setFechaCierreCarpeta(i.getFechaCierreCarpeta());
+        dto.setResponsableCierreCarpeta(i.getResponsableCierreCarpeta());
+        dto.setMotivoCierreCarpeta(i.getMotivoCierreCarpeta());
+        dto.setEstatusCumplimientoCierre(i.getEstatusCumplimientoCierre());
+        dto.setFechaIngresoCierre(i.getFechaIngresoCierre());
+        dto.setNotasCierre(i.getNotasCierre());
         dto.setEntrevistas(entrevistas.stream().map(EntrevistaResumen::from).toList());
         dto.setEvaluaciones(evaluaciones.stream().map(EvaluacionResumen::from).toList());
         dto.setMedidas(medidas.stream().map(MedidaResumen::from).toList());
@@ -143,6 +160,14 @@ public class ImputadoResponseDTO {
         dto.setCreatedAt(i.getCreatedAt());
         dto.setFallecido(i.isFallecido());
         dto.setFechaFallecimiento(i.getFechaFallecimiento());
+        dto.setCarpetaCerrada(i.isCarpetaCerrada());
+        dto.setNumeroCierreCarpeta(i.getNumeroCierreCarpeta());
+        dto.setFechaCierreCarpeta(i.getFechaCierreCarpeta());
+        dto.setResponsableCierreCarpeta(i.getResponsableCierreCarpeta());
+        dto.setMotivoCierreCarpeta(i.getMotivoCierreCarpeta());
+        dto.setEstatusCumplimientoCierre(i.getEstatusCumplimientoCierre());
+        dto.setFechaIngresoCierre(i.getFechaIngresoCierre());
+        dto.setNotasCierre(i.getNotasCierre());
         return dto;
     }
 }

@@ -2,6 +2,8 @@ package mx.edu.utez.umeca.modules.security.auth;
 
 import lombok.RequiredArgsConstructor;
 import mx.edu.utez.umeca.kernel.ApiResponse;
+import mx.edu.utez.umeca.modules.bitacora.Bitacora;
+import mx.edu.utez.umeca.modules.bitacora.BitacoraRepository;
 import mx.edu.utez.umeca.modules.security.config.JwtService;
 import mx.edu.utez.umeca.modules.security.mail.MailService;
 import mx.edu.utez.umeca.modules.security.user.User;
@@ -27,6 +29,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final MailService mailService;
+    private final BitacoraRepository bitacoraRepo;
 
     public ApiResponse login(AuthDTO dto) {
         try {
@@ -38,6 +41,16 @@ public class AuthService {
                     .orElseThrow();
 
             String token = jwtService.generateToken(user);
+
+            // Registrar entrada en bitácora
+            String nombreCompleto = user.getNombre() + " " + user.getApPaterno()
+                    + (user.getApMaterno() != null ? " " + user.getApMaterno() : "");
+            bitacoraRepo.save(new Bitacora(
+                    Bitacora.Entidad.SESION, user.getId(), nombreCompleto,
+                    Bitacora.Accion.LOGIN,
+                    "Inicio de sesión — usuario: " + user.getUsername() + " | rol: " + user.getRol(),
+                    user
+            ));
 
             Map<String, Object> data = new HashMap<>();
             data.put("token", token);
@@ -60,6 +73,20 @@ public class AuthService {
         } catch (AuthenticationException e) {
             return new ApiResponse(false, "Usuario o contraseña incorrectos");
         }
+    }
+
+    public ApiResponse logout(String username) {
+        userRepository.findByUsername(username).ifPresent(user -> {
+            String nombreCompleto = user.getNombre() + " " + user.getApPaterno()
+                    + (user.getApMaterno() != null ? " " + user.getApMaterno() : "");
+            bitacoraRepo.save(new Bitacora(
+                    Bitacora.Entidad.SESION, user.getId(), nombreCompleto,
+                    Bitacora.Accion.LOGOUT,
+                    "Cierre de sesión — usuario: " + user.getUsername() + " | rol: " + user.getRol(),
+                    user
+            ));
+        });
+        return new ApiResponse(true, "Sesión cerrada");
     }
 
     public boolean verificarPassword(String usernameOrEmail, String password) {

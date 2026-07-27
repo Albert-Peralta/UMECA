@@ -3,7 +3,7 @@ import api from '../api/axios';
 import './Historico.css';
 import './Imputados.css';
 
-const ITEMS_POR_PAGINA = 10;
+const ITEMS_POR_PAGINA = 50;
 
 const estatusConfig = {
     PENDIENTE:  { label: 'Pendiente',   clase: 'estatus-pendiente' },
@@ -26,6 +26,7 @@ const modalInicial = {
 const Historico = () => {
     const [datos, setDatos] = useState([]);
     const [busqueda, setBusqueda] = useState('');
+    const [zonaFiltro, setZonaFiltro] = useState('TODAS');
     const [pagina, setPagina] = useState(1);
     const [showModal, setShowModal] = useState(false);
     const [form, setForm] = useState(modalInicial);
@@ -58,11 +59,14 @@ const Historico = () => {
         }
     };
 
-    const filtrados = datos.filter(item =>
-        item.nombreImputado?.toLowerCase().includes(busqueda.toLowerCase()) ||
-        item.causaPenal?.toLowerCase().includes(busqueda.toLowerCase()) ||
-        item.delito?.toLowerCase().includes(busqueda.toLowerCase())
-    );
+    const filtrados = datos.filter(item => {
+        const coincideBusqueda =
+            item.nombreImputado?.toLowerCase().includes(busqueda.toLowerCase()) ||
+            item.causaPenal?.toLowerCase().includes(busqueda.toLowerCase()) ||
+            item.delito?.toLowerCase().includes(busqueda.toLowerCase());
+        const coincideZona = zonaFiltro === 'TODAS' || item.zonaEvaluador === zonaFiltro;
+        return coincideBusqueda && coincideZona;
+    });
 
     const totalPaginas = Math.max(1, Math.ceil(filtrados.length / ITEMS_POR_PAGINA));
     const inicio = (pagina - 1) * ITEMS_POR_PAGINA;
@@ -160,6 +164,16 @@ const Historico = () => {
                         onChange={handleBusqueda}
                     />
                 </div>
+                <div className="zona-pills">
+                    {['TODAS','XOCHITEPEC','CUAUTLA','JOJUTLA'].map(z => (
+                        <button
+                            key={z}
+                            className={`zona-pill zona-pill-${z.toLowerCase()} ${zonaFiltro === z ? 'zona-pill-active' : ''}`}
+                            onClick={() => { setZonaFiltro(z); setPagina(1); }}>
+                            {z === 'TODAS' ? 'Todas' : z.charAt(0) + z.slice(1).toLowerCase()}
+                        </button>
+                    ))}
+                </div>
                 <button className="btn-solicitud" onClick={() => setShowModal(true)}>
                     <i className="bi bi-plus-lg"></i> Solicitud
                 </button>
@@ -186,7 +200,16 @@ const Historico = () => {
                             paginados.map((item, index) => (
                                 <tr key={item.id}>
                                     <td>{inicio + index + 1}</td>
-                                    <td>{item.nombreImputado}</td>
+                                    <td>
+                                        <div style={{ display:'flex', alignItems:'center', gap:'7px' }}>
+                                            {item.nombreImputado}
+                                            {item.zonaEvaluador && (
+                                                <span className={`zona-tag zona-tag-${item.zonaEvaluador.toLowerCase()}`}>
+                                                    {({'XOCHITEPEC':'Xochi','CUAUTLA':'Cuat','JOJUTLA':'Jojut'})[item.zonaEvaluador] ?? item.zonaEvaluador}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </td>
                                     <td>{item.delito}</td>
                                     <td>{item.causaPenal}</td>
                                     <td>

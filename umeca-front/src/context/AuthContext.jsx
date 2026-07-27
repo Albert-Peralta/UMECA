@@ -1,4 +1,5 @@
 import { createContext, useContext, useState } from 'react';
+import api from '../api/axios';
 
 /**
  * Contexto global de autenticación.
@@ -28,7 +29,10 @@ export const AuthProvider = ({ children }) => {
         setUser(updated);
     };
 
-    const logout = () => {
+    const logout = async () => {
+        // Registrar cierre de sesión en bitácora (best-effort, no bloquea el logout)
+        try { await api.post('/auth/logout'); } catch (_) { /* ignorar errores de red */ }
+
         // Conservar avatares antes de limpiar para que no desaparezcan al volver a entrar
         const avatars = {};
         Object.keys(localStorage)

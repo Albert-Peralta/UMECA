@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { crearEntrevista } from '../api/entrevistasApi';
+import { getImputados, getImputadoById } from '../api/imputadosApi';
 import './FormularioEntrevista.css';
+import './FormularioEvaluacion.css';
 import './Imputados.css';
 
 const ESTADO_CURP = {
@@ -157,9 +159,18 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
     const [personasHabita, setPersonasHabita] = useState([{ nombre: '', parentesco: '', edad: '', telefono: '', escolaridad: '', ocupacion: '' }]);
     const [referencias, setReferencias] = useState([{ nombre: '', parentesco: '', edad: '', telefono: '', direccion: '' }]);
 
+    const [showConfirmTipo, setShowConfirmTipo] = useState(false);
     const [curpManual, setCurpManual] = useState(false);
     const [tieneDraft, setTieneDraft] = useState(false);
     const [draftGuardadoEn, setDraftGuardadoEn] = useState(null);
+
+    // Buscador de imputado existente
+    const [impBusq, setImpBusq] = useState('');
+    const [impOpts, setImpOpts] = useState([]);
+    const [impRecientes, setImpRecientes] = useState([]);
+    const [showRecientes, setShowRecientes] = useState(false);
+    const [impSelId, setImpSelId] = useState(null);
+    const [impYaTieneEntrevista, setImpYaTieneEntrevista] = useState(false);
 
     const draftKey = 'umeca-draft-entrevista-nuevo';
 
@@ -223,6 +234,50 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
         setDraftGuardadoEn(ahora);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [form, domicilios, tatuajes, consumoSustancias, personasHabita, referencias]);
+
+    // Carga sugerencias al enfocar: primero los sin entrevista, luego los que ya tienen (hasta 5)
+    useEffect(() => {
+        getImputados().then(res => {
+            if (res.data.ok) {
+                const activos = (res.data.data || []).filter(i => !i.fallecido && !i.carpetaCerrada);
+                const sinEnt = activos.filter(i => (i.totalEntrevistas ?? 0) === 0);
+                const conEnt = activos.filter(i => (i.totalEntrevistas ?? 0) > 0);
+                setImpRecientes([...sinEnt, ...conEnt].slice(0, 5));
+            }
+        }).catch(() => {});
+    }, []);
+
+    // Busca imputados en tiempo real mientras el usuario escribe
+    useEffect(() => {
+        if (impBusq.trim().length < 2) { setImpOpts([]); return; }
+        getImputados(impBusq.trim()).then(res => {
+            if (res.data.ok) setImpOpts((res.data.data || []).filter(i => !i.fallecido && !i.carpetaCerrada));
+        }).catch(() => {});
+    }, [impBusq]);
+
+    const seleccionarImp = async (imp) => {
+        setImpBusq('');
+        setImpOpts([]);
+        setShowRecientes(false);
+        setImpSelId(imp.id);
+        setImpYaTieneEntrevista(false);
+        // Pre-llenar campos básicos desde el imputado
+        setForm(prev => ({
+            ...prev,
+            causaPenal:  imp.causaPenal  || prev.causaPenal,
+            nombre:      imp.nombre      || prev.nombre,
+            apPaterno:   imp.apPaterno   || prev.apPaterno,
+            apMaterno:   imp.apMaterno   || prev.apMaterno,
+            delito:      imp.delito      || prev.delito,
+        }));
+        // Verificar si ya tiene entrevistas
+        try {
+            const res = await getImputadoById(imp.id);
+            if (res.data.ok && res.data.data.entrevistas?.length > 0) {
+                setImpYaTieneEntrevista(true);
+            }
+        } catch { /* sin bloqueo */ }
+    };
 
     // Auto-genera CURP cuando cambian los campos clave, salvo que el usuario lo haya editado manualmente
     useEffect(() => {
@@ -294,6 +349,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
             const payload = Object.fromEntries(
                 Object.entries({
                     ...form,
+                    imputadoId: impSelId || null,
                     documentosMigratorios: form.documentosMigratorios.join(', ') || null,
                     tatuajesJson: form.tieneTatuajes && tatuajes.some(t => t.parteCuerpo || t.descripcion)
                         ? JSON.stringify(tatuajes.filter(t => t.parteCuerpo || t.descripcion))
@@ -361,6 +417,83 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                     Borrador guardado a las {draftGuardadoEn}
                 </div>
             )}
+
+            {/* ── Buscador de imputado existente ── */}
+            <div className="fev-buscar-bloque" style={{ margin: '12px 0 0' }}>
+                <div className="fev-buscar-label">
+                    <i className="bi bi-person-fill-check"></i>
+                    Busca al imputado si ya está registrado en el sistema para vincularlo al expediente
+                </div>
+                <div className="fev-buscar-row">
+                    <i className="bi bi-search fev-search-icon"></i>
+                    <input
+                        placeholder="Buscar por nombre o causa penal..."
+                        value={impBusq}
+                        onChange={e => { setImpBusq(e.target.value); setShowRecientes(false); }}
+                        onFocus={() => { if (!impBusq.trim()) setShowRecientes(true); }}
+                        onBlur={() => setTimeout(() => { setShowRecientes(false); setImpOpts([]); }, 200)}
+                    />
+                    {/* Resultados de búsqueda */}
+                    {impOpts.length > 0 && (
+                        <ul className="fev-imp-opts">
+                            {impOpts.map(imp => (
+                                <li key={imp.id} onClick={() => seleccionarImp(imp)}>
+                                    <div className="fev-imp-opt-nombre"><strong>{imp.nombre} {imp.apPaterno} {imp.apMaterno || ''}</strong></div>
+                                    <div className="fev-imp-opt-meta">
+                                        <span className="fev-imp-causa">{imp.causaPenal}</span>
+                                        {(imp.totalEntrevistas ?? 0) === 0
+                                            ? <span className="fev-imp-sin-ent"><i className="bi bi-journal-x"></i> Sin entrevista</span>
+                                            : <span className="fev-imp-tiene-ent"><i className="bi bi-journal-check"></i> Con entrevista</span>
+                                        }
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                    {/* Recientes al enfocar */}
+                    {showRecientes && impOpts.length === 0 && impRecientes.length > 0 && (
+                        <ul className="fev-imp-opts">
+                            <li className="fev-imp-opts-header"><i className="bi bi-exclamation-circle"></i> Pendientes de entrevista</li>
+                            {impRecientes.map(imp => (
+                                <li key={imp.id} onClick={() => seleccionarImp(imp)}>
+                                    <div className="fev-imp-opt-nombre"><strong>{imp.nombre} {imp.apPaterno} {imp.apMaterno || ''}</strong></div>
+                                    <div className="fev-imp-opt-meta">
+                                        <span className="fev-imp-causa">{imp.causaPenal}</span>
+                                        {(imp.totalEntrevistas ?? 0) === 0
+                                            ? <span className="fev-imp-sin-ent"><i className="bi bi-journal-x"></i> Sin entrevista</span>
+                                            : <span className="fev-imp-tiene-ent"><i className="bi bi-journal-check"></i> Con entrevista</span>
+                                        }
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+                {/* Imputado seleccionado sin entrevista (situación normal al crear) */}
+                {impSelId && !impYaTieneEntrevista && (
+                    <div className="fev-prellenado-row">
+                        <p className="fev-prellenado-aviso"><i className="bi bi-check-circle-fill"></i> Imputado vinculado — datos básicos pre-llenados</p>
+                        <button className="fev-btn-limpiar" onClick={() => {
+                            setImpSelId(null); setImpYaTieneEntrevista(false);
+                            setForm(prev => ({ ...prev, causaPenal: '', nombre: '', apPaterno: '', apMaterno: '', delito: '' }));
+                        }}><i className="bi bi-x-circle"></i> Cambiar</button>
+                    </div>
+                )}
+                {/* Aviso: ya tiene entrevista */}
+                {impYaTieneEntrevista && (
+                    <div className="fev-aviso-sin-entrevista">
+                        <i className="bi bi-exclamation-triangle-fill"></i>
+                        <div>
+                            <strong>Este imputado ya tiene una entrevista de encuadre registrada.</strong>
+                            <span> Se creará una nueva entrevista vinculada al mismo expediente.</span>
+                        </div>
+                        <button className="fev-btn-limpiar" onClick={() => {
+                            setImpSelId(null); setImpYaTieneEntrevista(false);
+                            setForm(prev => ({ ...prev, causaPenal: '', nombre: '', apPaterno: '', apMaterno: '', delito: '' }));
+                        }}><i className="bi bi-x-circle"></i> Cambiar</button>
+                    </div>
+                )}
+            </div>
 
             <div className="fe-titulo-principal">
                 {/* <h2>ENTREVISTA DE ENCUADRE</h2> */}
@@ -916,10 +1049,57 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
 
             <div className="fe-botones">
                 <button className="fe-btn-cancelar" onClick={onCancelar}>← Cancelar y Volver</button>
-                <button className="fe-btn-guardar" onClick={handleGuardar} disabled={loading}>
+                <button className="fe-btn-guardar" onClick={() => {
+                    // Validar antes de mostrar confirmación
+                    const nuevosErrores = {
+                        causaPenal: !form.causaPenal,
+                        nombre: !form.nombre,
+                        apPaterno: !form.apPaterno,
+                        tipoSeguimiento: !form.tipoSeguimiento,
+                    };
+                    setErrores(nuevosErrores);
+                    const primerError = Object.keys(nuevosErrores).find(k => nuevosErrores[k]);
+                    if (primerError) {
+                        setError('Por favor completa todos los campos obligatorios marcados en rojo');
+                        const el = document.getElementById(`fe-${primerError}`);
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        return;
+                    }
+                    setShowConfirmTipo(true);
+                }} disabled={loading}>
                     {loading ? 'Guardando...' : 'Guardar Entrevista'}
                 </button>
             </div>
+
+            {/* Modal de confirmación de tipo de seguimiento */}
+            {showConfirmTipo && (
+                <div className="fe-modal-overlay">
+                    <div className="fe-modal-confirm">
+                        <div className="fe-modal-icon">
+                            <i className="bi bi-exclamation-triangle-fill"></i>
+                        </div>
+                        <h3 className="fe-modal-titulo">Confirmar tipo de seguimiento</h3>
+                        <p className="fe-modal-desc">
+                            Estás a punto de guardar la entrevista con el tipo:
+                        </p>
+                        <div className={`fe-modal-tipo-badge ${form.tipoSeguimiento === 'MC' ? 'fe-modal-badge-mc' : 'fe-modal-badge-scp'}`}>
+                            {form.tipoSeguimiento === 'MC' ? '⚖️ Medida Cautelar (M.C.)' : '📋 Suspensión Condicional del Proceso (S.C.P.)'}
+                        </div>
+                        <p className="fe-modal-advertencia">
+                            <i className="bi bi-lock-fill"></i>
+                            Una vez guardado, el tipo de seguimiento <strong>no podrá ser modificado</strong> excepto por el administrador del sistema.
+                        </p>
+                        <div className="fe-modal-acciones">
+                            <button className="fe-modal-btn-cancelar" onClick={() => setShowConfirmTipo(false)}>
+                                <i className="bi bi-arrow-left"></i> Revisar
+                            </button>
+                            <button className="fe-modal-btn-confirmar" onClick={() => { setShowConfirmTipo(false); handleGuardar(); }} disabled={loading}>
+                                <i className="bi bi-check-lg"></i> Sí, guardar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

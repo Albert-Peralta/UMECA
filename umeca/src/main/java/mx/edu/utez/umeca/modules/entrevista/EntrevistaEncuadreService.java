@@ -32,7 +32,33 @@ public class EntrevistaEncuadreService {
 
     @Transactional(readOnly = true)
     public ApiResponse findAll() {
-        return new ApiResponse(true, "Entrevistas obtenidas", repository.findAll());
+        List<java.util.Map<String, Object>> lista = repository.findAll().stream().map(e -> {
+            java.util.Map<String, Object> m = new java.util.LinkedHashMap<>();
+            m.put("id",             e.getId());
+            m.put("folio",          e.getFolio());
+            m.put("nombre",         e.getNombre());
+            m.put("apPaterno",      e.getApPaterno());
+            m.put("apMaterno",      e.getApMaterno());
+            m.put("causaPenal",     e.getCausaPenal());
+            m.put("fechaRegistro",  e.getFechaRegistro() != null ? e.getFechaRegistro().toString() : null);
+            m.put("estadoCivil",    e.getEstadoCivil());
+            m.put("tipoSeguimiento",e.getTipoSeguimiento() != null ? e.getTipoSeguimiento().name() : null);
+            m.put("estado",         e.getEstado() != null ? e.getEstado().name() : null);
+            m.put("createdAt",      e.getCreatedAt());
+            m.put("entrevistaId",   e.getId());
+            m.put("zona",           e.getRegistradoPor() != null && e.getRegistradoPor().getZona() != null
+                                        ? e.getRegistradoPor().getZona().name() : null);
+            // imputado resumido para el badge de fallecido
+            if (e.getImputado() != null) {
+                java.util.Map<String, Object> imp = new java.util.LinkedHashMap<>();
+                imp.put("id",             e.getImputado().getId());
+                imp.put("fallecido",      e.getImputado().isFallecido());
+                imp.put("carpetaCerrada", e.getImputado().isCarpetaCerrada());
+                m.put("imputado", imp);
+            }
+            return m;
+        }).toList();
+        return new ApiResponse(true, "Entrevistas obtenidas", lista);
     }
 
     /**
@@ -96,10 +122,13 @@ public class EntrevistaEncuadreService {
 
         entrevista.setEstado(EntrevistaEncuadre.Estado.PENDIENTE);
 
-        // Si viene imputadoId se vincula al existente; si no, se crea uno nuevo
+        // Si viene imputadoId o imputadoSelId se vincula al existente; si no, se crea uno nuevo
+        Long idVinculado = entrevista.getImputadoSelId() != null
+                ? entrevista.getImputadoSelId()
+                : entrevista.getImputadoId();
         Imputado imputado;
-        if (entrevista.getImputadoSelId() != null) {
-            imputado = imputadoRepository.findById(entrevista.getImputadoSelId()).orElse(null);
+        if (idVinculado != null) {
+            imputado = imputadoRepository.findById(idVinculado).orElse(null);
             if (imputado == null) return new ApiResponse(false, "Imputado no encontrado");
         } else {
             imputado = new Imputado();

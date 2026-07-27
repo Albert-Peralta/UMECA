@@ -21,9 +21,10 @@ public class AuthController {
                 : ResponseEntity.status(401).body(response);
     }
 
-    @GetMapping("/hash")
-    public String hash(@RequestParam String password) {
-        return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder().encode(password);
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse> logout(org.springframework.security.core.Authentication auth) {
+        String username = auth != null ? auth.getName() : null;
+        return ResponseEntity.ok(authService.logout(username));
     }
 
     @PostMapping("/verificar-password")

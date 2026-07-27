@@ -32,3 +32,5 @@ export const registrarRevocacion = (id, data) =>
 // Amplía el plazo de una SCP vigente
 export const registrarAmpliacion = (id, data) =>
     api.post(`/medidas/${id}/ampliacion`, data);
+
+export const eliminarMedida = (id) => api.delete(`/medidas/${id}`);

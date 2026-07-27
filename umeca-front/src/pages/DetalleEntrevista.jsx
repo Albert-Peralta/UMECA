@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { actualizarEntrevista } from '../api/entrevistasApi';
+import { actualizarEntrevista, eliminarEntrevista } from '../api/entrevistasApi';
 import { actualizarFotoImputado, getImputadoById } from '../api/imputadosApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import PrintEntrevista from './PrintEntrevista';
 import HistorialRegistro from '../components/HistorialRegistro';
+import SeguimientosPanel from '../components/SeguimientosPanel';
 import './DetalleEntrevista.css';
 import './Imputados.css';
 
@@ -64,8 +65,35 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const puedeEditar = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERVISION';
+    const puedeEditar  = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERVISION';
+    const esAdmin      = user?.rol === 'ADMINISTRADOR';
     const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
+
+    // ── Acciones exclusivas del Admin ──
+    const [showConfirmEliminar, setShowConfirmEliminar] = useState(false);
+    const [showConfirmTipo,     setShowConfirmTipo]     = useState(false);
+    const [nuevoTipo,           setNuevoTipo]           = useState('');
+    const [loadingAdmin,        setLoadingAdmin]        = useState(false);
+
+    const handleEliminar = async () => {
+        setLoadingAdmin(true);
+        try {
+            const res = await eliminarEntrevista(entrevista.id);
+            if (res.data.ok) { showToast('Entrevista eliminada'); onVolver(); }
+            else showToast(res.data.message || 'Error al eliminar', 'error');
+        } catch { showToast('Error de conexión', 'error'); }
+        finally { setLoadingAdmin(false); setShowConfirmEliminar(false); }
+    };
+
+    const handleCambiarTipo = async () => {
+        setLoadingAdmin(true);
+        try {
+            const res = await actualizarEntrevista(entrevista.id, { ...entrevista, tipoSeguimiento: nuevoTipo });
+            if (res.data.ok) { showToast('Tipo de seguimiento actualizado'); onVolver(); }
+            else showToast(res.data.message || 'Error al actualizar', 'error');
+        } catch { showToast('Error de conexión', 'error'); }
+        finally { setLoadingAdmin(false); setShowConfirmTipo(false); }
+    };
 
     const handleFechaNacimiento = (fecha) => {
         set('fechaNacimiento', fecha);
@@ -86,13 +114,19 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
     const [subiendoFoto, setSubiendoFoto] = useState(false);
     const [zoomFoto, setZoomFoto] = useState(false);
     const fotoInputRef = useRef(null);
+    const [imputadoInfo, setImputadoInfo] = useState(null);
 
-    // Cargar foto desde el imputado si no vino en el payload de la entrevista
+    // Cargar datos del imputado (foto + estado fallecido/cierre)
     useEffect(() => {
         const imputadoId = entrevista.imputado?.id;
-        if (!fotoSrc && imputadoId) {
+        if (imputadoId) {
             getImputadoById(imputadoId)
-                .then(res => { if (res.data.ok && res.data.data.foto) setFotoSrc(res.data.data.foto); })
+                .then(res => {
+                    if (res.data.ok) {
+                        setImputadoInfo(res.data.data);
+                        if (!fotoSrc && res.data.data.foto) setFotoSrc(res.data.data.foto);
+                    }
+                })
                 .catch(err => console.warn("Error al cargar datos:", err));
         }
     }, [entrevista.imputado?.id]);
@@ -196,7 +230,9 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
             {imprimiendo && <PrintEntrevista entrevista={form} onCerrar={() => setImprimiendo(false)} autoImprimir={true} />}
             <div className="de-toolbar">
                 <div style={{ display: 'flex', gap: '8px' }}>
-                    <button className="de-btn-volver" onClick={onVolver}>← Volver</button>
+                    <button className="de-btn-volver" onClick={editando ? cancelarEdicion : onVolver}>
+                        {editando ? '✕ Cancelar edición' : '← Volver'}
+                    </button>
                     {localStorage.getItem('volverExpedienteId') && (
                         <button className="de-btn-volver de-btn-expediente" onClick={() => {
                             const id = localStorage.getItem('volverExpedienteId');
@@ -215,14 +251,43 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
                             <i className="bi bi-printer" /> Imprimir
                         </button>
                     )}
-                    {puedeEditar && !editando && (
+                    {puedeEditar && !editando && !imputadoInfo?.fallecido && !imputadoInfo?.carpetaCerrada && (
                         <button className="de-btn-editar" onClick={() => setEditando(true)}>✎ Editar</button>
                     )}
                     {editando && (
                         <span className="de-editando-badge">Modo edición</span>
                     )}
+                    {/* Acciones exclusivas del Administrador */}
+                    {esAdmin && !editando && !imputadoInfo?.fallecido && !imputadoInfo?.carpetaCerrada && (
+                        <>
+                            <button className="de-btn-admin-tipo" title="Cambiar tipo de seguimiento" onClick={() => {
+                                setNuevoTipo(entrevista.tipoSeguimiento === 'MC' ? 'SCP' : 'MC');
+                                setShowConfirmTipo(true);
+                            }}>
+                                <i className="bi bi-arrow-left-right" />
+                                {entrevista.tipoSeguimiento === 'MC' ? 'Cambiar a S.C.P.' : 'Cambiar a M.C.'}
+                            </button>
+                            <button className="de-btn-admin-eliminar" title="Eliminar entrevista" onClick={() => setShowConfirmEliminar(true)}>
+                                <i className="bi bi-trash3" /> Eliminar
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
+
+            {/* ── Banners fallecido / cierre carpeta ── */}
+            {imputadoInfo?.fallecido && (
+                <div className="dm-banner-alerta dm-banner-fallecido" style={{ margin: '0 0 12px 0' }}>
+                    <i className="bi bi-heartbreak-fill"></i>
+                    <span>El imputado <strong>{imputadoInfo.nombreCompleto}</strong> ha fallecido. Esta entrevista es de solo lectura.</span>
+                </div>
+            )}
+            {imputadoInfo?.carpetaCerrada && (
+                <div className="dm-banner-alerta dm-banner-cierre" style={{ margin: '0 0 12px 0' }}>
+                    <i className="bi bi-folder-x"></i>
+                    <span>La carpeta de <strong>{imputadoInfo.nombreCompleto}</strong> fue cerrada (<strong>{imputadoInfo.numeroCierreCarpeta}</strong>). No es posible realizar modificaciones en esta entrevista.</span>
+                </div>
+            )}
 
             <div className="de-header-info">
                 {/* Foto imputado */}
@@ -887,10 +952,97 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
                 </div>
             )}
 
+            {/* ── Seguimientos ── */}
+            {entrevista?.id && entrevista?.imputado?.id && (
+                <div style={{ marginTop: '1rem' }}>
+                    <SeguimientosPanel
+                        imputadoId={entrevista.imputado.id}
+                        seccion="ENTREVISTA"
+                        referenciaId={entrevista.id}
+                    />
+                </div>
+            )}
+
             {/* ── Historial de cambios ── */}
             {entrevista?.id && (
                 <div style={{ marginTop: '1rem' }}>
                     <HistorialRegistro entidad="ENTREVISTA" id={entrevista.id} />
+                </div>
+            )}
+
+            {/* ── Modal: Confirmar Eliminar ── */}
+            {showConfirmEliminar && (
+                <div className="de-modal-overlay" onClick={() => !loadingAdmin && setShowConfirmEliminar(false)}>
+                    <div className="de-modal-box" onClick={e => e.stopPropagation()}>
+                        <div className="de-modal-icon de-modal-icon-danger">
+                            <i className="bi bi-trash3-fill" />
+                        </div>
+                        <h3 className="de-modal-titulo">¿Eliminar entrevista?</h3>
+                        <p className="de-modal-desc">
+                            Esta acción es <strong>permanente</strong> y no se puede deshacer.<br />
+                            Se eliminará la entrevista de encuadre del imputado junto con todos sus datos.
+                        </p>
+                        <div className="de-modal-acciones">
+                            <button
+                                className="de-modal-btn-cancelar"
+                                onClick={() => setShowConfirmEliminar(false)}
+                                disabled={loadingAdmin}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                className="de-modal-btn-eliminar"
+                                onClick={handleEliminar}
+                                disabled={loadingAdmin}
+                            >
+                                {loadingAdmin ? 'Eliminando...' : 'Sí, eliminar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Modal: Confirmar Cambio de Tipo ── */}
+            {showConfirmTipo && (
+                <div className="de-modal-overlay" onClick={() => !loadingAdmin && setShowConfirmTipo(false)}>
+                    <div className="de-modal-box" onClick={e => e.stopPropagation()}>
+                        <div className="de-modal-icon de-modal-icon-warning">
+                            <i className="bi bi-arrow-left-right" />
+                        </div>
+                        <h3 className="de-modal-titulo">Cambiar tipo de seguimiento</h3>
+                        <p className="de-modal-desc">
+                            Se cambiará el tipo de seguimiento de esta entrevista:
+                        </p>
+                        <div className="de-modal-tipo-cambio">
+                            <span className={`de-modal-badge ${entrevista.tipoSeguimiento === 'MC' ? 'de-badge-mc' : 'de-badge-scp'}`}>
+                                {entrevista.tipoSeguimiento === 'MC' ? 'Medida Cautelar' : 'Suspensión Condicional del Proceso'}
+                            </span>
+                            <i className="bi bi-arrow-right de-modal-arrow" />
+                            <span className={`de-modal-badge ${nuevoTipo === 'MC' ? 'de-badge-mc' : 'de-badge-scp'}`}>
+                                {nuevoTipo === 'MC' ? 'Medida Cautelar' : 'Suspensión Condicional del Proceso'}
+                            </span>
+                        </div>
+                        <div className="de-modal-advertencia-tipo">
+                            <i className="bi bi-info-circle-fill" style={{ marginRight: 6 }} />
+                            Solo se actualiza la clasificación de esta entrevista. Las medidas, evaluaciones y formularios ya registrados <strong>no se modifican</strong>.
+                        </div>
+                        <div className="de-modal-acciones">
+                            <button
+                                className="de-modal-btn-cancelar"
+                                onClick={() => setShowConfirmTipo(false)}
+                                disabled={loadingAdmin}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                className="de-modal-btn-confirmar"
+                                onClick={handleCambiarTipo}
+                                disabled={loadingAdmin}
+                            >
+                                {loadingAdmin ? 'Guardando...' : 'Confirmar cambio'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

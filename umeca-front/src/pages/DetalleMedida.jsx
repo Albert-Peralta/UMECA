@@ -1,11 +1,14 @@
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { agregarSeguimiento, registrarLevantamiento, registrarRevocacion, registrarAmpliacion } from '../api/medidasApi';
+import { agregarSeguimiento, registrarLevantamiento, registrarRevocacion, registrarAmpliacion, eliminarMedida } from '../api/medidasApi';
 import { registrarFallecimiento } from '../api/imputadosApi';
 import HistorialRegistro from '../components/HistorialRegistro';
 import PrintOficioMigracion from './PrintOficioMigracion';
+import SeguimientosPanel from '../components/SeguimientosPanel';
 import './FormularioMedida.css';
 import './DetalleMedida.css';
+import './DetalleEntrevista.css';
 
 // ── Fracciones (reutilizadas para mostrar etiquetas) ──────────────────────────
 const FRACCIONES_MC = [
@@ -47,8 +50,10 @@ const ESTADO_LABELS = { ACTIVO: 'Activo', SUSPENDIDO: 'Suspendido', FINALIZADO: 
 const ESTADO_CLASE  = { ACTIVO: 'dm-badge-activo', SUSPENDIDO: 'dm-badge-suspendido', FINALIZADO: 'dm-badge-finalizado', LEVANTADO: 'dm-badge-levantado', REVOCADO: 'dm-badge-revocado' };
 
 // ── Componente principal ──────────────────────────────────────────────────────
-const DetalleMedida = ({ medida: m, puedeRegistrar, onVolver, onEditar, onActualizado, onCambiarSCP }) => {
+const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, onEditar, onActualizado, onCambiarSCP, onCambiarMC }) => {
+    const { user } = useAuth();
     const { showToast } = useToast();
+    const esAdmin = user?.rol === 'ADMINISTRADOR';
     const esMC = m.tipo === 'MEDIDA_CAUTELAR';
     const FRAC_LIST = esMC ? FRACCIONES_MC : FRACCIONES_SCP;
 
@@ -117,6 +122,9 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, onVolver, onEditar, onActual
     // ── Confirm SCP ───────────────────────────────────────────────────────────
     const [showConfirmSCP, setShowConfirmSCP] = useState(false);
 
+    // ── Confirm regreso a MC ──────────────────────────────────────────────────
+    const [showConfirmMC, setShowConfirmMC] = useState(false);
+
     // ── Revocación SCP ────────────────────────────────────────────────────────
     const [showRevocacion, setShowRevocacion] = useState(false);
     const [revForm, setRevForm] = useState({ oficioRevocacion: '', motivoRevocacion: '' });
@@ -162,6 +170,20 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, onVolver, onEditar, onActual
     const tieneFraccionV = esMC && (m.fracciones || []).includes('V');
     const detV = detalles['V'] || {};
     const [showOficioMigracion, setShowOficioMigracion] = useState(false);
+
+    // ── Admin: Eliminar medida ────────────────────────────────────────────────
+    const [showConfirmEliminar, setShowConfirmEliminar] = useState(false);
+    const [loadingEliminar, setLoadingEliminar] = useState(false);
+
+    const handleEliminar = async () => {
+        setLoadingEliminar(true);
+        try {
+            const res = await eliminarMedida(m.id);
+            if (res.data.ok) { showToast('Medida eliminada correctamente'); onVolver(); }
+            else showToast(res.data.message || 'Error al eliminar', 'error');
+        } catch { showToast('Error de conexión', 'error'); }
+        finally { setLoadingEliminar(false); setShowConfirmEliminar(false); }
+    };
 
     const [ampForm, setAmpForm] = useState({ nuevoPlazoScp: '', motivoAmpliacion: '' });
     const [ampError, setAmpError] = useState('');
@@ -221,22 +243,22 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, onVolver, onEditar, onActual
                 </div>
                 {/* Fila 2: Botones de acción */}
                 <div className="dm-header-actions">
-                    {puedeRegistrar && !m.imputadoFallecido && (
+                    {puedeRegistrar && !m.imputadoFallecido && !m.imputadoCarpetaCerrada && (
                         <button className="dm-btn-editar" onClick={onEditar}>
                             <i className="bi bi-pencil" /> Editar
                         </button>
                     )}
-                    {puedeRegistrar && m.estado === 'ACTIVO' && !m.imputadoFallecido && (
+                    {puedeRegistrar && m.estado === 'ACTIVO' && !m.imputadoFallecido && !m.imputadoCarpetaCerrada && (
                         <button className="btn-fallecimiento" onClick={() => { setFallForm(FALL_VACIO); setFallError(''); setShowFallecimiento(true); }}>
                             <i className="bi bi-heartbreak" /> Fallecimiento
                         </button>
                     )}
-                    {tieneFraccionV && !m.imputadoFallecido && (
+                    {tieneFraccionV && !m.imputadoFallecido && !m.imputadoCarpetaCerrada && (
                         <button className="btn-oficio-migracion" onClick={() => setShowOficioMigracion(true)} title="Generar oficio para el INM">
                             <i className="bi bi-file-earmark-text" /> Oficio Migración
                         </button>
                     )}
-                    {puedeRegistrar && esMC && m.estado === 'ACTIVO' && !m.imputadoFallecido && (
+                    {puedeRegistrar && esMC && m.estado === 'ACTIVO' && !m.imputadoFallecido && !m.imputadoCarpetaCerrada && (
                         <>
                             {!m.cambiadoAScp && (
                                 <button className="btn-scp" onClick={() => setShowConfirmSCP(true)}>
@@ -248,8 +270,11 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, onVolver, onEditar, onActual
                             </button>
                         </>
                     )}
-                    {puedeRegistrar && !esMC && m.estado === 'ACTIVO' && !m.imputadoFallecido && (
+                    {puedeRegistrar && !esMC && m.estado === 'ACTIVO' && !m.imputadoFallecido && !m.imputadoCarpetaCerrada && (
                         <>
+                            <button className="btn-mc" onClick={() => setShowConfirmMC(true)}>
+                                <i className="bi bi-arrow-left-right" /> Cambiar a M.C.
+                            </button>
                             <button className="btn-amp" onClick={() => setShowAmpliacion(true)}>
                                 <i className="bi bi-calendar-plus" /> Ampliación
                             </button>
@@ -261,6 +286,11 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, onVolver, onEditar, onActual
                             </button>
                         </>
                     )}
+                    {esAdmin && (
+                        <button className="de-btn-admin-eliminar" onClick={() => setShowConfirmEliminar(true)}>
+                            <i className="bi bi-trash3" /> Eliminar
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -270,6 +300,12 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, onVolver, onEditar, onActual
                     <div className="dm-banner-alerta dm-banner-fallecido">
                         <i className="bi bi-heartbreak-fill" />
                         <span>El imputado <strong>{m.nombreImputado}</strong> ha fallecido. No es posible realizar modificaciones en este expediente.</span>
+                    </div>
+                )}
+                {m.imputadoCarpetaCerrada && (
+                    <div className="dm-banner-alerta dm-banner-cierre">
+                        <i className="bi bi-folder-x" />
+                        <span>La carpeta de <strong>{m.nombreImputado}</strong> fue cerrada (<strong>{m.numeroCierreCarpeta}</strong>). No es posible realizar modificaciones en este expediente.</span>
                     </div>
                 )}
                 {alertaVencimientoDetalle && (
@@ -451,60 +487,12 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, onVolver, onEditar, onActual
 
                 {/* ── 6. Seguimientos ── */}
                 <Sec titulo="SEGUIMIENTOS" />
-                <div className="dm-seguimientos">
-                    <div className="dm-seg-header">
-                        <span className="dm-seg-count">{m.seguimientos?.length ?? 0} registro(s)</span>
-                        {puedeRegistrar && (
-                            <button className="btn-cargar" onClick={() => setShowSegForm(s => !s)}>
-                                <i className="bi bi-plus-lg" /> Agregar seguimiento
-                            </button>
-                        )}
-                    </div>
-
-                    {showSegForm && (
-                        <div className="dm-seg-form">
-                            <div className="dm-seg-form-row">
-                                <div className="modal-field">
-                                    <label>FECHA *</label>
-                                    <input type="date" value={segForm.fechaSeguimiento}
-                                        onChange={e => setSegForm({ ...segForm, fechaSeguimiento: e.target.value })} />
-                                </div>
-                            </div>
-                            <div className="modal-field">
-                                <label>DETALLES *</label>
-                                <textarea rows={3} value={segForm.detalles}
-                                    onChange={e => setSegForm({ ...segForm, detalles: e.target.value })}
-                                    placeholder="Detalles del seguimiento realizado..." />
-                            </div>
-                            <div className="dm-seg-btns">
-                                <button className="btn-cancelar" onClick={() => setShowSegForm(false)}>Cancelar</button>
-                                <button className="btn-registrar" onClick={handleGuardarSeguimiento} disabled={loadingSeg}>
-                                    {loadingSeg ? 'Guardando...' : 'Guardar'}
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {m.seguimientos?.length > 0 ? (
-                        <table className="dm-seg-tabla">
-                            <thead>
-                                <tr><th>#</th><th>Fecha</th><th>Detalles</th><th>Registrado por</th></tr>
-                            </thead>
-                            <tbody>
-                                {m.seguimientos.map((s, i) => (
-                                    <tr key={s.id}>
-                                        <td>{i + 1}</td>
-                                        <td>{s.fechaSeguimiento}</td>
-                                        <td>{s.detalles}</td>
-                                        <td>{s.registradoPor ?? '—'}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    ) : (
-                        <p className="dm-sin-seg">Sin seguimientos registrados.</p>
-                    )}
-                </div>
+                <SeguimientosPanel
+                    imputadoId={m.imputadoId ?? m.imputado?.id}
+                    seccion="MEDIDA"
+                    referenciaId={m.id}
+                    readonly={!(puedeSeguimiento ?? puedeRegistrar)}
+                />
             </div>
 
             {/* ── Modal Levantamiento ──────────────────────────────────────── */}
@@ -686,6 +674,35 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, onVolver, onEditar, onActual
                     </div>
                 </div>
             )}
+            {/* ── Modal Cambiar a M.C. ── */}
+            {showConfirmMC && (
+                <div className="modal-overlay">
+                    <div className="modal-box" style={{ maxWidth: 480 }}>
+                        <div className="modal-header">
+                            <h3><i className="bi bi-arrow-left-right" /> CAMBIO A MEDIDA CAUTELAR</h3>
+                            <button className="modal-close" onClick={() => setShowConfirmMC(false)}>
+                                <i className="bi bi-x-lg" />
+                            </button>
+                        </div>
+                        <div className="modal-form">
+                            <p style={{ fontSize: 14, color: '#374151', lineHeight: 1.6 }}>
+                                ¿Está seguro que desea registrar una nueva <strong>Medida Cautelar</strong> para <strong>{m.nombreImputado}</strong>?
+                            </p>
+                            <div style={{ background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: 8, padding: '10px 14px', marginTop: 10, fontSize: 12, color: '#92400e', lineHeight: 1.6 }}>
+                                <i className="bi bi-exclamation-triangle-fill" style={{ marginRight: 6 }} />
+                                Se abrirá el formulario para capturar los datos de la nueva M.C. La S.C.P. actual no será modificada y el historial completo se conservará.
+                            </div>
+                            <div className="modal-buttons" style={{ padding: 0, marginTop: 16 }}>
+                                <button className="btn-cancelar" onClick={() => setShowConfirmMC(false)}>No, cancelar</button>
+                                <button className="btn-mc" onClick={() => { setShowConfirmMC(false); onCambiarMC(m); }}>
+                                    <i className="bi bi-check-lg" /> Sí, continuar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* ── Modal Fallecimiento ── */}
             {showFallecimiento && (
                 <div className="modal-overlay">
@@ -776,6 +793,30 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, onVolver, onEditar, onActual
             )}
 
         </div>
+
+        {/* ── Modal: Confirmar Eliminar Medida ── */}
+        {showConfirmEliminar && (
+            <div className="de-modal-overlay" onClick={() => !loadingEliminar && setShowConfirmEliminar(false)}>
+                <div className="de-modal-box" onClick={e => e.stopPropagation()}>
+                    <div className="de-modal-icon de-modal-icon-danger">
+                        <i className="bi bi-trash3-fill" />
+                    </div>
+                    <h3 className="de-modal-titulo">¿Eliminar {esMC ? 'medida cautelar' : 'S.C.P.'}?</h3>
+                    <p className="de-modal-desc">
+                        Esta acción es <strong>permanente</strong> y no se puede deshacer.<br />
+                        Se eliminará el registro completo de <strong>{m.nombreImputado}</strong> — {m.causaPenal}.
+                    </p>
+                    <div className="de-modal-acciones">
+                        <button className="de-modal-btn-cancelar" onClick={() => setShowConfirmEliminar(false)} disabled={loadingEliminar}>
+                            Cancelar
+                        </button>
+                        <button className="de-modal-btn-eliminar" onClick={handleEliminar} disabled={loadingEliminar}>
+                            {loadingEliminar ? 'Eliminando...' : 'Sí, eliminar'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
         </>
     );
 };

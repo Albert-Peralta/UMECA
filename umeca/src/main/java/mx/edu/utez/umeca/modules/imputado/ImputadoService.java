@@ -12,6 +12,10 @@ import mx.edu.utez.umeca.modules.supervision.SupervisionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import mx.edu.utez.umeca.modules.medidacautelar.MedidaCautelar;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +67,14 @@ public class ImputadoService {
                         (a, b) -> a
                 ));
 
+        // 1 query: zona de la última entrevista por imputado
+        Map<Long, String> zonas = entrevistaRepository.zonasPorImputados(ids)
+                .stream().collect(Collectors.toMap(
+                        r -> (Long) r[0],
+                        r -> r[1] != null ? r[1].toString() : null,
+                        (a, b) -> a
+                ));
+
         List<ImputadoResponseDTO> lista = todos.stream().map(i -> {
             ImputadoResponseDTO dto = ImputadoResponseDTO.fromSimple(i);
             dto.setTotalEntrevistas(conteoEnt.getOrDefault(i.getId(), 0L).intValue());
@@ -74,6 +86,7 @@ public class ImputadoService {
                 dto.setTipoMedidaActiva(mInfo[1].toString());
                 dto.setEstadoMedidaActiva(mInfo[2].toString());
             }
+            dto.setZona(zonas.get(i.getId()));
             return dto;
         }).toList();
 
@@ -181,6 +194,69 @@ public class ImputadoService {
             });
             return new ApiResponse(true,
                     "Fallecimiento registrado. " + pendientes.size() + " supervisión(es) cancelada(s).",
+                    ImputadoResponseDTO.fromSimple(imp));
+        }).orElse(new ApiResponse(false, "Imputado no encontrado"));
+    }
+
+    /**
+     * Registra el cierre de carpeta del imputado, auto-finaliza todas sus medidas activas
+     * y cancela supervisiones pendientes. El número se genera automáticamente (CC-YYYY-XXXX).
+     */
+    @Transactional
+    public ApiResponse registrarCierreCarpeta(Long id, String motivo, String estatusCumplimiento, LocalDate fechaIngreso, String notas) {
+        return imputadoRepository.findById(id).map(imp -> {
+            if (imp.isCarpetaCerrada())
+                return new ApiResponse(false, "La carpeta de este imputado ya fue cerrada");
+
+            LocalDate hoy = LocalDate.now();
+            int anio = hoy.getYear();
+            long secuencia = imputadoRepository.countCierresPorAnio(anio) + 1;
+            String numero = String.format("CC-%d-%04d", anio, secuencia);
+
+            // Responsable = usuario autenticado
+            String responsable = "sistema";
+            try {
+                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                if (auth != null && auth.getName() != null) responsable = auth.getName();
+            } catch (Exception ignored) {}
+
+            imp.setCarpetaCerrada(true);
+            imp.setNumeroCierreCarpeta(numero);
+            imp.setFechaCierreCarpeta(hoy);
+            imp.setResponsableCierreCarpeta(responsable);
+            if (motivo != null) imp.setMotivoCierreCarpeta(motivo);
+            if (estatusCumplimiento != null) imp.setEstatusCumplimientoCierre(estatusCumplimiento);
+            if (fechaIngreso != null) imp.setFechaIngresoCierre(fechaIngreso);
+            if (notas != null && !notas.isBlank()) imp.setNotasCierre(notas);
+            imputadoRepository.save(imp);
+
+            // Finalizar todas las medidas activas
+            List<mx.edu.utez.umeca.modules.medidacautelar.MedidaCautelar> medidasActivas =
+                    medidaRepository.findByImputadoId(id).stream()
+                            .filter(m -> m.getEstado() == MedidaCautelar.Estado.ACTIVO)
+                            .toList();
+            medidasActivas.forEach(m -> {
+                m.setEstado(MedidaCautelar.Estado.FINALIZADO);
+                medidaRepository.save(m);
+            });
+
+            // Cancelar supervisiones pendientes
+            List<mx.edu.utez.umeca.modules.supervision.Supervision> pendientes =
+                    supervisionRepository.findPendientesByImputadoId(id);
+            pendientes.forEach(s -> {
+                s.setEstado(mx.edu.utez.umeca.modules.supervision.Supervision.EstadoSupervision.CANCELADA);
+                supervisionRepository.save(s);
+            });
+
+            bitacoraService.registrar(Bitacora.Entidad.IMPUTADO, imp.getId(),
+                    imp.getNombre() + " " + imp.getApPaterno(),
+                    Bitacora.Accion.CIERRE_CARPETA,
+                    "Cierre de carpeta registrado. Número: " + numero
+                            + ". Medidas finalizadas: " + medidasActivas.size()
+                            + ". Supervisiones canceladas: " + pendientes.size());
+
+            return new ApiResponse(true,
+                    "Cierre de carpeta registrado exitosamente. Número: " + numero,
                     ImputadoResponseDTO.fromSimple(imp));
         }).orElse(new ApiResponse(false, "Imputado no encontrado"));
     }

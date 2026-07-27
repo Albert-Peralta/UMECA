@@ -18,6 +18,7 @@ public class EntrevistaPreLlenadoDTO {
     private String tipoSeguimiento;   // MC | SCP
     private Long imputadoId;
     private String fechaRegistro;
+    private String zona;
 
     public static EntrevistaPreLlenadoDTO from(EntrevistaEncuadre e) {
         EntrevistaPreLlenadoDTO dto = new EntrevistaPreLlenadoDTO();
@@ -29,6 +30,8 @@ public class EntrevistaPreLlenadoDTO {
         dto.setTipoSeguimiento(e.getTipoSeguimiento() != null ? e.getTipoSeguimiento().name() : null);
         dto.setImputadoId(e.getImputado() != null ? e.getImputado().getId() : null);
         dto.setFechaRegistro(e.getFechaRegistro() != null ? e.getFechaRegistro().toString() : null);
+        dto.setZona(e.getRegistradoPor() != null && e.getRegistradoPor().getZona() != null
+                ? e.getRegistradoPor().getZona().name() : null);
         return dto;
     }
 }

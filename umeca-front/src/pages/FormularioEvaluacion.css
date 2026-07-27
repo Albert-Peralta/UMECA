@@ -83,13 +83,33 @@
     position: absolute; top: 100%; left: 0; right: 0;
     background: white; border: 1px solid #d0d0d0; border-radius: 8px;
     list-style: none; margin: 2px 0 0; padding: 0; z-index: 100;
-    box-shadow: 0 4px 12px rgba(0,0,0,.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,.1); max-height: 280px; overflow-y: auto;
 }
+.fev-imp-opts-header {
+    padding: 8px 14px 6px; font-size: 11px; font-weight: 700; color: #9ca3af;
+    text-transform: uppercase; letter-spacing: .5px; cursor: default !important;
+    background: #f9fafb; border-bottom: 1px solid #f0f0f0;
+}
+.fev-imp-opts-header:hover { background: #f9fafb !important; }
 .fev-imp-opts li { padding: 10px 14px; cursor: pointer; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
 .fev-imp-opts li:last-child { border-bottom: none; }
 .fev-imp-opts li:hover { background: #f0f8f1; }
+.fev-imp-opt-nombre { font-weight: 600; color: #1e293b; margin-bottom: 2px; }
+.fev-imp-opt-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fev-imp-causa { font-size: 11px; color: #6b7280; background: #f1f5f9; padding: 1px 7px; border-radius: 8px; }
+.fev-imp-sin-ent { font-size: 11px; color: #b45309; background: #fef3c7; padding: 1px 7px; border-radius: 8px; display: flex; align-items: center; gap: 4px; }
+.fev-imp-tiene-ent { font-size: 11px; color: #15803d; background: #dcfce7; padding: 1px 7px; border-radius: 8px; display: flex; align-items: center; gap: 4px; }
 .fev-badge-ent { background: #e8f5e9; color: #376842; font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-left: 8px; }
-.fev-prellenado-aviso { color: #376842; font-size: 12px; margin: 0; font-weight: 600; }
+.fev-prellenado-aviso { color: #376842; font-size: 12px; margin: 0; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+/* Aviso imputado con o sin entrevista (usado también en FormularioEntrevista) */
+.fev-aviso-sin-entrevista {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px;
+    padding: 12px 14px; margin-top: 10px; font-size: 13px; color: #92400e;
+}
+.fev-aviso-sin-entrevista i { font-size: 16px; flex-shrink: 0; margin-top: 1px; color: #d97706; }
+.fev-aviso-sin-entrevista div { flex: 1; line-height: 1.5; }
+.fev-aviso-sin-entrevista strong { color: #78350f; }
 
 
 /* Secciones */

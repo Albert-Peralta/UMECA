@@ -700,3 +700,88 @@
     /* Domicilio cards */
     .fe-domicilio-bloque { padding: 12px; }
 }
+
+/* ── Confirmation modal ── */
+.fe-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+    padding: 1rem;
+}
+.fe-modal-confirm {
+    background: #fff;
+    border-radius: 14px;
+    padding: 2rem;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    text-align: center;
+}
+.fe-modal-icon {
+    font-size: 2.2rem;
+    margin-bottom: 0.8rem;
+}
+.fe-modal-titulo {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1a2e22;
+    margin: 0 0 0.5rem;
+}
+.fe-modal-desc {
+    font-size: 0.88rem;
+    color: #4a5568;
+    margin: 0 0 0.8rem;
+}
+.fe-modal-tipo-badge {
+    display: inline-block;
+    padding: 6px 18px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+.fe-modal-badge-mc  { background: #dbeafe; color: #1e40af; }
+.fe-modal-badge-scp { background: #d1fae5; color: #065f46; }
+.fe-modal-advertencia {
+    font-size: 0.82rem;
+    color: #92400e;
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 1.2rem;
+}
+.fe-modal-acciones {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+.fe-modal-btn-cancelar {
+    flex: 1;
+    padding: 9px;
+    border: 1.5px solid #d1d5db;
+    background: #fff;
+    color: #374151;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.fe-modal-btn-cancelar:hover { background: #f3f4f6; }
+.fe-modal-btn-confirmar {
+    flex: 1;
+    padding: 9px;
+    border: none;
+    background: #2d6a4f;
+    color: #fff;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+.fe-modal-btn-confirmar:hover { background: #245c42; }
+.fe-modal-btn-confirmar:disabled { opacity: 0.6; cursor: not-allowed; }

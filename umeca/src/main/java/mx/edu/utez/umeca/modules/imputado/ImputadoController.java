@@ -75,6 +75,22 @@ public class ImputadoController {
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
     }
 
+    @PatchMapping("/{id}/cierre-carpeta")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR', 'ROLE_SUPERVISION')")
+    public ResponseEntity<ApiResponse> registrarCierreCarpeta(
+            @PathVariable Long id,
+            @RequestBody(required = false) Map<String, String> body) {
+        String motivo              = body != null ? body.get("motivoCierreCarpeta") : null;
+        String estatusCumplimiento = body != null ? body.get("estatusCumplimientoCierre") : null;
+        String notasCierre         = body != null ? body.get("notasCierre") : null;
+        java.time.LocalDate fechaIngreso = null;
+        if (body != null && body.get("fechaIngresoCierre") != null && !body.get("fechaIngresoCierre").isBlank()) {
+            try { fechaIngreso = java.time.LocalDate.parse(body.get("fechaIngresoCierre")); } catch (Exception ignored) {}
+        }
+        ApiResponse res = service.registrarCierreCarpeta(id, motivo, estatusCumplimiento, fechaIngreso, notasCierre);
+        return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR', 'ROLE_SUPERVISION')")
     public ResponseEntity<ApiResponse> update(@PathVariable Long id,

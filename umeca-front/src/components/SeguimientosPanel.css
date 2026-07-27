@@ -1,0 +1,67 @@
+.sp-panel { border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; margin-top: 16px; }
+
+.sp-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; background: #f5f5f5; border-bottom: 1px solid #e0e0e0;
+}
+.sp-titulo { font-weight: 600; font-size: 14px; color: #333; display: flex; align-items: center; gap: 8px; }
+.sp-count {
+    background: #1a3a5c; color: #fff; border-radius: 12px;
+    padding: 1px 8px; font-size: 12px; font-weight: 600;
+}
+.sp-btn-add {
+    background: #2d6a4f; color: #fff; border: none; border-radius: 6px;
+    padding: 6px 12px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 4px;
+}
+.sp-btn-add:hover { background: #1b4332; }
+
+.sp-form { padding: 14px 16px; background: #fafafa; border-bottom: 1px solid #e0e0e0; }
+.sp-form-row { margin-bottom: 10px; display: flex; flex-direction: column; gap: 4px; }
+.sp-form-row label { font-size: 12px; font-weight: 600; color: #555; text-transform: uppercase; }
+.sp-form-row select,
+.sp-form-row textarea {
+    border: 1px solid #ccc; border-radius: 6px; padding: 8px 10px;
+    font-size: 14px; font-family: inherit; resize: vertical;
+}
+.sp-form-row select:focus,
+.sp-form-row textarea:focus { outline: none; border-color: #2d6a4f; }
+.sp-form-actions { display: flex; justify-content: flex-end; }
+.sp-btn-save {
+    background: #1a3a5c; color: #fff; border: none; border-radius: 6px;
+    padding: 8px 16px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px;
+}
+.sp-btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.sp-lista { padding: 8px 0; }
+.sp-empty { text-align: center; color: #999; font-size: 13px; padding: 20px; }
+
+.sp-item { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; }
+.sp-item:last-child { border-bottom: none; }
+.sp-item-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.sp-seccion-badge {
+    color: #fff; font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border-radius: 10px; text-transform: uppercase;
+}
+.sp-tipo { font-weight: 600; font-size: 13px; color: #222; flex: 1; }
+.sp-fecha { font-size: 12px; color: #888; white-space: nowrap; }
+.sp-detalles { font-size: 13px; color: #444; margin: 0 0 4px; line-height: 1.5; }
+.sp-autor { font-size: 12px; color: #888; margin: 0; display: flex; align-items: center; gap: 4px; }
+
+/* ── Campo "Especifica cuál" para tipo Otro ── */
+.sp-input-otro {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1.5px solid #d1d5db;
+    border-radius: 7px;
+    font-size: 13.5px;
+    font-family: inherit;
+    background: #fff;
+    color: #111827;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+.sp-input-otro:focus {
+    outline: none;
+    border-color: #2d6a4f;
+    box-shadow: 0 0 0 3px rgba(45,106,79,0.1);
+}

@@ -240,9 +240,13 @@ public class EntrevistaEncuadre extends BaseEntity {
     @Transient
     private String fotoImputado;
 
-    /** Campo transitorio: si viene, se vincula al imputado existente en lugar de buscar/crear por causa penal. */
+    /** Campo transitorio: si viene, se vincula al imputado existente en lugar de buscar/crear por causa penal.
+     *  El frontend puede mandarlo como "imputadoId" o "imputadoSelId" — ambos se leen. */
     @Transient
     private Long imputadoSelId;
+
+    @Transient
+    private Long imputadoId;
 
     @OneToMany(mappedBy = "entrevista", cascade = CascadeType.ALL, orphanRemoval = true)
     private java.util.List<DomicilioEntrevista> domicilios = new java.util.ArrayList<>();

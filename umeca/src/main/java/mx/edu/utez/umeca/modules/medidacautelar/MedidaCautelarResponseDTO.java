@@ -15,6 +15,8 @@ public class MedidaCautelarResponseDTO {
     private Long imputadoId;
     private String nombreImputado;
     private boolean imputadoFallecido;
+    private boolean imputadoCarpetaCerrada;
+    private String numeroCierreCarpeta;
     private String causaPenal;
     private String causaPenalImputado;
     private String delito;
@@ -23,6 +25,7 @@ public class MedidaCautelarResponseDTO {
     private Long entrevistaId;
     private String folioEntrevista;
     private String registradoPor;
+    private String zona;
     private LocalDateTime createdAt;
     private String estado;
 
@@ -126,6 +129,8 @@ public class MedidaCautelarResponseDTO {
         dto.setImputadoId(m.getImputado().getId());
         dto.setNombreImputado(m.getImputado().getNombreCompleto());
         dto.setImputadoFallecido(m.getImputado().isFallecido());
+        dto.setImputadoCarpetaCerrada(m.getImputado().isCarpetaCerrada());
+        dto.setNumeroCierreCarpeta(m.getImputado().getNumeroCierreCarpeta());
         dto.setCausaPenal(m.getCausaPenal());
         dto.setCausaPenalImputado(m.getImputado().getCausaPenal());
         dto.setDelito(m.getDelito() != null ? m.getDelito() : m.getImputado().getDelito());
@@ -135,6 +140,8 @@ public class MedidaCautelarResponseDTO {
         dto.setRegistradoPor(m.getRegistradoPor() != null
                 ? m.getRegistradoPor().getNombre() + " " + m.getRegistradoPor().getApPaterno()
                 : null);
+        dto.setZona(m.getRegistradoPor() != null && m.getRegistradoPor().getZona() != null
+                ? m.getRegistradoPor().getZona().name() : null);
         dto.setCreatedAt(m.getCreatedAt());
 
         if (m.getEntrevista() != null) {

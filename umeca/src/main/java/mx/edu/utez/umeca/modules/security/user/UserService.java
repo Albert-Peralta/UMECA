@@ -210,19 +210,22 @@ public class UserService implements UserDetailsService {
     }
 
     private String generarIdentificador(User.Zona zona, User.Rol rol) {
-        String zonaCode = switch (zona) {
+        String zonaCode = (zona == null) ? "GEN" : switch (zona) {
             case XOCHITEPEC -> "XOCH";
-            case CUAUTLA -> "CUAL";
-            case JOJUTLA -> "JOJ";
+            case CUAUTLA    -> "CUAL";
+            case JOJUTLA    -> "JOJ";
         };
 
         String rolCode = switch (rol) {
-            case ADMINISTRADOR -> "ADM";
-            case SUPERVISION -> "SUP";
+            case ADMINISTRADOR    -> "ADM";
+            case SUPERVISION      -> "SUP";
             case EVALUADOR_RIESGO -> "EVA";
+            case CORRESPONDENCIA  -> "COR";
         };
 
-        int siguiente = userRepository.findMaxConsecutivoByZonaAndRol(zona, rol)
+        int siguiente = (zona != null
+                ? userRepository.findMaxConsecutivoByZonaAndRol(zona, rol)
+                : java.util.Optional.<Integer>empty())
                 .orElse(0) + 1;
 
         String identificador;

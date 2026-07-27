@@ -16,9 +16,13 @@ import Supervision from './Supervision';
 import Estadisticas from './Estadisticas';
 import Bitacora from './Bitacora';
 import ConsultaRegistros from './ConsultaRegistros';
+import SuspensionCondicional from './SuspensionCondicional';
 import ReporteDiario from './ReporteDiario';
 import PrimerLogin from './PrimerLogin';
 import Perfil from './Perfil';
+import Correspondencia from './Correspondencia';
+import ExpedientesAnteriores from './ExpedientesAnteriores';
+import { getContadoresCorrespondencia } from '../api/correspondenciaApi';
 
 // ── Menú por rol ──────────────────────────────────────────────────────────────
 // Cada entrada puede ser un ítem de navegación (con key e icon) o un separador visual.
@@ -36,20 +40,44 @@ const menuPorRol = {
         { key: 'medidas',    label: 'Medidas y Suspensiones', icon: 'bi bi-card-checklist' },
         { key: 'supervision',label: 'Supervisión',            icon: 'bi bi-eye' },
         { separator: true,   label: 'Evaluación' },
-        { key: 'evaluacion', label: 'Evaluación de riesgos',  icon: 'bi bi-shield-check' },
-        { key: 'consultas',  label: 'Consulta de Registros',  icon: 'bi bi-search' },
+        { key: 'evaluacion',  label: 'Evaluación de riesgos',   icon: 'bi bi-shield-check' },
+        { key: 'consultas',   label: 'Consulta de Registros',  icon: 'bi bi-search' },
+        { key: 'suspension',  label: 'Suspensión Condicional', icon: 'bi bi-hourglass-split' },
+        { separator: true,   label: 'Oficios' },
+        { key: 'correspondencia',   label: 'Correspondencia',       icon: 'bi bi-envelope-paper' },
+        { separator: true,   label: 'Histórico' },
+        { key: 'expedientes',       label: 'Expedientes Anteriores', icon: 'bi bi-archive' },
     ],
     SUPERVISION: [
+        { separator: true,   label: 'General' },
         { key: 'imputados',  label: 'Imputados',              icon: 'bi bi-person' },
+        { key: 'reporte',    label: 'Reporte Diario',         icon: 'bi bi-clipboard-data' },
+        { separator: true,   label: 'Supervisión' },
         { key: 'entrevista', label: 'Entrevista de encuadre', icon: 'bi bi-journal-text' },
         { key: 'medidas',    label: 'Medidas y Suspensiones', icon: 'bi bi-card-checklist' },
         { key: 'supervision',label: 'Supervisión',            icon: 'bi bi-eye' },
-        { key: 'reporte',    label: 'Reporte Diario',         icon: 'bi bi-clipboard-data' },
+        { separator: true,   label: 'Oficios' },
+        { key: 'correspondencia', label: 'Correspondencia',        icon: 'bi bi-envelope-paper' },
+        { separator: true,   label: 'Histórico' },
+        { key: 'expedientes',     label: 'Expedientes Anteriores', icon: 'bi bi-archive' },
     ],
     EVALUADOR_RIESGO: [
-        { key: 'evaluacion', label: 'Evaluación de riesgos',  icon: 'bi bi-shield-check' },
-        { key: 'consultas',  label: 'Consulta de Registros',  icon: 'bi bi-search' },
-        { key: 'reporte',    label: 'Reporte Diario',         icon: 'bi bi-clipboard-data' },
+        { separator: true,   label: 'General' },
+        { key: 'imputados',   label: 'Imputados',              icon: 'bi bi-people' },
+        { key: 'reporte',     label: 'Reporte Diario',         icon: 'bi bi-clipboard-data' },
+        { separator: true,   label: 'Evaluación' },
+        { key: 'evaluacion',  label: 'Evaluación de riesgos',  icon: 'bi bi-shield-check' },
+        { key: 'consultas',   label: 'Consulta de Registros',  icon: 'bi bi-search' },
+        { key: 'suspension',  label: 'Suspensión Condicional', icon: 'bi bi-hourglass-split' },
+        { separator: true,   label: 'Supervisión' },
+        { key: 'supervision', label: 'Supervisión',             icon: 'bi bi-eye' },
+        { separator: true,   label: 'Oficios' },
+        { key: 'correspondencia', label: 'Correspondencia',        icon: 'bi bi-envelope-paper' },
+        { separator: true,   label: 'Histórico' },
+        { key: 'expedientes',     label: 'Expedientes Anteriores', icon: 'bi bi-archive' },
+    ],
+    CORRESPONDENCIA: [
+        { key: 'correspondencia', label: 'Correspondencia',    icon: 'bi bi-envelope-paper' },
     ],
 };
 
@@ -73,6 +101,7 @@ const Dashboard = () => {
     const [activeMenu, setActiveMenu] = useState(() => getValidKey(window.location.hash));
     const [avatarSrc, setAvatarSrc] = useState(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [corrPendientes, setCorrPendientes] = useState(0);
 
     // Si el token desaparece (logout en otra pestaña o navegación por historial), cierra sesión
     useEffect(() => {
@@ -90,6 +119,37 @@ const Dashboard = () => {
         }
     }, [user?.id]);
 
+    // Carga y refresca el contador de correspondencia pendiente cada 10 s
+    useEffect(() => {
+        const tieneCorr = (menuPorRol[user?.rol] || []).some(i => i.key === 'correspondencia');
+        // CORRESPONDENCIA solo registra; no tiene contadores de pendientes
+        if (!tieneCorr || user?.rol === 'CORRESPONDENCIA') return;
+
+        const rol = user?.rol;
+        const esPersonal = rol === 'SUPERVISION' || rol === 'EVALUADOR_RIESGO';
+
+        const cargarContadores = async () => {
+            try {
+                const res = await getContadoresCorrespondencia();
+                if (res.data?.ok) {
+                    const d = res.data.data || {};
+                    setCorrPendientes(esPersonal ? (d.misAsignados || 0) : (d.pendientesAdmin || 0));
+                }
+            } catch { /* silencioso */ }
+        };
+
+        cargarContadores();
+        // Polling cada 10 s para refrescar el badge rápidamente
+        const id = setInterval(cargarContadores, 10_000);
+        // Refresco inmediato cuando Correspondencia emite un cambio de asignación
+        const handler = () => cargarContadores();
+        window.addEventListener('corr-contadores-cambio', handler);
+        return () => {
+            clearInterval(id);
+            window.removeEventListener('corr-contadores-cambio', handler);
+        };
+    }, [user?.rol]);
+
     // Sincroniza activeMenu con el hash cuando el usuario usa las flechas del navegador
     useEffect(() => {
         setActiveMenu(getValidKey(location.hash));
@@ -102,7 +162,9 @@ const Dashboard = () => {
             const key = e.detail;
             const items = menuPorRol[user?.rol] || [];
             const keys = items.filter(i => !i.separator).map(i => i.key);
-            if (keys.includes(key)) navegarA(key);
+            // Rutas auxiliares: accesibles desde el expediente aunque no estén en el menú lateral
+            const rutasAuxiliares = ['entrevista', 'medidas', 'evaluacion'];
+            if (keys.includes(key) || rutasAuxiliares.includes(key)) navegarA(key);
         };
         window.addEventListener('navigate', handler);
         return () => window.removeEventListener('navigate', handler);
@@ -156,9 +218,12 @@ const Dashboard = () => {
         case 'graficas': return <Estadisticas />;
         case 'usuarios': return <GestionUsuarios />;
         case 'bitacora':  return <Bitacora />;
-        case 'consultas': return <ConsultaRegistros />;
-        case 'reporte':   return <ReporteDiario />;
-        case 'perfil':    return <Perfil />;
+        case 'consultas':   return <ConsultaRegistros />;
+        case 'suspension':  return <SuspensionCondicional />;
+        case 'reporte':          return <ReporteDiario />;
+        case 'correspondencia':  return <Correspondencia />;
+        case 'expedientes':      return <ExpedientesAnteriores />;
+        case 'perfil':           return <Perfil />;
         default: return null;
     }
 };
@@ -181,7 +246,7 @@ const Dashboard = () => {
                     <img src={logoMorelos} alt="Morelos" />
                 </div>
 
-                <nav className="sidebar-nav">
+                <nav className={`sidebar-nav${!menuItems.some(i => i.separator) ? ' sidebar-nav-pocos' : ''}`}>
                     {menuItems.map((item, idx) =>
                         item.separator ? (
                             <div key={`sep-${idx}`} className="sidebar-separator">
@@ -193,7 +258,11 @@ const Dashboard = () => {
                                 className={`sidebar-item ${activeMenu === item.key ? 'active' : ''}`}
                                 onClick={() => navegarA(item.key)}
                             >
-                                <i className={item.icon}></i> {item.label}
+                                <i className={item.icon}></i>
+                                <span style={{ flex: 1 }}>{item.label}</span>
+                                {item.key === 'correspondencia' && corrPendientes > 0 && (
+                                    <span className="sidebar-badge">{corrPendientes > 99 ? '99+' : corrPendientes}</span>
+                                )}
                             </button>
                         )
                     )}

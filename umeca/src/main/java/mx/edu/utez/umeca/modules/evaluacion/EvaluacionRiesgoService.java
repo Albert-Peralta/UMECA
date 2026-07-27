@@ -423,4 +423,18 @@ public class EvaluacionRiesgoService {
             return new ApiResponse(true, "Resultado registrado", EvaluacionRiesgoResponseDTO.from(saved));
         }).orElse(new ApiResponse(false, "Evaluación no encontrada"));
     }
+
+    @Transactional
+    public ApiResponse eliminar(Long id) {
+        return evaluacionRepository.findById(id).map(e -> {
+            String nombre = e.getImputado() != null
+                    ? e.getImputado().getNombre() + " " + e.getImputado().getApPaterno() : "—";
+            bitacoraService.registrar(Bitacora.Entidad.IMPUTADO,
+                    e.getImputado() != null ? e.getImputado().getId() : id,
+                    nombre, Bitacora.Accion.ELIMINAR,
+                    "Evaluación de riesgo eliminada. Oficio: " + e.getNumOficio());
+            evaluacionRepository.delete(e);
+            return new ApiResponse(true, "Evaluación eliminada correctamente");
+        }).orElse(new ApiResponse(false, "Evaluación no encontrada"));
+    }
 }

@@ -10,7 +10,7 @@ import './Historico.css';
 import './Imputados.css';
 import './EvaluacionRiesgos.css';
 
-const ITEMS_POR_PAGINA = 10;
+const ITEMS_POR_PAGINA = 50;
 
 // ── Mapas de presentación ──────────────────────────────────────────────────────
 // resultadoConfig: traduce los valores del enum Resultado a etiqueta y clase CSS de badge
@@ -41,6 +41,7 @@ const EvaluacionRiesgos = () => {
     const [datos, setDatos] = useState([]);
     const [busqueda, setBusqueda] = useState('');
     const [filtroEstatus, setFiltroEstatus] = useState('');
+    const [zonaFiltro, setZonaFiltro] = useState('TODAS');
     const [pagina, setPagina] = useState(1);
     const [cargando, setCargando] = useState(true);
 
@@ -129,7 +130,7 @@ const EvaluacionRiesgos = () => {
             const res = await getEvaluaciones();
             if (res.data.ok) setDatos(res.data.data);
         } catch (err) {
-            // silenced
+            showToast('Error al cargar evaluaciones. Verifica la conexión.', 'error');
         } finally {
             setCargando(false);
         }
@@ -150,6 +151,8 @@ const EvaluacionRiesgos = () => {
     };
 
     const datosFiltrados = datos.filter(d => {
+        const zonaOk = zonaFiltro === 'TODAS' || d.zonaEvaluador === zonaFiltro;
+        if (!zonaOk) return false;
         if (!filtroEstatus) return true;
         // Filtrar por resultado si aplica
         if (['FLEXIBLE', 'ESTRICTO', 'DIFICIL_CUMPLIR'].includes(filtroEstatus))
@@ -266,6 +269,15 @@ const EvaluacionRiesgos = () => {
                         />
                     </div>
                 </div>
+                <div className="zona-pills">
+                    {['TODAS','XOCHITEPEC','CUAUTLA','JOJUTLA'].map(z => (
+                        <button key={z}
+                            className={`zona-pill zona-pill-${z.toLowerCase()} ${zonaFiltro === z ? 'zona-pill-active' : ''}`}
+                            onClick={() => { setZonaFiltro(z); setPagina(1); }}>
+                            {z === 'TODAS' ? 'Todas' : z.charAt(0) + z.slice(1).toLowerCase()}
+                        </button>
+                    ))}
+                </div>
                 <select
                     className="eval-filtro-estatus"
                     value={filtroEstatus}
@@ -322,11 +334,20 @@ const EvaluacionRiesgos = () => {
                                 <tr><td colSpan={9} className="tabla-vacia">No hay registros</td></tr>
                             ) : (
                                 paginados.map((item, index) => (
-                                    <tr key={item.id}>
+                                    <tr key={item.id} className={!item.nombreEvaluador ? 'eval-fila-sin-asignar' : ''}>
                                         <td>{inicio + index + 1}</td>
                                         <td className="eval-col-centro">{item.nombreSolicitante}</td>
                                         <td>{item.causaPenal}</td>
-                                        <td>{item.nombreCompletoImputado || item.nombreImputado}</td>
+                                        <td>
+                                            <div style={{ display:'flex', alignItems:'center', gap:'7px' }}>
+                                                {item.nombreCompletoImputado || item.nombreImputado}
+                                                {item.zonaEvaluador && (
+                                                    <span className={`zona-tag zona-tag-${item.zonaEvaluador.toLowerCase()}`}>
+                                                        {({'XOCHITEPEC':'Xochi','CUAUTLA':'Cuat','JOJUTLA':'Jojut'})[item.zonaEvaluador] ?? item.zonaEvaluador}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
                                         <td>{item.delito}</td>
                                         <td className="eval-fechas eval-col-centro">
                                             <span>{item.fechaSolicitud || '—'}</span>
@@ -334,13 +355,15 @@ const EvaluacionRiesgos = () => {
                                                 {item.fechaAudiencia || <span className="eval-fecha-vacia">—</span>}
                                             </span>
                                         </td>
-                                        <td>{item.nombreEvaluador ?? <span className="sin-asignar">—</span>}</td>
+                                        <td>{item.nombreEvaluador ?? <span className="sin-asignar eval-sin-eval">Sin asignar</span>}</td>
                                         {/* Badge de estado: prioridad Negación > Fallecido > Resultado (riesgo) > Estatus */}
                                         <td>
                                             {item.tipoDocumento === 'NEGACION' ? (
                                                 <span className="estatus-badge" style={{ background: '#fde8e8', color: '#c0392b', border: '1px solid #f5c6c6' }}><i className="bi bi-x-circle-fill" /> Negación</span>
                                             ) : item.imputadoFallecido ? (
                                                 <span className="imp-badge-fallecido"><i className="bi bi-heartbreak-fill" /> Fallecido</span>
+                                            ) : item.imputadoCarpetaCerrada ? (
+                                                <span className="exp-badge-cierre"><i className="bi bi-folder-x" /> Carpeta Cerrada</span>
                                             ) : item.resultado ? (
                                                 <span className={`riesgo-badge ${resultadoConfig[item.resultado]?.clase}`}>
                                                     {resultadoConfig[item.resultado]?.label}

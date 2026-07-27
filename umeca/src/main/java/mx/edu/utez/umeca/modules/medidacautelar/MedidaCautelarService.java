@@ -337,4 +337,18 @@ public class MedidaCautelarService {
             try { m.setEstado(MedidaCautelar.Estado.valueOf(dto.getEstado())); } catch (Exception ignored) {}
         }
     }
+
+    @Transactional
+    public ApiResponse eliminar(Long id) {
+        return repository.findById(id).map(m -> {
+            String nombre = m.getImputado() != null
+                    ? m.getImputado().getNombre() + " " + m.getImputado().getApPaterno() : "—";
+            bitacoraService.registrar(Bitacora.Entidad.IMPUTADO,
+                    m.getImputado() != null ? m.getImputado().getId() : id,
+                    nombre, Bitacora.Accion.ELIMINAR,
+                    "Medida cautelar eliminada: " + m.getTipo() + " | Causa: " + m.getCausaPenal());
+            repository.delete(m);
+            return new ApiResponse(true, "Medida eliminada correctamente");
+        }).orElse(new ApiResponse(false, "Medida no encontrada"));
+    }
 }

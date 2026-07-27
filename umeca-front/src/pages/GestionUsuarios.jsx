@@ -3,11 +3,12 @@ import { getUsuarios, crearUsuario, actualizarUsuario, toggleUsuario } from '../
 import { useToast } from '../context/ToastContext';
 import './GestionUsuarios.css';
 
-const ROLES = ['ADMINISTRADOR', 'SUPERVISION', 'EVALUADOR_RIESGO'];
+const ROLES = ['ADMINISTRADOR', 'SUPERVISION', 'EVALUADOR_RIESGO', 'CORRESPONDENCIA'];
 const ETIQUETA_ROL = {
-    ADMINISTRADOR:    'Administrador',
-    SUPERVISION:      'Supervisión',
-    EVALUADOR_RIESGO: 'Evaluador de Riesgos',
+    ADMINISTRADOR:   'Administrador',
+    SUPERVISION:     'Supervisión',
+    EVALUADOR_RIESGO:'Evaluador de Riesgos',
+    CORRESPONDENCIA: 'Correspondencia',
 };
 const ZONAS = ['XOCHITEPEC', 'CUAUTLA', 'JOJUTLA'];
 
@@ -59,7 +60,7 @@ const GestionUsuarios = () => {
             const res = await getUsuarios();
             setUsuarios(res.data.data || []);
         } catch (e) {
-            // silenced
+            showToast('Error al cargar usuarios. Verifica la conexión.', 'error');
         }
     };
 
@@ -318,8 +319,9 @@ const GestionUsuarios = () => {
                                 {errores.rol && <span className="gu-error-msg">Este campo es obligatorio</span>}
                             </div>
                             <div className="gu-field">
-                                <label>Zona</label>
+                                <label>Zona {form.rol === 'CORRESPONDENCIA' ? <span style={{color:'#9ca3af',fontWeight:400}}>(opcional)</span> : ''}</label>
                                 <select value={form.zona} onChange={e => setForm(p => ({ ...p, zona: e.target.value }))}>
+                                    {form.rol === 'CORRESPONDENCIA' && <option value="">Sin zona</option>}
                                     {ZONAS.map(z => <option key={z} value={z}>{z}</option>)}
                                 </select>
                             </div>

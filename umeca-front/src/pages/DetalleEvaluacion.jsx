@@ -1,8 +1,13 @@
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import { eliminarEvaluacion } from '../api/evaluacionesApi';
 import PrintEvaluacion from './PrintEvaluacion';
 import PrintInformeEval from './PrintInformeEval';
+import SeguimientosPanel from '../components/SeguimientosPanel';
 import './DetalleEntrevista.css';
 import './EvaluacionRiesgos.css';
+import './DetalleMedida.css';
 
 const resultadoConfig = {
     FLEXIBLE:        { label: 'Bajo Riesgo',  clase: 'riesgo-bajo' },
@@ -29,8 +34,25 @@ const sec = (titulo) => (
 );
 
 const DetalleEvaluacion = ({ evaluacion: d, onVolver, onEditar, puedeEditar }) => {
+    const { user } = useAuth();
+    const { showToast } = useToast();
+    const esAdmin = user?.rol === 'ADMINISTRADOR';
     const [imprimiendo, setImprimiendo]         = useState(false);
     const [showInforme, setShowInforme]         = useState(false);
+
+    // ── Admin: Eliminar evaluación ────────────────────────────────────────────
+    const [showConfirmEliminar, setShowConfirmEliminar] = useState(false);
+    const [loadingEliminar, setLoadingEliminar]         = useState(false);
+
+    const handleEliminar = async () => {
+        setLoadingEliminar(true);
+        try {
+            const res = await eliminarEvaluacion(d.id);
+            if (res.data.ok) { showToast('Evaluación eliminada correctamente'); onVolver(); }
+            else showToast(res.data.message || 'Error al eliminar', 'error');
+        } catch { showToast('Error de conexión', 'error'); }
+        finally { setLoadingEliminar(false); setShowConfirmEliminar(false); }
+    };
     const domAnt = (() => { try { return JSON.parse(d.domiciliosAnterioresJson || '[]'); } catch { return []; } })();
     const empleosAnt = (() => { try { return JSON.parse(d.empleosAnterioresJson || '[]'); } catch { return []; } })();
 
@@ -64,14 +86,33 @@ const DetalleEvaluacion = ({ evaluacion: d, onVolver, onEditar, puedeEditar }) =
                         <i className="bi bi-file-earmark-text"></i> Informe
                     </button>
 
-                    {puedeEditar && onEditar && (
+                    {puedeEditar && onEditar && !d.imputadoFallecido && !d.imputadoCarpetaCerrada && (
                         <button className="de-btn-editar" onClick={onEditar}>
                             <i className="bi bi-pencil"></i> Editar
+                        </button>
+                    )}
+                    {esAdmin && !d.imputadoFallecido && !d.imputadoCarpetaCerrada && (
+                        <button className="de-btn-admin-eliminar" onClick={() => setShowConfirmEliminar(true)}>
+                            <i className="bi bi-trash3"></i> Eliminar
                         </button>
                     )}
                 </div>
             </div>
 
+
+            {/* Banners de estado del imputado */}
+            {d.imputadoFallecido && (
+                <div className="dm-banner-alerta dm-banner-fallecido" style={{ margin: '0 0 12px' }}>
+                    <i className="bi bi-heartbreak-fill" />
+                    <span>El imputado <strong>{d.nombreCompletoImputado}</strong> ha fallecido. Este expediente es de solo lectura.</span>
+                </div>
+            )}
+            {d.imputadoCarpetaCerrada && (
+                <div className="dm-banner-alerta dm-banner-cierre" style={{ margin: '0 0 12px' }}>
+                    <i className="bi bi-folder-x" />
+                    <span>La carpeta de <strong>{d.nombreCompletoImputado}</strong> fue cerrada (<strong>{d.numeroCierreCarpeta}</strong>). Este expediente es de solo lectura.</span>
+                </div>
+            )}
 
             {/* Encabezado */}
             <div className="dev-header-card">
@@ -312,6 +353,40 @@ const DetalleEvaluacion = ({ evaluacion: d, onVolver, onEditar, puedeEditar }) =
                 </div>
                 {d.justificacionResultado && campo('Justificación', d.justificacionResultado)}
             </div>
+            {/* ── Seguimientos ── */}
+            {d?.id && d?.imputadoId && (
+                <div style={{ marginTop: '1rem' }}>
+                    <SeguimientosPanel
+                        imputadoId={d.imputadoId}
+                        seccion="EVALUACION"
+                        referenciaId={d.id}
+                    />
+                </div>
+            )}
+
+            {/* ── Modal: Confirmar Eliminar Evaluación ── */}
+            {showConfirmEliminar && (
+                <div className="de-modal-overlay" onClick={() => !loadingEliminar && setShowConfirmEliminar(false)}>
+                    <div className="de-modal-box" onClick={e => e.stopPropagation()}>
+                        <div className="de-modal-icon de-modal-icon-danger">
+                            <i className="bi bi-trash3-fill" />
+                        </div>
+                        <h3 className="de-modal-titulo">¿Eliminar evaluación de riesgo?</h3>
+                        <p className="de-modal-desc">
+                            Esta acción es <strong>permanente</strong> y no se puede deshacer.<br />
+                            Se eliminará la evaluación de <strong>{d.nombreCompletoImputado || d.nombreImputado}</strong> — {d.causaPenal}.
+                        </p>
+                        <div className="de-modal-acciones">
+                            <button className="de-modal-btn-cancelar" onClick={() => setShowConfirmEliminar(false)} disabled={loadingEliminar}>
+                                Cancelar
+                            </button>
+                            <button className="de-modal-btn-eliminar" onClick={handleEliminar} disabled={loadingEliminar}>
+                                {loadingEliminar ? 'Eliminando...' : 'Sí, eliminar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

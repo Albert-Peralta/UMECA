@@ -22,7 +22,7 @@ const App = () => {
                     <Route
                         path="/primer-login"
                         element={
-                            <PrivateRoute roles={['ADMINISTRADOR', 'SUPERVISION', 'EVALUADOR_RIESGO']}>
+                            <PrivateRoute roles={['ADMINISTRADOR', 'SUPERVISION', 'EVALUADOR_RIESGO', 'CORRESPONDENCIA']}>
                                 <PrimerLogin onCompletado={() => window.location.replace('/dashboard')} />
                             </PrivateRoute>
                         }
@@ -30,7 +30,7 @@ const App = () => {
                     <Route
                         path="/dashboard"
                         element={
-                            <PrivateRoute roles={['ADMINISTRADOR', 'SUPERVISION', 'EVALUADOR_RIESGO']}>
+                            <PrivateRoute roles={['ADMINISTRADOR', 'SUPERVISION', 'EVALUADOR_RIESGO', 'CORRESPONDENCIA']}>
                                 <Dashboard />
                             </PrivateRoute>
                         }

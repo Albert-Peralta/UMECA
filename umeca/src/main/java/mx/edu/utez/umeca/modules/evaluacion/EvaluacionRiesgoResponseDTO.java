@@ -10,10 +10,13 @@ import java.time.LocalDateTime;
 @Setter
 public class EvaluacionRiesgoResponseDTO {
     private Long id;
+    private Long imputadoId;
     private LocalDate fechaSolicitud;
     private LocalDateTime createdAt;
     private String nombreSolicitante;
     private boolean imputadoFallecido;
+    private boolean imputadoCarpetaCerrada;
+    private String numeroCierreCarpeta;
     private String nombreImputado;      // solo el nombre (para el formulario)
     private String apPaternoImputado;   // solo el apellido paterno (para el formulario)
     private String apMaternoImputado;   // apellido materno (para el formulario)
@@ -26,6 +29,7 @@ public class EvaluacionRiesgoResponseDTO {
     private String estatus;
     private String resultado;
     private String nombreEvaluador;
+    private String zonaEvaluador;
     private String cargo;
     private String dependencia;
     private Long entrevistaId;
@@ -154,10 +158,15 @@ public class EvaluacionRiesgoResponseDTO {
         dto.setFechaSolicitud(e.getFechaSolicitud());
         dto.setNombreSolicitante(e.getNombreSolicitanteTexto() != null && !e.getNombreSolicitanteTexto().isBlank()
                 ? e.getNombreSolicitanteTexto()
-                : e.getSolicitante().getNombre() + " " + e.getSolicitante().getApPaterno());
+                : e.getSolicitante() != null
+                    ? e.getSolicitante().getNombre() + " " + e.getSolicitante().getApPaterno()
+                    : "—");
         dto.setCargo(e.getCargoSolicitante());
         dto.setDependencia(e.getDependenciaSolicitante());
+        dto.setImputadoId(e.getImputado().getId());
         dto.setImputadoFallecido(e.getImputado().isFallecido());
+        dto.setImputadoCarpetaCerrada(e.getImputado().isCarpetaCerrada());
+        dto.setNumeroCierreCarpeta(e.getImputado().getNumeroCierreCarpeta());
         dto.setNombreImputado(e.getImputado().getNombre());
         dto.setApPaternoImputado(e.getImputado().getApPaterno());
         dto.setApMaternoImputado(e.getImputado().getApMaterno());
@@ -171,6 +180,8 @@ public class EvaluacionRiesgoResponseDTO {
         dto.setResultado(e.getResultado() != null ? e.getResultado().name() : null);
         dto.setNombreEvaluador(e.getEvaluador() != null
                 ? e.getEvaluador().getNombre() + " " + e.getEvaluador().getApPaterno() : null);
+        dto.setZonaEvaluador(e.getEvaluador() != null && e.getEvaluador().getZona() != null
+                ? e.getEvaluador().getZona().name() : null);
         dto.setEntrevistaId(e.getEntrevista() != null ? e.getEntrevista().getId() : null);
 
         dto.setGenero(e.getGenero());

@@ -10,7 +10,7 @@ import './Historico.css';
 import './SeguimientoCasos.css';
 import './Imputados.css';
 
-const ITEMS_POR_PAGINA = 10;
+const ITEMS_POR_PAGINA = 50;
 
 const estadoConfig = {
     ACTIVO:     { label: 'Activo',     clase: 'estatus-atendido' },
@@ -23,7 +23,8 @@ const estadoConfig = {
 const SeguimientoCasos = () => {
     const { user } = useAuth();
     const { showToast } = useToast();
-    const puedeRegistrar = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERVISION';
+    const puedeRegistrar   = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERVISION';
+    const puedeSeguimiento = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERVISION' || user?.rol === 'EVALUADOR_RIESGO';
 
     // ── Alerta de vencimiento SCP ─────────────────────────────────────────────
     // Prioridad de plazo: nuevo plazo acordado > vencimiento calculado > plazo original
@@ -62,6 +63,7 @@ const SeguimientoCasos = () => {
     const [datos, setDatos]           = useState([]);
     const [busqueda, setBusqueda]     = useState('');
     const [filtroAlerta,  setFiltroAlerta]  = useState(null); // null | 'proximo' | 'vencido'
+    const [zonaFiltro, setZonaFiltro] = useState('TODAS');
     const [showDropdown,  setShowDropdown]  = useState(false);
     const [expandedIds,   setExpandedIds]   = useState(new Set());
     const dropdownRef = useRef(null);
@@ -142,7 +144,8 @@ const SeguimientoCasos = () => {
         const textoOk = d.nombreImputado?.toLowerCase().includes(busqueda.toLowerCase()) ||
                         d.causaPenal?.toLowerCase().includes(busqueda.toLowerCase());
         const alertaOk = !filtroAlerta || alertaVencimiento(d)?.tipo === filtroAlerta;
-        return textoOk && alertaOk;
+        const zonaOk = zonaFiltro === 'TODAS' || d.zona === zonaFiltro;
+        return textoOk && alertaOk && zonaOk;
     });
 
     // Agrupa las medidas por imputado para la vista de tabla anidada.
@@ -218,11 +221,17 @@ const SeguimientoCasos = () => {
         setPreOpts([]);
         setInitError('');
         setShowInicio(true);
-        // Cargar las 5 entrevistas más recientes con tipoSeguimiento asignado
+        // Cargar entrevistas recientes; priorizar las que aún no tienen medida activa
         try {
             const res = await buscarEntrevistasParaMedida('');
             const todas = res.data?.data || [];
-            setRecientesPre(todas.slice(0, 5));
+            // Set de imputadoIds que ya tienen al menos una medida registrada
+            const conMedidaIds = new Set((datos || []).map(d => d.imputadoId).filter(Boolean));
+            const sinMedida = todas.filter(e => !conMedidaIds.has(e.imputadoId));
+            const conMedida = todas.filter(e =>  conMedidaIds.has(e.imputadoId));
+            // Marcar cada entrevista con flag para el badge
+            const marcar = (arr, tiene) => arr.map(e => ({ ...e, tieneMedida: tiene }));
+            setRecientesPre([...marcar(sinMedida, false), ...marcar(conMedida, true)].slice(0, 5));
         } catch { setRecientesPre([]); }
         // Auto-focus al input tras render
         setTimeout(() => preInputRef.current?.focus(), 80);
@@ -251,7 +260,7 @@ const SeguimientoCasos = () => {
                 setMedidaActiva(res.data.data);
                 setVista('formulario');
             }
-        } catch { /* red error — la vista muestra lista vacía */ }
+        } catch { showToast('Error al cargar la medida. Verifica la conexión.', 'error'); }
         finally { setCargandoDetalle(false); }
     };
 
@@ -261,7 +270,7 @@ const SeguimientoCasos = () => {
         try {
             const res = await getMedidaById(item.id);
             if (res.data.ok) { setDetalleActivo(res.data.data); setVista('detalle'); }
-        } catch { /* red error */ }
+        } catch { showToast('Error al cargar el detalle de la medida.', 'error'); }
         finally { setCargandoDetalle(false); }
     };
 
@@ -273,7 +282,21 @@ const SeguimientoCasos = () => {
             causaPenal: medida.causaPenal,
             entrevistaId: medida.entrevistaId,
             tipo: 'SUSPENSION_CONDICIONAL',
-            medidaOrigenId: medida.id,   // para marcar la MC original como cambiada
+            medidaOrigenId: medida.id,
+        });
+        setDetalleActivo(null);
+        setVista('formulario');
+    };
+
+    const handleCambiarAMC = (medida) => {
+        setMedidaActiva({
+            _nuevoMC: true,
+            imputadoId: medida.imputadoId,
+            nombreImputado: medida.nombreImputado,
+            causaPenal: medida.causaPenal,
+            entrevistaId: medida.entrevistaId,
+            tipo: 'MEDIDA_CAUTELAR',
+            medidaOrigenId: medida.id,  // para vincular la MC nueva con la SCP origen
         });
         setDetalleActivo(null);
         setVista('formulario');
@@ -285,10 +308,12 @@ const SeguimientoCasos = () => {
             <DetalleMedida
                 medida={detalleActivo}
                 puedeRegistrar={puedeRegistrar}
+                puedeSeguimiento={puedeSeguimiento}
                 onVolver={() => { setVista('lista'); setDetalleActivo(null); cargarDatos(); }}
                 onEditar={() => { setMedidaActiva(detalleActivo); setDetalleActivo(null); setVista('formulario'); }}
                 onActualizado={(actualizado) => { setDetalleActivo(actualizado); cargarDatos(); }}
                 onCambiarSCP={handleCambiarASCP}
+                onCambiarMC={handleCambiarAMC}
             />
         );
     }
@@ -372,6 +397,15 @@ const SeguimientoCasos = () => {
                         value={busqueda}
                         onChange={e => { setBusqueda(e.target.value); setPagina(1); }}
                     />
+                </div>
+                <div className="zona-pills">
+                    {['TODAS','XOCHITEPEC','CUAUTLA','JOJUTLA'].map(z => (
+                        <button key={z}
+                            className={`zona-pill zona-pill-${z.toLowerCase()} ${zonaFiltro === z ? 'zona-pill-active' : ''}`}
+                            onClick={() => { setZonaFiltro(z); setPagina(1); }}>
+                            {z === 'TODAS' ? 'Todas' : z.charAt(0) + z.slice(1).toLowerCase()}
+                        </button>
+                    ))}
                 </div>
                 <div className="scp-dropdown-wrap" ref={dropdownRef}>
                     <button
@@ -483,6 +517,8 @@ const SeguimientoCasos = () => {
                                     <td>
                                         {item.imputadoFallecido
                                             ? <span className="imp-badge-fallecido"><i className="bi bi-heartbreak-fill" /> Fallecido</span>
+                                            : item.imputadoCarpetaCerrada
+                                            ? <span className="exp-badge-cierre"><i className="bi bi-folder-x" /> Carpeta Cerrada</span>
                                             : <span className={`estatus-badge ${estadoConfig[item.estado]?.clase}`}>{estadoConfig[item.estado]?.label ?? item.estado}</span>
                                         }
                                     </td>
@@ -505,6 +541,11 @@ const SeguimientoCasos = () => {
                                                 : <i className="bi bi-person-fill scp-grupo-icon" />
                                             }
                                             <span className="scp-grupo-nombre-txt">{grupo.nombre}</span>
+                                            {reciente.zona && (
+                                                <span className={`zona-tag zona-tag-${reciente.zona.toLowerCase()}`}>
+                                                    {({'XOCHITEPEC':'Xochi','CUAUTLA':'Cuat','JOJUTLA':'Jojut'})[reciente.zona] ?? reciente.zona}
+                                                </span>
+                                            )}
                                         </div>
                                         {tieneVarias && (
                                             <span className="scp-grupo-hint-txt">
@@ -602,7 +643,7 @@ const SeguimientoCasos = () => {
                                             <ul className="scp-pre-opts">
                                                 {!preQuery.trim() && (
                                                     <li className="scp-pre-recientes-label">
-                                                        <i className="bi bi-clock-history" /> Recientes
+                                                        <i className="bi bi-exclamation-circle" /> Pendientes de medida
                                                     </li>
                                                 )}
                                                 {opcionesVisibles.map(e => (
@@ -612,9 +653,16 @@ const SeguimientoCasos = () => {
                                                                 <i className="bi bi-person-fill scp-pre-imputado-icon" />
                                                                 <span className="scp-pre-nombre">{e.nombreCompleto}</span>
                                                             </div>
-                                                            <span className={`scp-pre-tipo ${e.tipoSeguimiento === 'MC' ? 'scp-pre-mc' : 'scp-pre-scp'}`}>
-                                                                {e.tipoSeguimiento === 'MC' ? 'Medida Cautelar' : 'Susp. Condicional'}
-                                                            </span>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                                {e.tieneMedida !== undefined && (
+                                                                    e.tieneMedida
+                                                                        ? <span className="fev-imp-tiene-ent"><i className="bi bi-card-checklist"></i> Con medida</span>
+                                                                        : <span className="fev-imp-sin-ent"><i className="bi bi-card-checklist"></i> Sin medida</span>
+                                                                )}
+                                                                <span className={`scp-pre-tipo ${e.tipoSeguimiento === 'MC' ? 'scp-pre-mc' : 'scp-pre-scp'}`}>
+                                                                    {e.tipoSeguimiento === 'MC' ? 'Medida Cautelar' : 'Susp. Condicional'}
+                                                                </span>
+                                                            </div>
                                                         </div>
                                                         <div className="scp-pre-item-bot">
                                                             <span><i className="bi bi-file-earmark-text" /> {e.causaPenal}</span>

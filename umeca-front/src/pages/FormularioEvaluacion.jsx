@@ -197,6 +197,8 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
 
   const [imputadoBusq, setImputadoBusq] = useState('');
   const [imputadoOpts, setImputadoOpts] = useState([]);
+  const [impRecientes, setImpRecientes] = useState([]);
+  const [showRecientes, setShowRecientes] = useState(false);
   const [entrevistaId, setEntrevistaId] = useState(esEdicion ? evaluacion.entrevistaId : null);
   const [preLlenado, setPreLlenado] = useState(false);
 
@@ -294,6 +296,20 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
     const d = new Date(); d.setFullYear(d.getFullYear() - 18); return d.toISOString().split('T')[0];
   })();
 
+  // Carga sugerencias al enfocar: imputados con entrevista pero sin evaluación (pendientes de evaluar)
+  useEffect(() => {
+    if (!esEdicion) {
+      getImputados().then(res => {
+        if (res.data.ok) {
+          const activos = (res.data.data || []).filter(i => !i.fallecido && !i.carpetaCerrada);
+          const sinEval = activos.filter(i => (i.totalEntrevistas ?? 0) > 0 && (i.totalEvaluaciones ?? 0) === 0);
+          const conEval = activos.filter(i => (i.totalEntrevistas ?? 0) > 0 && (i.totalEvaluaciones ?? 0) > 0);
+          setImpRecientes([...sinEval, ...conEval].slice(0, 5));
+        }
+      }).catch(() => {});
+    }
+  }, [esEdicion]);
+
   // Al editar: re-cargar datos de la entrevista vinculada para llenar campos de la entrevista
   useEffect(() => {
     if (esEdicion && evaluacion.entrevistaId) {
@@ -315,6 +331,7 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
   const seleccionarImputado = async (imp) => {
     setImputadoBusq('');
     setImputadoOpts([]);
+    setShowRecientes(false);
     setForm(prev => ({
       ...prev,
       causaPenal: imp.causaPenal || '',
@@ -825,13 +842,37 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
             <input
               placeholder="Buscar por nombre o causa penal..."
               value={imputadoBusq}
-              onChange={e => setImputadoBusq(e.target.value)}
+              onChange={e => { setImputadoBusq(e.target.value); setShowRecientes(false); }}
+              onFocus={() => { if (!imputadoBusq.trim()) setShowRecientes(true); }}
+              onBlur={() => setTimeout(() => { setShowRecientes(false); setImputadoOpts([]); }, 200)}
             />
+            {/* Resultados de búsqueda */}
             {imputadoOpts.length > 0 && (
               <ul className="fev-imp-opts">
                 {imputadoOpts.map(imp => (
                   <li key={imp.id} onClick={() => seleccionarImputado(imp)}>
-                    <strong>{imp.nombre} {imp.apPaterno}</strong> — {imp.causaPenal}
+                    <div className="fev-imp-opt-nombre"><strong>{imp.nombre} {imp.apPaterno} {imp.apMaterno || ''}</strong></div>
+                    <div className="fev-imp-opt-meta">
+                      <span className="fev-imp-causa">{imp.causaPenal}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {/* Recientes al enfocar: con entrevista, sin evaluación primero */}
+            {showRecientes && imputadoOpts.length === 0 && impRecientes.length > 0 && (
+              <ul className="fev-imp-opts">
+                <li className="fev-imp-opts-header"><i className="bi bi-clock-history"></i> Pendientes de evaluación</li>
+                {impRecientes.map(imp => (
+                  <li key={imp.id} onClick={() => seleccionarImputado(imp)}>
+                    <div className="fev-imp-opt-nombre"><strong>{imp.nombre} {imp.apPaterno} {imp.apMaterno || ''}</strong></div>
+                    <div className="fev-imp-opt-meta">
+                      <span className="fev-imp-causa">{imp.causaPenal}</span>
+                      {(imp.totalEvaluaciones ?? 0) === 0
+                        ? <span className="fev-imp-sin-ent"><i className="bi bi-shield-exclamation"></i> Sin evaluación</span>
+                        : <span className="fev-imp-tiene-ent"><i className="bi bi-shield-check"></i> {imp.totalEvaluaciones} evaluación(es)</span>
+                      }
+                    </div>
                   </li>
                 ))}
               </ul>

@@ -7,6 +7,7 @@ import {
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import { getEstadisticas, exportarEstadisticasExcel } from '../api/estadisticasApi';
 import { getConsultas } from '../api/consultasApi';
+import { getEstadisticasCorrespondencia } from '../api/correspondenciaApi';
 import './Estadisticas.css';
 
 ChartJS.register(
@@ -141,6 +142,7 @@ const Estadisticas = () => {
     const [cargando,   setCargando]   = useState(true);
     const [exportando, setExportando] = useState(false);
     const [consultas,  setConsultas]  = useState([]);
+    const [corrStats,  setCorrStats]  = useState(null);
 
     const handleExportar = async () => {
         setExportando(true);
@@ -172,6 +174,12 @@ const Estadisticas = () => {
             .then(r => { if (r.data.ok) setConsultas(r.data.data || []); })
             .catch(err => console.warn("Error al cargar datos:", err));
     }, []);
+
+    useEffect(() => {
+        getEstadisticasCorrespondencia(anio)
+            .then(r => { if (r.data.ok) setCorrStats(r.data.data); })
+            .catch(() => {});
+    }, [anio]);
 
     // Filtra consultas según anio/mes/semana seleccionados
     const consultasFiltradas = useMemo(() => {
@@ -500,6 +508,94 @@ const Estadisticas = () => {
                     </div>
                 </GraficaCard>
 
+                {/* ── SECCIÓN CORRESPONDENCIA ── */}
+                <Seccion label="Correspondencia" icono="bi bi-envelope-paper" />
+
+                {corrStats ? (() => {
+                    // Helpers: buscar valor fijo sin depender de lo que devuelva el backend
+                    const byTipo  = (k) => Number(corrStats.porTipo?.find(([t]) => t === k)?.[1] ?? 0);
+                    const byPrio  = (k) => Number(corrStats.porPrioridad?.find(([p]) => p === k)?.[1] ?? 0);
+                    const byEst   = (k) => Number(corrStats.porEstado?.find(([e]) => e === k)?.[1] ?? 0);
+                    return (<>
+                    {/* Por tipo — siempre 3 segmentos */}
+                    <GraficaCard titulo="Oficios por tipo" subtitulo={`Distribución por tipo · ${anio}`}>
+                        <div className="est-dona-wrap">
+                            <Doughnut options={doughnutOpts} data={{
+                                labels: ['Oficio', 'Correo', 'WhatsApp'],
+                                datasets: [dDataset(
+                                    [byTipo('OFICIO'), byTipo('CORREO'), byTipo('WHATSAPP')],
+                                    [COLORES.verde, COLORES.azulClaro, COLORES.naranja]
+                                )],
+                            }} />
+                        </div>
+                        <div className="est-dona-stats">
+                            <span style={{ color: COLORES.verde }}><strong>{byTipo('OFICIO')}</strong> Oficio</span>
+                            <span style={{ color: COLORES.azulClaro }}><strong>{byTipo('CORREO')}</strong> Correo</span>
+                            <span style={{ color: COLORES.naranja }}><strong>{byTipo('WHATSAPP')}</strong> WhatsApp</span>
+                        </div>
+                    </GraficaCard>
+
+                    {/* Por prioridad — siempre 3 segmentos */}
+                    <GraficaCard titulo="Oficios por prioridad" subtitulo={`Distribución por prioridad · ${anio}`}>
+                        <div className="est-dona-wrap">
+                            <Doughnut options={doughnutOpts} data={{
+                                labels: ['Normal', 'Urgente', 'De Conocimiento'],
+                                datasets: [dDataset(
+                                    [byPrio('NORMAL'), byPrio('URGENTE'), byPrio('DE_CONOCIMIENTO')],
+                                    [COLORES.gris, COLORES.rojo, COLORES.azulClaro]
+                                )],
+                            }} />
+                        </div>
+                        <div className="est-dona-stats">
+                            <span style={{ color: COLORES.gris }}><strong>{byPrio('NORMAL')}</strong> Normal</span>
+                            <span style={{ color: COLORES.rojo }}><strong>{byPrio('URGENTE')}</strong> Urgente</span>
+                            <span style={{ color: COLORES.azulClaro }}><strong>{byPrio('DE_CONOCIMIENTO')}</strong> De Conoc.</span>
+                        </div>
+                    </GraficaCard>
+
+                    {/* Por estado — siempre 5 segmentos */}
+                    <GraficaCard titulo="Oficios por estado" subtitulo={`Estado actual de todos los oficios · ${anio}`}>
+                        <div className="est-dona-wrap">
+                            <Doughnut options={{ ...doughnutOpts, plugins: { ...doughnutOpts.plugins, legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 12 } } } }} data={{
+                                labels: ['Pendiente', 'Asignado', 'Leído', 'En Espera', 'Finalizado'],
+                                datasets: [dDataset(
+                                    [byEst('PENDIENTE'), byEst('ASIGNADO'), byEst('LEIDO'), byEst('EN_ESPERA'), byEst('FINALIZADO')],
+                                    [COLORES.amarillo, COLORES.azulClaro, COLORES.verdeClaro, COLORES.naranja, COLORES.verde]
+                                )],
+                            }} />
+                        </div>
+                        <div className="est-dona-stats">
+                            <span style={{ color: COLORES.amarillo }}><strong>{byEst('PENDIENTE')}</strong> Pendiente</span>
+                            <span style={{ color: COLORES.azulClaro }}><strong>{byEst('ASIGNADO')}</strong> Asignado</span>
+                            <span style={{ color: COLORES.verdeClaro }}><strong>{byEst('LEIDO')}</strong> Leído</span>
+                            <span style={{ color: COLORES.naranja }}><strong>{byEst('EN_ESPERA')}</strong> En Espera</span>
+                            <span style={{ color: COLORES.verde }}><strong>{byEst('FINALIZADO')}</strong> Finalizado</span>
+                        </div>
+                    </GraficaCard>
+
+                    {/* Por mes — línea */}
+                    <GraficaCard titulo="Oficios registrados por mes" subtitulo={`Evolución mensual · ${anio}`} span2>
+                        <div className="est-bar-stats">
+                            <span><strong>{corrStats.total ?? 0}</strong> Total</span>
+                            <span><strong>{corrStats.conTermino ?? 0}</strong> Con término</span>
+                            <span><strong>{corrStats.sinTermino ?? 0}</strong> Sin término</span>
+                        </div>
+                        <div className="est-bar-wrap">
+                            <Line options={{ ...barOpts(), elements: { line: { tension: 0.4 }, point: { radius: 4 } } }} data={{
+                                labels: MESES,
+                                datasets: [{
+                                    label: 'Oficios recibidos',
+                                    data: (() => { const arr = Array(12).fill(0); (corrStats.porMes ?? []).forEach(([m, c]) => { arr[Number(m) - 1] = Number(c); }); return arr; })(),
+                                    borderColor: COLORES.verde, backgroundColor: COLORES.verde + '22', fill: true, pointBackgroundColor: COLORES.verde,
+                                }],
+                            }} />
+                        </div>
+                    </GraficaCard>
+                    </>);
+                })() : (
+                    <div className="est-cargando" style={{ gridColumn: '1/-1' }}>Cargando datos de correspondencia...</div>
+                )}
+
                 <Seccion icono="bi bi-person-x-fill" label="Fallecidos" />
 
                 {/* Fallecidos — imputados activos vs fallecidos (totales acumulados) */}
@@ -647,6 +743,7 @@ const Estadisticas = () => {
                         </div>
                     </GraficaCard>
                 )}
+
 
             </div>
         </div>

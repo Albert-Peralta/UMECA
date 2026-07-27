@@ -17,3 +17,6 @@ export const actualizarFotoImputado = (id, foto) => api.patch(`/imputados/${id}/
 
 export const registrarFallecimiento = (id, datos) =>
     api.patch(`/imputados/${id}/fallecimiento`, datos);
+
+export const registrarCierreCarpeta = (id, datos) =>
+    api.patch(`/imputados/${id}/cierre-carpeta`, datos);

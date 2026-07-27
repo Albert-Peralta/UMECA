@@ -86,6 +86,7 @@ const Supervision = () => {
     // Filtros
     const [filtroTipo, setFiltroTipo]     = useState('');
     const [filtroEstado, setFiltroEstado] = useState('');
+    const [zonaFiltro, setZonaFiltro]     = useState('TODAS');
 
     const [imputados, setImputados] = useState([]);
 
@@ -263,7 +264,8 @@ const Supervision = () => {
     // ── filtrar ──────────────────────────────────────────────────────────────
     const datosFiltrados = datos.filter(item =>
         (!filtroTipo   || item.tipo   === filtroTipo) &&
-        (!filtroEstado || item.estado === filtroEstado)
+        (!filtroEstado || item.estado === filtroEstado) &&
+        (zonaFiltro === 'TODAS' || item.zona === zonaFiltro)
     );
 
     // Agrupa supervisiones por fechaProgramada para la vista de agenda diaria.
@@ -344,6 +346,15 @@ const Supervision = () => {
 
                     {/* Filtros siempre visibles — pegados a la derecha */}
                     <div className="sv-filtros">
+                        <div className="zona-pills">
+                            {['TODAS','XOCHITEPEC','CUAUTLA','JOJUTLA'].map(z => (
+                                <button key={z}
+                                    className={`zona-pill zona-pill-${z.toLowerCase()} ${zonaFiltro === z ? 'zona-pill-active' : ''}`}
+                                    onClick={() => setZonaFiltro(z)}>
+                                    {z === 'TODAS' ? 'Todas' : z.charAt(0) + z.slice(1).toLowerCase()}
+                                </button>
+                            ))}
+                        </div>
                         <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
                             <option value="">Todos los tipos</option>
                             <option value="LLAMADA">Llamada</option>
@@ -655,8 +666,15 @@ const SupervisionCard = ({ item, puedeEditar, puedeEliminar, onEditar, onElimina
             <div className="sv-card-info">
                 <div className="sv-card-nombre-row">
                     <span className="sv-card-nombre">{item.nombreImputado}</span>
+                    {item.zona && (
+                        <span className={`zona-tag zona-tag-${item.zona.toLowerCase()}`}>
+                            {({'XOCHITEPEC':'Xochi','CUAUTLA':'Cuat','JOJUTLA':'Jojut'})[item.zona] ?? item.zona}
+                        </span>
+                    )}
                     {item.imputadoFallecido
                         ? <span className="imp-badge-fallecido"><i className="bi bi-heartbreak-fill" /> Fallecido</span>
+                        : item.imputadoCarpetaCerrada
+                        ? <span className="exp-badge-cierre" style={{ fontSize: 11, padding: '2px 8px' }}><i className="bi bi-folder-x" /> Carpeta Cerrada</span>
                         : <span className={`sv-badge ${cfg.clase}`}>{cfg.label}</span>
                     }
                 </div>
