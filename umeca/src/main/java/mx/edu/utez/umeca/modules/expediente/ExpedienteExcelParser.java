@@ -742,6 +742,9 @@ public class ExpedienteExcelParser {
                         "DE ESTATUS",
                         "N DE ESTATUS",
                         "ESTATUS"));
+                    // Columna I (índice 8) — observaciones, sin encabezado en el Excel
+                    String obsCol = str(row, 8);
+                    if (obsCol != null && !obsCol.isBlank()) dto.setObservaciones(obsCol);
                     lista.add(dto);
                 }
             }

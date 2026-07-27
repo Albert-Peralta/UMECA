@@ -199,7 +199,7 @@ export default function ExpedientesAnteriores() {
 
                     {/* ── Sección SUSTRAIDO ── */}
                     {detalle.tipo === 'SUSTRAIDO' && (
-                        <div className="exp-seccion exp-seccion-sustraido">
+                        <div className="exp-seccion exp-seccion-sustraido exp-seccion-full">
                             <div className="exp-seccion-titulo"><i className="bi bi-person-dash-fill" /> Datos del Sustraído</div>
                             <div className="exp-campos">
                                 <Fila label="No."             valor={detalle.numero} />
