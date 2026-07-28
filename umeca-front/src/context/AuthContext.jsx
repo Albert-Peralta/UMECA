@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useRef, useState } from 'react';
 import api from '../api/axios';
 
 /**
@@ -29,7 +29,11 @@ export const AuthProvider = ({ children }) => {
         setUser(updated);
     };
 
+    const loggingOut = useRef(false);
+
     const logout = async () => {
+        if (loggingOut.current) return;
+        loggingOut.current = true;
         // Registrar cierre de sesión en bitácora (best-effort, no bloquea el logout)
         try { await api.post('/auth/logout'); } catch (_) { /* ignorar errores de red */ }
 
@@ -45,6 +49,7 @@ export const AuthProvider = ({ children }) => {
         Object.entries(avatars).forEach(([k, v]) => localStorage.setItem(k, v));
 
         setUser(null);
+        loggingOut.current = false;
     };
 
     return (
