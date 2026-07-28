@@ -1,10 +1,28 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getExpedientes, getExpedienteById, importarExpedientesExcel, importarRegistroHistorico, importarSustraidos, getLotes, eliminarLote } from '../api/expedientesApi';
+import { getExpedientes, getExpedienteById, importarExpedientesExcel, importarRegistroHistorico, importarSustraidos, importarBaseJojutla, importarBaseCuautla, getLotes, eliminarLote } from '../api/expedientesApi';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import './ExpedientesAnteriores.css';
 
 const ITEMS_POR_PAGINA = 50;
+
+const SUBTIPO_LABELS = {
+    MC: 'MC', SCP: 'SCP', HISTORICO: 'Histórico',
+    JOJU_SUSTRAIDO: 'Sustraídos', JOJU_PRISION: 'Prisión Preventiva',
+    JOJU_DEFUNCION: 'Defunción', JOJU_SOBRESEIMIENTO: 'Sobreseimiento',
+    JOJU_ARCHIVO: 'Archivo', JOJU_CARPETAS_INACTIVAS: 'Carpetas Inactivas',
+    CUAT_PRISION: 'Prisión Preventiva', CUAT_ESPERA: 'Espera Sobreseimientos',
+    CUAT_CARPETAS_CERRAR: 'Carpetas para Cerrar', CUAT_OFICIOS: 'Oficios Sobreseimientos',
+    CUAT_SUSTRAIDO: 'Sustraídos', CUAT_TTA: 'TTA', CUAT_ARCHIVO: 'Archivo',
+};
+
+const SUBTIPOS_POR_BASE = {
+    BASE_XOCHI: ['MC', 'SCP', 'HISTORICO'],
+    BASE_JOJU:  ['JOJU_SUSTRAIDO', 'JOJU_PRISION', 'JOJU_DEFUNCION', 'JOJU_SOBRESEIMIENTO', 'JOJU_ARCHIVO', 'JOJU_CARPETAS_INACTIVAS'],
+    BASE_CUAT:  ['CUAT_PRISION', 'CUAT_ESPERA', 'CUAT_CARPETAS_CERRAR', 'CUAT_OFICIOS', 'CUAT_SUSTRAIDO', 'CUAT_TTA', 'CUAT_ARCHIVO'],
+};
+
+const ZONA_LABELS = { XOCHITEPEC: 'Xochitepec', CUAUTLA: 'Cuautla', JOJUTLA: 'Jojutla' };
 
 const MEDIDAS_LABEL = {
     mcI: 'I', mcIi: 'II', mcIii: 'III', mcIv: 'IV', mcV: 'V',
@@ -15,7 +33,7 @@ const MEDIDAS_LABEL = {
 export default function ExpedientesAnteriores() {
     const { showToast } = useToast();
     const { user } = useAuth();
-    const esAdmin = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN';
+    const esAdmin = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN';
 
     const [lista,   setLista]   = useState([]);
     const [total,   setTotal]   = useState(0);
@@ -23,7 +41,8 @@ export default function ExpedientesAnteriores() {
     const [loading, setLoading] = useState(false);
 
     const [busqueda,    setBusqueda]    = useState('');
-    const [tipoFiltro,  setTipoFiltro]  = useState('MC');
+    const [tipoFiltro,  setTipoFiltro]  = useState('BASE_XOCHI');
+    const [subtipoFiltro, setSubtipoFiltro] = useState(null);
     const [zonaFiltro,  setZonaFiltro]  = useState('');
 
     const [detalle,     setDetalle]     = useState(null);
@@ -50,12 +69,36 @@ export default function ExpedientesAnteriores() {
 
     const totalPaginas = Math.max(1, Math.ceil(total / ITEMS_POR_PAGINA));
 
+
     const cargar = useCallback(async (p = pagina) => {
         setLoading(true);
         try {
+            // Calcular parámetros de filtro
+            let tipo      = undefined;
+            let tipoIn    = undefined;
+            let zona      = undefined;
+
+            if (SUBTIPOS_POR_BASE[tipoFiltro]) {
+                // Es una base (XOCHI/JOJU/CUAT)
+                zona = tipoFiltro === 'BASE_XOCHI' ? 'XOCHITEPEC'
+                     : tipoFiltro === 'BASE_JOJU'  ? 'JOJUTLA'
+                     : 'CUAUTLA';
+                if (subtipoFiltro) {
+                    tipo = subtipoFiltro; // subtipo específico
+                } else {
+                    // Todos los de esta base — enviamos tipoIn para no mezclar con SUSTRAIDO etc.
+                    tipoIn = SUBTIPOS_POR_BASE[tipoFiltro].join(',');
+                }
+            } else {
+                // SUSTRAIDO o REGISTRO_HISTORICO
+                tipo = tipoFiltro;
+                zona = zonaFiltro || undefined;
+            }
+
             const res = await getExpedientes({
-                tipo: tipoFiltro || undefined,
-                zona: zonaFiltro || undefined,
+                tipo,
+                tipoIn,
+                zona,
                 busqueda: busqueda || undefined,
                 pagina: p,
                 tam: ITEMS_POR_PAGINA,
@@ -68,13 +111,13 @@ export default function ExpedientesAnteriores() {
         } finally {
             setLoading(false);
         }
-    }, [pagina, tipoFiltro, zonaFiltro, busqueda]);
+    }, [pagina, tipoFiltro, subtipoFiltro, zonaFiltro, busqueda]);
 
-    useEffect(() => { cargar(0); setPagina(0); }, [tipoFiltro, zonaFiltro]);
+    useEffect(() => { cargar(0); setPagina(0); }, [tipoFiltro, subtipoFiltro, zonaFiltro]);
 
     // Búsqueda con pequeño debounce
     useEffect(() => {
-        const t = setTimeout(() => { cargar(0); setPagina(0); }, 350);
+        const t = setTimeout(() => { cargar(0); setPagina(0); }, 500);
         return () => clearTimeout(t);
     }, [busqueda]);
 
@@ -91,6 +134,10 @@ export default function ExpedientesAnteriores() {
                 res = await importarRegistroHistorico(importArchivo, importZona || undefined);
             } else if (importTipo === 'SUSTRAIDO') {
                 res = await importarSustraidos(importArchivo);
+            } else if (importTipo === 'BASE_IMPUTADOS') {
+                if (importZona === 'JOJUTLA') res = await importarBaseJojutla(importArchivo);
+                else if (importZona === 'CUAUTLA') res = await importarBaseCuautla(importArchivo);
+                else res = await importarExpedientesExcel(importArchivo, importZona);
             } else {
                 res = await importarExpedientesExcel(importArchivo, importZona);
             }
@@ -230,8 +277,44 @@ export default function ExpedientesAnteriores() {
                         </div>
                     )}
 
+                    {/* ── Sección bases Jojutla / Cuautla ── */}
+                    {(detalle.tipo?.startsWith('JOJU_') || detalle.tipo?.startsWith('CUAT_')) && (
+                        <div className="exp-seccion exp-seccion-full exp-seccion-base">
+                            <div className="exp-seccion-titulo"><i className="bi bi-person-lines-fill" /> Datos del Registro</div>
+                            <div className="exp-campos">
+                                <Fila label="Causa Penal"   valor={detalle.causaPenal} />
+                                <Fila label="Nombre"        valor={detalle.nombre} />
+                                {detalle.delito      && <Fila label="Delito"       valor={detalle.delito} />}
+                                {detalle.sexo        && <Fila label="Sexo"         valor={detalle.sexo} />}
+                                {detalle.resolucion  && <Fila label="Resolución"   valor={detalle.resolucion} />}
+                                {detalle.estatus     && <Fila label="Estatus"      valor={detalle.estatus} />}
+                                {detalle.tipoMcScp   && <Fila label="MC/SCP"       valor={detalle.tipoMcScp} />}
+                                {detalle.juez        && <Fila label="Juez"         valor={detalle.juez} />}
+                                {detalle.plazo       && <Fila label="Plazo"        valor={detalle.plazo} />}
+                                {detalle.fechaImposicion && <Fila label="Fecha Imposición" valor={detalle.fechaImposicion} />}
+                                {detalle.fechaVencimiento && <Fila label="Fecha Vencimiento" valor={detalle.fechaVencimiento} />}
+                                {detalle.vencimiento && <Fila label="Vencimiento"  valor={detalle.vencimiento} />}
+                                {detalle.asignado    && <Fila label="Asignado"     valor={detalle.asignado} />}
+                                {detalle.supervisor  && <Fila label="Supervisor"   valor={detalle.supervisor} />}
+                                {detalle.sustraccion && <Fila label="Fecha Sustracción" valor={detalle.sustraccion} />}
+                                {detalle.archivo     && <Fila label="Fecha Archivo" valor={detalle.archivo} />}
+                                {detalle.cierre      && <Fila label="Cierre"       valor={detalle.cierre} />}
+                                {detalle.motivoCierre && <Fila label="Motivo Cierre" valor={detalle.motivoCierre} />}
+                                {detalle.bitacora    && <Fila label="Bitácora"     valor={detalle.bitacora} />}
+                                {detalle.carpetaXochitepec && <Fila label="Carpeta Xochitepec" valor={detalle.carpetaXochitepec} />}
+                                {detalle.numero      && <Fila label="No."          valor={detalle.numero} />}
+                            </div>
+                            {(detalle.observaciones || detalle.observaciones2) && (
+                                <div className="exp-sustraido-estatus">
+                                    <span className="exp-sustraido-estatus-label"><i className="bi bi-chat-left-text" /> Observaciones</span>
+                                    <p>{[detalle.observaciones, detalle.observaciones2, detalle.observaciones3, detalle.observaciones4, detalle.observaciones5, detalle.observaciones6].filter(Boolean).join(' | ')}</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {/* Datos del imputado */}
-                    {detalle.tipo !== 'SUSTRAIDO' && detalle.tipo !== 'REGISTRO_HISTORICO' && (
+                    {detalle.tipo !== 'SUSTRAIDO' && detalle.tipo !== 'REGISTRO_HISTORICO' && !detalle.tipo?.startsWith('JOJU_') && !detalle.tipo?.startsWith('CUAT_') && (
                     <div className="exp-seccion">
                         <div className="exp-seccion-titulo"><i className="bi bi-person-fill" /> Datos del Imputado</div>
                         <div className="exp-campos">
@@ -246,7 +329,7 @@ export default function ExpedientesAnteriores() {
                     )}
 
                     {/* Domicilio */}
-                    {detalle.tipo !== 'SUSTRAIDO' && detalle.tipo !== 'REGISTRO_HISTORICO' && <div className="exp-seccion">
+                    {detalle.tipo !== 'SUSTRAIDO' && detalle.tipo !== 'REGISTRO_HISTORICO' && !detalle.tipo?.startsWith('JOJU_') && !detalle.tipo?.startsWith('CUAT_') && <div className="exp-seccion">
                         <div className="exp-seccion-titulo"><i className="bi bi-house-fill" /> Domicilio</div>
                         <div className="exp-campos">
                             <Fila label="Calle" valor={detalle.calle} />
@@ -302,7 +385,7 @@ export default function ExpedientesAnteriores() {
                     )}
 
                     {/* Oficio de imposición */}
-                    {detalle.tipo !== 'SUSTRAIDO' && detalle.tipo !== 'REGISTRO_HISTORICO' && <div className="exp-seccion">
+                    {detalle.tipo !== 'SUSTRAIDO' && detalle.tipo !== 'REGISTRO_HISTORICO' && !detalle.tipo?.startsWith('JOJU_') && !detalle.tipo?.startsWith('CUAT_') && <div className="exp-seccion">
                         <div className="exp-seccion-titulo"><i className="bi bi-file-earmark-text-fill" /> Oficio de Imposición</div>
                         <div className="exp-campos">
                             <Fila label="Causa Penal" valor={detalle.causaPenal} />
@@ -417,8 +500,8 @@ export default function ExpedientesAnteriores() {
                         </div>
                     )}
 
-                    {/* Observaciones */}
-                    {detalle.observaciones && (
+                    {/* Observaciones — solo para tipos que no sean JOJU_* o CUAT_* (esos ya las muestran dentro de su sección) */}
+                    {detalle.observaciones && !detalle.tipo?.startsWith('JOJU_') && !detalle.tipo?.startsWith('CUAT_') && (
                         <div className="exp-seccion exp-seccion-full">
                             <div className="exp-seccion-titulo"><i className="bi bi-chat-left-text-fill" /> Observaciones</div>
                             <p className="exp-observaciones">{detalle.observaciones}</p>
@@ -435,32 +518,28 @@ export default function ExpedientesAnteriores() {
 
             {/* Top bar */}
             <div className="exp-topbar">
-                {/* Fila única: pills + botones + paginación */}
+                {/* Fila 1: contador + pills principales + botones + paginación */}
                 <div className="exp-topbar-row">
                     <span className="exp-topbar-count">
                         Mostrando <b>{total === 0 ? 0 : pagina * ITEMS_POR_PAGINA + 1}</b>–<b>{Math.min((pagina + 1) * ITEMS_POR_PAGINA, total)}</b> de <b>{total}</b>
                     </span>
                     <div className="exp-topbar-sep" />
                     <div className="exp-tipo-pills">
-                        {[['MC', 'MC'], ['SCP', 'SCP'], ['HISTORICO', 'Histórico'], ['REGISTRO_HISTORICO', 'Reg. Histórico'], ['SUSTRAIDO', 'Sustraídos']].map(([v, l]) => (
+                        {[
+                            ['BASE_XOCHI', 'Base Xochi'],
+                            ['BASE_CUAT',  'Base Cuautla'],
+                            ['BASE_JOJU',  'Base Jojutla'],
+                            ['REGISTRO_HISTORICO', 'Reg. Histórico'],
+                            ['SUSTRAIDO', 'Sustraídos'],
+                        ].map(([v, l]) => (
                             <button key={v}
                                 className={`exp-tipo-pill ${tipoFiltro === v ? 'exp-tipo-pill-active' : ''} exp-tipo-pill-${v.toLowerCase()}`}
-                                onClick={() => setTipoFiltro(v)}>
+                                onClick={() => { setTipoFiltro(v); setSubtipoFiltro(null); setZonaFiltro(''); }}>
                                 {l}
                             </button>
                         ))}
                     </div>
                     <div className="exp-topbar-spacer" />
-                    {esAdmin && (
-                        <>
-                            <button className="exp-btn-gestion" onClick={abrirGestion}>
-                                <i className="bi bi-archive-fill" /> Gestionar importaciones
-                            </button>
-                            <button className="exp-btn-importar" onClick={() => { setShowImport(true); setImportTipo('NORMAL'); setImportArchivo(null); setImportPaso(1); setImportError(null); setImportExito(null); }}>
-                                <i className="bi bi-file-earmark-arrow-up-fill" /> Importar Excel
-                            </button>
-                        </>
-                    )}
                     <div className="exp-topbar-sep" />
                     <div className="exp-paginacion">
                         <button onClick={() => cambiarPagina(pagina - 1)} disabled={pagina === 0}>
@@ -472,6 +551,25 @@ export default function ExpedientesAnteriores() {
                         </button>
                     </div>
                 </div>
+
+                {/* Fila 2: subtipos de la base seleccionada */}
+                {SUBTIPOS_POR_BASE[tipoFiltro] && (
+                    <div className={`exp-subtipo-bar exp-base-${tipoFiltro === 'BASE_XOCHI' ? 'xochi' : tipoFiltro === 'BASE_JOJU' ? 'joju' : 'cuat'}`}>
+                        <span className="exp-subtipo-label">Sección:</span>
+                        <button
+                            className={`exp-tipo-pill exp-subtipo-pill ${subtipoFiltro === null ? 'exp-tipo-pill-active' : ''}`}
+                            onClick={() => setSubtipoFiltro(null)}>
+                            Todos
+                        </button>
+                        {SUBTIPOS_POR_BASE[tipoFiltro].map(st => (
+                            <button key={st}
+                                className={`exp-tipo-pill exp-subtipo-pill ${subtipoFiltro === st ? 'exp-tipo-pill-active' : ''}`}
+                                onClick={() => setSubtipoFiltro(st)}>
+                                {SUBTIPO_LABELS[st] || st}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Filtros */}
@@ -486,15 +584,28 @@ export default function ExpedientesAnteriores() {
                     />
                     {loading && <i className="bi bi-arrow-repeat exp-spin exp-buscador-loading" />}
                 </div>
-                <div className="zona-pills">
-                    {[['', 'Todas'], ['XOCHITEPEC', 'Xochi'], ['CUAUTLA', 'Cuautla'], ['JOJUTLA', 'Jojutla']].map(([v, l]) => (
-                        <button key={v}
-                            className={`zona-pill ${v ? `zona-pill-${v.toLowerCase()}` : 'zona-pill-todas'} ${zonaFiltro === v ? 'zona-pill-active' : ''}`}
-                            onClick={() => setZonaFiltro(v)}>
-                            {l}
+                {/* Pills de zona — solo para Reg. Histórico y Sustraídos */}
+                {esAdmin && (
+                    <div className="exp-acciones-bar">
+                        <button className="exp-btn-gestion" onClick={abrirGestion}>
+                            <i className="bi bi-archive-fill" /> Gestionar importaciones
                         </button>
-                    ))}
-                </div>
+                        <button className="exp-btn-importar" onClick={() => { setShowImport(true); setImportTipo('BASE_IMPUTADOS'); setImportArchivo(null); setImportPaso(1); setImportError(null); setImportExito(null); }}>
+                            <i className="bi bi-file-earmark-arrow-up-fill" /> Importar Excel
+                        </button>
+                    </div>
+                )}
+                {(tipoFiltro === 'REGISTRO_HISTORICO' || tipoFiltro === 'SUSTRAIDO') && (
+                    <div className="zona-pills">
+                        {[['', 'Todas'], ['XOCHITEPEC', 'Xochi'], ['CUAUTLA', 'Cuautla'], ['JOJUTLA', 'Jojutla']].map(([v, l]) => (
+                            <button key={v}
+                                className={`zona-pill ${v ? `zona-pill-${v.toLowerCase()}` : 'zona-pill-todas'} ${zonaFiltro === v ? 'zona-pill-active' : ''}`}
+                                onClick={() => setZonaFiltro(v)}>
+                                {l}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Tabla */}
@@ -508,7 +619,11 @@ export default function ExpedientesAnteriores() {
                 <table className="exp-table">
                     <thead>
                         <tr>
-                            {tipoFiltro !== 'REGISTRO_HISTORICO' && <th>NO.</th>}
+                            {tipoFiltro !== 'REGISTRO_HISTORICO'
+                                && !(tipoFiltro === 'BASE_CUAT' && subtipoFiltro !== 'CUAT_ARCHIVO')
+                                && !(tipoFiltro === 'BASE_JOJU' && subtipoFiltro !== 'JOJU_ARCHIVO')
+                                && <th>NO.</th>}
+                            {tipoFiltro === 'BASE_CUAT' && subtipoFiltro === 'CUAT_SUSTRAIDO' && <th>CARPETA XOCHI</th>}
                             <th>NOMBRE COMPLETO</th>
                             <th>CAUSA PENAL</th>
                             {tipoFiltro === 'SUSTRAIDO' ? (
@@ -523,6 +638,14 @@ export default function ExpedientesAnteriores() {
                                 <>
                                     <th>FECHA</th>
                                     <th>SITUACIÓN JURÍDICA</th>
+                                </>
+                            ) : SUBTIPOS_POR_BASE[tipoFiltro] ? (
+                                <>
+                                    <th>TIPO</th>
+                                    <th>ZONA</th>
+                                    {(tipoFiltro !== 'BASE_CUAT' || subtipoFiltro === 'CUAT_PRISION' || subtipoFiltro === null)
+                                        && (tipoFiltro !== 'BASE_JOJU' || subtipoFiltro === 'JOJU_SOBRESEIMIENTO' || subtipoFiltro === null)
+                                        && <th>ESTATUS</th>}
                                 </>
                             ) : (
                                 <>
@@ -542,7 +665,11 @@ export default function ExpedientesAnteriores() {
                                 : e.nombre || '—';
                             return (
                             <tr key={e.id}>
-                                {tipoFiltro !== 'REGISTRO_HISTORICO' && <td className="exp-num">{e.numero || '—'}</td>}
+                                {tipoFiltro !== 'REGISTRO_HISTORICO'
+                                && !(tipoFiltro === 'BASE_CUAT' && subtipoFiltro !== 'CUAT_ARCHIVO')
+                                && !(tipoFiltro === 'BASE_JOJU' && subtipoFiltro !== 'JOJU_ARCHIVO')
+                                && <td className="exp-num">{e.numero || '—'}</td>}
+                                {tipoFiltro === 'BASE_CUAT' && subtipoFiltro === 'CUAT_SUSTRAIDO' && <td>{e.carpetaXochitepec || '—'}</td>}
                                 <td>
                                     <div style={{display:'flex', alignItems:'center', gap:'7px'}}>
                                         <span>{nombreCompleto}</span>
@@ -566,6 +693,14 @@ export default function ExpedientesAnteriores() {
                                     <>
                                         <td>{e.fechaRegistroHist || '—'}</td>
                                         <td className="exp-delito">{e.situacionJuridica || '—'}</td>
+                                    </>
+                                ) : SUBTIPOS_POR_BASE[tipoFiltro] ? (
+                                    <>
+                                        <td><span className={`exp-tipo-badge exp-tipo-${(e.tipo||'').toLowerCase()}`}>{SUBTIPO_LABELS[e.tipo] || e.tipo || '—'}</span></td>
+                                        <td>{e.zona ? ({'XOCHITEPEC':'Xochi','CUAUTLA':'Cuat','JOJUTLA':'Jojut'})[e.zona] ?? e.zona : '—'}</td>
+                                        {(tipoFiltro !== 'BASE_CUAT' || subtipoFiltro === 'CUAT_PRISION' || subtipoFiltro === null)
+                                            && (tipoFiltro !== 'BASE_JOJU' || subtipoFiltro === 'JOJU_SOBRESEIMIENTO' || subtipoFiltro === null)
+                                            && <td>{e.estatus || '—'}</td>}
                                     </>
                                 ) : (
                                     <>
@@ -710,7 +845,7 @@ export default function ExpedientesAnteriores() {
                                         <label>Formato de importación *</label>
                                         <div className="exp-modal-opts" style={{flexDirection:'column',gap:'8px'}}>
                                             {[
-                                                ['NORMAL',            'bi-file-earmark-excel',  'MC / SCP / Histórico',     'Archivo con pestañas por tipo. La zona se asigna manualmente.'],
+                                                ['BASE_IMPUTADOS',    'bi-people-fill',           'Base de Imputados',        'Archivo de base de imputados por sede (MC/SCP/Histórico, Prisión Preventiva, Sustraídos, etc.)'],
                                                 ['REGISTRO_HISTORICO','bi-clock-history',         'Registro Histórico',       'Formato simple: CAUSA PENAL, NOMBRE, FECHA, SITUACIÓN JURÍDICA.'],
                                                 ['SUSTRAIDO',         'bi-person-dash-fill',      'Sustraídos',               'Archivo con hojas por zona (Cuernavaca / Jojutla / Cuautla).'],
                                             ].map(([v, icon, titulo, desc]) => (
@@ -727,17 +862,10 @@ export default function ExpedientesAnteriores() {
                                             ))}
                                         </div>
                                     </div>
-                                    {(importTipo === 'NORMAL' || importTipo === 'REGISTRO_HISTORICO') && (
+                                    {(importTipo === 'BASE_IMPUTADOS' || importTipo === 'REGISTRO_HISTORICO') && (
                                     <div className="exp-modal-field">
                                         <label>{importTipo === 'REGISTRO_HISTORICO' ? 'Zona (opcional)' : 'Zona *'}</label>
                                         <div className="exp-modal-opts">
-                                            {importTipo === 'REGISTRO_HISTORICO' && (
-                                                <button
-                                                    className={`exp-modal-opt ${importZona === '' ? 'exp-modal-opt-active' : ''}`}
-                                                    onClick={() => setImportZona('')}>
-                                                    Sin zona
-                                                </button>
-                                            )}
                                             {[['XOCHITEPEC','Xochitepec'],['CUAUTLA','Cuautla'],['JOJUTLA','Jojutla']].map(([v,l]) => (
                                                 <button key={v}
                                                     className={`exp-modal-opt ${importZona === v ? 'exp-modal-opt-active' : ''}`}
@@ -746,6 +874,12 @@ export default function ExpedientesAnteriores() {
                                                 </button>
                                             ))}
                                         </div>
+                                        {importTipo === 'BASE_IMPUTADOS' && importZona && (
+                                            <div className="exp-zona-alerta">
+                                                <i className="bi bi-exclamation-triangle-fill" />
+                                                Verifica que el archivo corresponde a la sede <strong>{ZONA_LABELS[importZona]}</strong> antes de continuar.
+                                            </div>
+                                        )}
                                     </div>
                                     )}
                                     {importTipo === 'SUSTRAIDO' && (
@@ -797,8 +931,8 @@ export default function ExpedientesAnteriores() {
                                         {importTipo === 'SUSTRAIDO'
                                             ? <p>El sistema leerá las 3 hojas del archivo y asignará la zona automáticamente a cada registro. <b>Esta acción no podrá revertirse una vez confirmada.</b></p>
                                             : importTipo === 'REGISTRO_HISTORICO'
-                                            ? <p>Verifica que el archivo corresponda al formato de Registro Histórico. <b>Esta acción no podrá revertirse una vez confirmada.</b></p>
-                                            : <p>Verifica que la zona seleccionada sea correcta antes de continuar. Esta información será asignada a <b>todos</b> los registros del archivo y <b>no podrá modificarse una vez realizada la importación</b>.</p>
+                                            ? <p>Verifica que el archivo corresponda al formato de Registro Histórico y que la zona sea correcta. <b>Esta acción no podrá revertirse una vez confirmada.</b></p>
+                                            : <p>Verifica que la zona y el formato del archivo sean correctos antes de continuar. Esta información será asignada a <b>todos</b> los registros del archivo y <b>no podrá modificarse una vez realizada la importación</b>.</p>
                                         }
                                     </div>
                                 </div>
@@ -807,7 +941,7 @@ export default function ExpedientesAnteriores() {
                                     <div className="exp-confirm-fila">
                                         <span className="exp-confirm-label"><i className="bi bi-layers-fill" /> Formato</span>
                                         <span className="exp-confirm-valor">
-                                            {importTipo === 'NORMAL' ? 'MC / SCP / Histórico' : importTipo === 'REGISTRO_HISTORICO' ? 'Registro Histórico' : 'Sustraídos'}
+                                            {importTipo === 'BASE_IMPUTADOS' ? 'Base de Imputados' : importTipo === 'REGISTRO_HISTORICO' ? 'Registro Histórico' : 'Sustraídos'}
                                         </span>
                                     </div>
                                     {importTipo !== 'SUSTRAIDO' && importZona && (

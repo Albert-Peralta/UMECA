@@ -58,6 +58,26 @@ public class ExpedienteAnteriorController {
     }
 
     /**
+     * Importación de Base Jojutla — solo ADMINISTRADOR.
+     */
+    @PostMapping("/importar-base-jojutla")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR')")
+    public ResponseEntity<ApiResponse> importarBaseJojutla(
+            @RequestParam("archivo") MultipartFile archivo) {
+        return ResponseEntity.ok(service.importarBaseJojutla(archivo));
+    }
+
+    /**
+     * Importación de Base Cuautla — solo ADMINISTRADOR.
+     */
+    @PostMapping("/importar-base-cuautla")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR')")
+    public ResponseEntity<ApiResponse> importarBaseCuautla(
+            @RequestParam("archivo") MultipartFile archivo) {
+        return ResponseEntity.ok(service.importarBaseCuautla(archivo));
+    }
+
+    /**
      * Importación masiva por JSON — solo ADMINISTRADOR.
      */
     @PostMapping("/importar")
@@ -88,11 +108,12 @@ public class ExpedienteAnteriorController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> listar(
             @RequestParam(required = false) String tipo,
+            @RequestParam(required = false) String tipoIn,
             @RequestParam(required = false) String zona,
             @RequestParam(required = false) String busqueda,
             @RequestParam(defaultValue = "0") int pagina,
             @RequestParam(defaultValue = "20") int tam) {
-        return ResponseEntity.ok(service.listar(tipo, zona, busqueda, pagina, tam));
+        return ResponseEntity.ok(service.listar(tipo, tipoIn, zona, busqueda, pagina, tam));
     }
 
     /**

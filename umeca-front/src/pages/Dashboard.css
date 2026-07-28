@@ -284,12 +284,25 @@
     min-width: 0;
 }
 
+.dashboard-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
 .dashboard-section-label {
     font-size: 0.85rem;
     font-weight: 700;
     color: #555;
-    margin-bottom: 8px;
+    margin: 0;
     letter-spacing: 0.5px;
+}
+.dashboard-section-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
 }
 
 .dashboard-placeholder {

@@ -191,16 +191,16 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "fecha_recepcion")
     private LocalDate fechaRecepcion;
 
-    @Column(name = "causa_penal", length = 100)
+    @Column(name = "causa_penal", columnDefinition = "TEXT")
     private String causaPenal;
 
-    @Column(name = "delito", length = 300)
+    @Column(name = "delito", columnDefinition = "TEXT")
     private String delito;
 
-    @Column(name = "modalidad", length = 100)
+    @Column(name = "modalidad", length = 200)
     private String modalidad;
 
-    @Column(name = "sede", length = 100)
+    @Column(name = "sede", length = 200)
     private String sede;
 
     @Column(name = "nombre_juez", length = 200)
@@ -347,6 +347,62 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "supervisor", length = 300)
     private String supervisor;
 
-    public enum TipoExpediente { MC, SCP, HISTORICO, REGISTRO_HISTORICO, SUSTRAIDO }
+    // ── Campos nuevos Base Jojutla / Cuautla ──────────────────
+    @Column(name = "resolucion", columnDefinition = "TEXT")
+    private String resolucion;
+
+    @Column(name = "sexo", length = 20)
+    private String sexo;
+
+    @Column(name = "bitacora", columnDefinition = "TEXT")
+    private String bitacora;
+
+    @Column(name = "juez", length = 300)
+    private String juez;
+
+    @Column(name = "fecha_imposicion")
+    private LocalDate fechaImposicion;
+
+    @Column(name = "plazo", length = 200)
+    private String plazo;
+
+    @Column(name = "fecha_vencimiento")
+    private LocalDate fechaVencimiento;
+
+    @Column(name = "asignado", length = 300)
+    private String asignado;
+
+    @Column(name = "vencimiento")
+    private LocalDate vencimiento;
+
+    @Column(name = "motivo_cierre", columnDefinition = "TEXT")
+    private String motivoCierre;
+
+    @Column(name = "cierre", length = 200)
+    private String cierre;
+
+    @Column(name = "observaciones2", columnDefinition = "TEXT")
+    private String observaciones2;
+
+    @Column(name = "observaciones3", columnDefinition = "TEXT")
+    private String observaciones3;
+
+    @Column(name = "observaciones4", columnDefinition = "TEXT")
+    private String observaciones4;
+
+    @Column(name = "observaciones5", columnDefinition = "TEXT")
+    private String observaciones5;
+
+    @Column(name = "observaciones6", columnDefinition = "TEXT")
+    private String observaciones6;
+
+    @Column(name = "carpeta_xochitepec", length = 300)
+    private String carpetaXochitepec;
+
+    public enum TipoExpediente {
+        MC, SCP, HISTORICO, REGISTRO_HISTORICO, SUSTRAIDO,
+        JOJU_SUSTRAIDO, JOJU_PRISION, JOJU_DEFUNCION, JOJU_SOBRESEIMIENTO, JOJU_ARCHIVO, JOJU_CARPETAS_INACTIVAS,
+        CUAT_PRISION, CUAT_ESPERA, CUAT_CARPETAS_CERRAR, CUAT_OFICIOS, CUAT_SUSTRAIDO, CUAT_TTA, CUAT_ARCHIVO
+    }
     public enum Zona { XOCHITEPEC, CUAUTLA, JOJUTLA }
 }

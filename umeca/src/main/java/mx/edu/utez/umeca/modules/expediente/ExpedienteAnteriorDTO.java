@@ -137,4 +137,23 @@ public class ExpedienteAnteriorDTO {
     private String tipoMcScp;
     private String sustraccion;
     private String supervisor;
+
+    // ── Campos nuevos Base Jojutla / Cuautla ──────────────────
+    private String resolucion;
+    private String sexo;
+    private String bitacora;
+    private String juez;
+    private LocalDate fechaImposicion;
+    private String plazo;
+    private LocalDate fechaVencimiento;
+    private String asignado;
+    private LocalDate vencimiento;
+    private String motivoCierre;
+    private String cierre;
+    private String observaciones2;
+    private String observaciones3;
+    private String observaciones4;
+    private String observaciones5;
+    private String observaciones6;
+    private String carpetaXochitepec;
 }

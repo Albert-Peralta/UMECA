@@ -40,3 +40,19 @@ export const importarSustraidos = (archivo) => {
         headers: { 'Content-Type': 'multipart/form-data' },
     });
 };
+
+export const importarBaseJojutla = (archivo) => {
+    const form = new FormData();
+    form.append('archivo', archivo);
+    return api.post('/expedientes-anteriores/importar-base-jojutla', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+};
+
+export const importarBaseCuautla = (archivo) => {
+    const form = new FormData();
+    form.append('archivo', archivo);
+    return api.post('/expedientes-anteriores/importar-base-cuautla', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+};

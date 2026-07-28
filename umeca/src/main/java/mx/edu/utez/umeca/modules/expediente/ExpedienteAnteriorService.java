@@ -135,11 +135,12 @@ public class ExpedienteAnteriorService {
 
     // ── Consulta paginada ────────────────────────────────────
     @Transactional(readOnly = true)
-    public ApiResponse listar(String tipo, String zona, String busqueda, int pagina, int tam) {
-        String t = (tipo != null && !tipo.isBlank()) ? tipo.trim() : null;
-        String z = (zona != null && !zona.isBlank()) ? zona.trim() : null;
-        String q = (busqueda != null && !busqueda.isBlank()) ? busqueda.trim() : null;
-        Page<ExpedienteAnterior> page = repo.buscar(t, z, q, PageRequest.of(pagina, tam));
+    public ApiResponse listar(String tipo, String tipoIn, String zona, String busqueda, int pagina, int tam) {
+        String t  = (tipo   != null && !tipo.isBlank())   ? tipo.trim()   : null;
+        String ti = (tipoIn != null && !tipoIn.isBlank()) ? tipoIn.trim() : null;
+        String z  = (zona   != null && !zona.isBlank())   ? zona.trim()   : null;
+        String q  = (busqueda != null && !busqueda.isBlank()) ? busqueda.trim() : null;
+        Page<ExpedienteAnterior> page = repo.buscar(t, ti, z, q, PageRequest.of(pagina, tam));
         return new ApiResponse(true, "ok", page);
     }
 
@@ -275,6 +276,25 @@ public class ExpedienteAnteriorService {
         e.setSustraccion(d.getSustraccion());
         e.setSupervisor(d.getSupervisor());
 
+        // Campos nuevos Base Jojutla / Cuautla
+        e.setResolucion(d.getResolucion());
+        e.setSexo(d.getSexo());
+        e.setBitacora(d.getBitacora());
+        e.setJuez(d.getJuez());
+        e.setFechaImposicion(d.getFechaImposicion());
+        e.setPlazo(d.getPlazo());
+        e.setFechaVencimiento(d.getFechaVencimiento());
+        e.setAsignado(d.getAsignado());
+        e.setVencimiento(d.getVencimiento());
+        e.setMotivoCierre(d.getMotivoCierre());
+        e.setCierre(d.getCierre());
+        e.setObservaciones2(d.getObservaciones2());
+        e.setObservaciones3(d.getObservaciones3());
+        e.setObservaciones4(d.getObservaciones4());
+        e.setObservaciones5(d.getObservaciones5());
+        e.setObservaciones6(d.getObservaciones6());
+        e.setCarpetaXochitepec(d.getCarpetaXochitepec());
+
         return e;
     }
 
@@ -293,6 +313,26 @@ public class ExpedienteAnteriorService {
         try {
             List<ExpedienteAnteriorDTO> dtos = parser.parsearSustraidos(file);
             return importarTransaccional(dtos, file.getOriginalFilename());
+        } catch (Exception e) {
+            return new ApiResponse(false, "Error al procesar el archivo: " + e.getMessage());
+        }
+    }
+
+    // ── Importar Base Jojutla ────────────────────────────────
+    public ApiResponse importarBaseJojutla(MultipartFile file) {
+        try {
+            List<ExpedienteAnteriorDTO> dtos = parser.parsearBaseJojutla(file);
+            return importar(dtos, file.getOriginalFilename());
+        } catch (Exception e) {
+            return new ApiResponse(false, "Error al procesar el archivo: " + e.getMessage());
+        }
+    }
+
+    // ── Importar Base Cuautla ────────────────────────────────
+    public ApiResponse importarBaseCuautla(MultipartFile file) {
+        try {
+            List<ExpedienteAnteriorDTO> dtos = parser.parsearBaseCuautla(file);
+            return importar(dtos, file.getOriginalFilename());
         } catch (Exception e) {
             return new ApiResponse(false, "Error al procesar el archivo: " + e.getMessage());
         }

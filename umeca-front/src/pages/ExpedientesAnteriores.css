@@ -1,6 +1,14 @@
 /* ── Contenedor ─────────────────────────────────────────── */
 .exp-container { padding: 1.5rem; max-width: 100%; }
 
+/* ── Barra de acciones (encima del card) ─────────────────── */
+.exp-acciones-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
 /* ── Top bar ─────────────────────────────────────────────── */
 .exp-topbar {
     background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
@@ -31,18 +39,33 @@
 /* ── Pills de tipo ───────────────────────────────────────── */
 .exp-tipo-pills { display: flex; gap: 6px; flex-wrap: wrap; }
 .exp-tipo-pill {
-    border: 1.5px solid; border-radius: 20px; padding: 3px 12px;
+    border: 1.5px solid; border-radius: 20px; padding: 4px 13px;
     font-size: 0.78rem; font-weight: 600; cursor: pointer;
     background: #fff; transition: all 0.15s; font-family: inherit;
+    white-space: nowrap;
+}
+/* Estado activo general — fallback para pills sin clase de color específica */
+.exp-tipo-pill.exp-tipo-pill-active {
+    box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+    background: #1f2937;
+    color: #fff;
+    border-color: #1f2937;
 }
 .exp-tipo-pill-all    { border-color: #d1d5db; color: #6b7280; }
-.exp-tipo-pill-all:hover, .exp-tipo-pill-all.exp-tipo-pill-active { background: #f3f4f6; color: #374151; border-color: #9ca3af; }
+.exp-tipo-pill-all:hover { background: #f3f4f6; }
+.exp-tipo-pill-all.exp-tipo-pill-active { background: #374151; color: #fff; border-color: #374151; }
+
 .exp-tipo-pill-mc     { border-color: #93c5fd; color: #1d4ed8; }
-.exp-tipo-pill-mc:hover, .exp-tipo-pill-mc.exp-tipo-pill-active { background: #dbeafe; }
+.exp-tipo-pill-mc:hover { background: #dbeafe; }
+.exp-tipo-pill-mc.exp-tipo-pill-active { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+
 .exp-tipo-pill-scp    { border-color: #c4b5fd; color: #6d28d9; }
-.exp-tipo-pill-scp:hover, .exp-tipo-pill-scp.exp-tipo-pill-active { background: #ede9fe; }
+.exp-tipo-pill-scp:hover { background: #ede9fe; }
+.exp-tipo-pill-scp.exp-tipo-pill-active { background: #6d28d9; color: #fff; border-color: #6d28d9; }
+
 .exp-tipo-pill-historico { border-color: #fcd34d; color: #92400e; }
-.exp-tipo-pill-historico:hover, .exp-tipo-pill-historico.exp-tipo-pill-active { background: #fef3c7; }
+.exp-tipo-pill-historico:hover { background: #fef3c7; }
+.exp-tipo-pill-historico.exp-tipo-pill-active { background: #92400e; color: #fff; border-color: #92400e; }
 
 /* ── Filtros ─────────────────────────────────────────────── */
 .exp-filtros {
@@ -69,7 +92,7 @@
 }
 
 /* ── Tabla ───────────────────────────────────────────────── */
-.exp-table-wrapper { overflow-x: auto; border-radius: 10px; border: 1px solid #e5e7eb; }
+.exp-table-wrapper { overflow-x: auto; border-radius: 10px; border: 1px solid #e5e7eb; min-height: calc(100vh - 340px); }
 .exp-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
 .exp-table thead tr { background: #376842; }
 .exp-table thead th {
@@ -450,9 +473,12 @@
 
 /* ── Filtro tabs nuevos tipos ─────────────────────────────── */
 .exp-tipo-pill-registro_historico { border-color: #a78bfa; color: #5b21b6; }
-.exp-tipo-pill-registro_historico:hover, .exp-tipo-pill-registro_historico.exp-tipo-pill-active { background: #ede9fe; }
+.exp-tipo-pill-registro_historico:hover { background: #ede9fe; }
+.exp-tipo-pill-registro_historico.exp-tipo-pill-active { background: #5b21b6; color: #fff; border-color: #5b21b6; }
+
 .exp-tipo-pill-sustraido { border-color: #fca5a5; color: #b91c1c; }
-.exp-tipo-pill-sustraido:hover, .exp-tipo-pill-sustraido.exp-tipo-pill-active { background: #fee2e2; }
+.exp-tipo-pill-sustraido:hover { background: #fee2e2; }
+.exp-tipo-pill-sustraido.exp-tipo-pill-active { background: #b91c1c; color: #fff; border-color: #b91c1c; }
 
 /* ── Sección Sustraído ───────────────────────────────────── */
 .exp-seccion-sustraido { border-left: 4px solid #b91c1c; }
@@ -468,3 +494,74 @@
 .exp-sustraido-estatus p {
     margin: 0; font-size: 0.85rem; color: #374151; line-height: 1.5;
 }
+
+/* ── Filtro tabs Bases ───────────────────────────────────── */
+.exp-tipo-pill-base_xochi { border-color: #6ee7b7; color: #065f46; }
+.exp-tipo-pill-base_xochi:hover { background: #d1fae5; }
+.exp-tipo-pill-base_xochi.exp-tipo-pill-active { background: #065f46; color: #fff; border-color: #065f46; }
+
+.exp-tipo-pill-base_joju { border-color: #fdba74; color: #9a3412; }
+.exp-tipo-pill-base_joju:hover { background: #ffedd5; }
+.exp-tipo-pill-base_joju.exp-tipo-pill-active { background: #9a3412; color: #fff; border-color: #9a3412; }
+
+.exp-tipo-pill-base_cuat { border-color: #93c5fd; color: #1e40af; }
+.exp-tipo-pill-base_cuat:hover { background: #dbeafe; }
+.exp-tipo-pill-base_cuat.exp-tipo-pill-active { background: #1e40af; color: #fff; border-color: #1e40af; }
+
+/* ── Barra de subtipos ───────────────────────────────────── */
+.exp-subtipo-bar {
+    display: flex; align-items: center; gap: 2px; flex-wrap: wrap;
+    padding: 6px 14px 0 14px;
+    border-top: 1px solid #e5e7eb;
+    margin-top: 8px;
+    background: transparent;
+}
+.exp-subtipo-label {
+    font-size: 0.72rem; font-weight: 700; color: #9ca3af;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-right: 10px; white-space: nowrap; padding-bottom: 6px;
+}
+.exp-subtipo-pill {
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    padding: 5px 14px 6px !important;
+    border-radius: 0 !important;
+    border: none !important;
+    border-bottom: 3px solid transparent !important;
+    background: transparent !important;
+    color: #6b7280 !important;
+    transition: color 0.15s, border-color 0.15s !important;
+    box-shadow: none !important;
+}
+.exp-subtipo-pill:hover {
+    color: #374151 !important;
+    background: #f9fafb !important;
+}
+/* Activo: usa el color de la base seleccionada */
+.exp-base-xochi .exp-subtipo-pill.exp-tipo-pill-active {
+    color: #065f46 !important;
+    border-bottom-color: #065f46 !important;
+    background: transparent !important;
+}
+.exp-base-joju .exp-subtipo-pill.exp-tipo-pill-active {
+    color: #9a3412 !important;
+    border-bottom-color: #9a3412 !important;
+    background: transparent !important;
+}
+.exp-base-cuat .exp-subtipo-pill.exp-tipo-pill-active {
+    color: #1e40af !important;
+    border-bottom-color: #1e40af !important;
+    background: transparent !important;
+}
+
+/* ── Sección base ────────────────────────────────────────── */
+.exp-seccion-base { border-left: 4px solid #6366f1; }
+
+/* ── Alerta de zona ─────────────────────────────────────── */
+.exp-zona-alerta {
+    display: flex; align-items: flex-start; gap: 8px;
+    background: #fffbeb; border: 1.5px solid #fcd34d;
+    border-radius: 8px; padding: 10px 12px;
+    font-size: 0.82rem; color: #92400e; margin-top: 10px;
+}
+.exp-zona-alerta i { color: #f59e0b; flex-shrink: 0; margin-top: 1px; }

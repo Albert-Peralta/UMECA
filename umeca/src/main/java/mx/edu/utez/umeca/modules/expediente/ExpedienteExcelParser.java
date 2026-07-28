@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -813,5 +814,215 @@ public class ExpedienteExcelParser {
             }
         }
         return null;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // BASE_JOJUTLA — múltiples hojas con tipos específicos por sede Jojutla
+    // ══════════════════════════════════════════════════════════════════════════
+
+    public List<ExpedienteAnteriorDTO> parsearBaseJojutla(MultipartFile file) throws Exception {
+        List<ExpedienteAnteriorDTO> lista = new ArrayList<>();
+        try (InputStream is = file.getInputStream();
+             Workbook wb = new XSSFWorkbook(is)) {
+
+            for (int s = 0; s < wb.getNumberOfSheets(); s++) {
+                Sheet sheet = wb.getSheetAt(s);
+                String nombreHoja = norm(sheet.getSheetName());
+
+                Row header = sheet.getRow(0);
+                if (header == null) continue;
+                Map<String, Integer> cols = mapearHeaders(header);
+
+                String tipo;
+                if      (nombreHoja.contains("SUSTRAIDO"))                                tipo = "JOJU_SUSTRAIDO";
+                else if (nombreHoja.contains("PRISION") || nombreHoja.contains("PRISIO")) tipo = "JOJU_PRISION";
+                else if (nombreHoja.contains("DEFUNCION"))                                tipo = "JOJU_DEFUNCION";
+                else if (nombreHoja.contains("SOBRESEIMIENTO") || nombreHoja.contains("ESPERA")) tipo = "JOJU_SOBRESEIMIENTO";
+                else if (nombreHoja.contains("ARCHIVO"))                                  tipo = "JOJU_ARCHIVO";
+                else if (nombreHoja.contains("CARPETAS") || nombreHoja.contains("INACTIVA")) tipo = "JOJU_CARPETAS_INACTIVAS";
+                else continue;
+
+                if ("JOJU_ARCHIVO".equals(tipo)) {
+                    // Ordenar: primero los que tienen número, luego los sin número por nombre
+                    List<ExpedienteAnteriorDTO> conNum = new ArrayList<>();
+                    List<ExpedienteAnteriorDTO> sinNum = new ArrayList<>();
+                    for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                        Row row = sheet.getRow(i);
+                        if (row == null) continue;
+                        String causaPenal = strH(row, cols, "CAUSA", "CAUSA PENAL");
+                        String nombre     = strH(row, cols, "NOMBRE");
+                        if (causaPenal == null && nombre == null) continue;
+                        ExpedienteAnteriorDTO dto = new ExpedienteAnteriorDTO();
+                        dto.setTipo(tipo);
+                        dto.setZona("JOJUTLA");
+                        String numStr = str(row, 0);
+                        dto.setNumero(numStr);
+                        dto.setCausaPenal(causaPenal);
+                        dto.setNombre(nombre);
+                        dto.setArchivo(strH(row, cols, "HA DE ENVIO ARCH", "FECHA ARCH", "ARCHIVO"));
+                        dto.setDelito(strH(row, cols, "DELITO"));
+                        dto.setTipoMcScp(strH(row, cols, "MC/SCP", "MC O SCP", "SCP"));
+                        dto.setResolucion(strH(row, cols, "RESOLUCION", "RESOLUCIÓN"));
+                        try {
+                            Double.parseDouble(numStr != null ? numStr.trim() : "x");
+                            conNum.add(dto);
+                        } catch (NumberFormatException e) {
+                            sinNum.add(dto);
+                        }
+                    }
+                    conNum.sort(Comparator.comparingDouble(d -> {
+                        try { return Double.parseDouble(d.getNumero().trim()); } catch (Exception e2) { return Double.MAX_VALUE; }
+                    }));
+                    sinNum.sort(Comparator.comparing(d -> d.getNombre() != null ? d.getNombre() : ""));
+                    lista.addAll(conNum);
+                    lista.addAll(sinNum);
+                    continue;
+                }
+
+                for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                    Row row = sheet.getRow(i);
+                    if (row == null) continue;
+                    String causaPenal = strH(row, cols, "CAUSA PENAL", "CAUSA");
+                    String nombre     = strH(row, cols, "NOMBRE");
+                    if (causaPenal == null && nombre == null) continue;
+
+                    ExpedienteAnteriorDTO dto = new ExpedienteAnteriorDTO();
+                    dto.setTipo(tipo);
+                    dto.setZona("JOJUTLA");
+                    dto.setCausaPenal(causaPenal);
+                    dto.setNombre(nombre);
+
+                    switch (tipo) {
+                        case "JOJU_SUSTRAIDO" -> {
+                            dto.setResolucion(strH(row, cols, "RESOLUCION", "RESOLUCIÓN"));
+                            dto.setSexo(strH(row, cols, "SEXO"));
+                            dto.setObservaciones(strH(row, cols, "OBSERVACIONES"));
+                        }
+                        case "JOJU_PRISION" -> {
+                            dto.setSexo(strH(row, cols, "SEXO"));
+                            dto.setDelito(strH(row, cols, "DELITO"));
+                            dto.setObservaciones(strH(row, cols, "OBSERVACIONES"));
+                            dto.setResolucion(strH(row, cols, "RESOLUCION", "RESOLUCIÓN"));
+                        }
+                        case "JOJU_DEFUNCION" -> {
+                            dto.setDelito(strH(row, cols, "DELITO"));
+                            dto.setTipoMcScp(strH(row, cols, "MC/SCP", "MC O SCP"));
+                            dto.setSexo(strH(row, cols, "SEXO"));
+                            dto.setBitacora(strH(row, cols, "BITACORA", "BITÁCORA"));
+                        }
+                        case "JOJU_SOBRESEIMIENTO" -> {
+                            dto.setTipoMcScp(strH(row, cols, "MC/SCP", "MC O SCP"));
+                            dto.setSexo(strH(row, cols, "SEXO"));
+                            dto.setDelito(strH(row, cols, "DELITO"));
+                            dto.setEstatus(strH(row, cols, "ESTATUS"));
+                            dto.setBitacora(strH(row, cols, "BITACORA", "BITÁCORA"));
+                        }
+                        case "JOJU_CARPETAS_INACTIVAS" -> {
+                            dto.setSexo(strH(row, cols, "SEXO"));
+                            dto.setDelito(strH(row, cols, "DELITO"));
+                            // Concatenar todas las observaciones
+                            List<String> obsAll = new ArrayList<>();
+                            for (String obs : new String[]{"OBSERVACIONES","OBSERVACIONES 2","OBSERVACIONES 3","OBSERVACIONES 4","OBSERVACIONES 5","OBSERVACIONES 6"}) {
+                                String v = strH(row, cols, obs);
+                                if (v != null && !v.isBlank()) obsAll.add(v);
+                            }
+                            if (!obsAll.isEmpty()) dto.setObservaciones(String.join(" | ", obsAll));
+                        }
+                    }
+                    lista.add(dto);
+                }
+            }
+        }
+        return lista;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // BASE_CUAUTLA — múltiples hojas con tipos específicos por sede Cuautla
+    // ══════════════════════════════════════════════════════════════════════════
+
+    public List<ExpedienteAnteriorDTO> parsearBaseCuautla(MultipartFile file) throws Exception {
+        List<ExpedienteAnteriorDTO> lista = new ArrayList<>();
+        try (InputStream is = file.getInputStream();
+             Workbook wb = new XSSFWorkbook(is)) {
+
+            for (int s = 0; s < wb.getNumberOfSheets(); s++) {
+                Sheet sheet = wb.getSheetAt(s);
+                String nombreHoja = norm(sheet.getSheetName());
+
+                Row header = sheet.getRow(0);
+                if (header == null) continue;
+                Map<String, Integer> cols = mapearHeaders(header);
+
+                String tipo;
+                if      (nombreHoja.contains("PRISION") || nombreHoja.contains("PRISIO")) tipo = "CUAT_PRISION";
+                else if (nombreHoja.contains("ESPERA"))                                    tipo = "CUAT_ESPERA";
+                else if (nombreHoja.contains("CARPETAS") && nombreHoja.contains("CERRAR")) tipo = "CUAT_CARPETAS_CERRAR";
+                else if (nombreHoja.contains("OFICIO"))                                    tipo = "CUAT_OFICIOS";
+                else if (nombreHoja.contains("SUSTRAIDO"))                                 tipo = "CUAT_SUSTRAIDO";
+                else if (nombreHoja.contains("TTA"))                                       tipo = "CUAT_TTA";
+                else if (nombreHoja.contains("ARCHIVO"))                                   tipo = "CUAT_ARCHIVO";
+                else continue;
+
+                for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                    Row row = sheet.getRow(i);
+                    if (row == null) continue;
+                    String causaPenal = strH(row, cols, "CAUSA PENAL", "CAUSA", "CARPETA");
+                    String nombre     = strH(row, cols, "NOMBRE", "NOMBRE COMPLETO");
+                    if (causaPenal == null && nombre == null) continue;
+
+                    ExpedienteAnteriorDTO dto = new ExpedienteAnteriorDTO();
+                    dto.setTipo(tipo);
+                    dto.setZona("CUAUTLA");
+                    dto.setCausaPenal(causaPenal);
+                    dto.setNombre(nombre);
+
+                    switch (tipo) {
+                        case "CUAT_PRISION" -> {
+                            dto.setEstatus(strH(row, cols, "ESTATUS"));
+                            dto.setObservaciones(strH(row, cols, "OBSERVACIONES"));
+                            dto.setObservaciones2(strH(row, cols, "OBSERVACIONES 2"));
+                        }
+                        case "CUAT_ESPERA" -> {
+                            dto.setNumero(strH(row, cols, "NO.", "NUMERO", "NO"));
+                            dto.setDelito(strH(row, cols, "DELITO"));
+                            dto.setJuez(strH(row, cols, "JUEZ"));
+                            dto.setFechaImposicion(fechaH(row, cols, "FECHA DE IMPOSICION", "FECHA IMPOSICION"));
+                            dto.setPlazo(strH(row, cols, "PLAZO"));
+                            dto.setFechaVencimiento(fechaH(row, cols, "FECHA DE VENCIMIENTO", "FECHA VENCIMIENTO"));
+                            dto.setObservaciones(strH(row, cols, "OBSERVACIONES"));
+                            dto.setObservaciones2(strH(row, cols, "OBSERVACIONES 2"));
+                        }
+                        case "CUAT_CARPETAS_CERRAR" -> {
+                            dto.setNumero(strH(row, cols, "NO.", "NUMERO", "NO"));
+                        }
+                        case "CUAT_OFICIOS" -> {
+                            dto.setAsignado(strH(row, cols, "ASIGNADO"));
+                        }
+                        case "CUAT_SUSTRAIDO" -> {
+                            dto.setCarpetaXochitepec(strH(row, cols, "CARPETAS ENVIADAS A XOCHITEPEC", "CARPETA XOCHITEPEC"));
+                            dto.setArchivo(strH(row, cols, "FECHA DE ARCHIVO TEMPORAL", "FECHA ARCHIVO TEMPORAL", "ARCHIVO"));
+                            dto.setTipoMcScp(strH(row, cols, "MC O SCP", "MC Ó SCP"));
+                            dto.setSustraccion(strH(row, cols, "FECHA DE SUSTRACCION", "SUSTRACCION"));
+                            dto.setEstatus(strH(row, cols, "MODIFICACION DE ESTATUS", "ESTATUS"));
+                            dto.setSupervisor(strH(row, cols, "SUPERVISOR"));
+                            dto.setObservaciones(strH(row, cols, "OBSERVACIONES"));
+                        }
+                        case "CUAT_TTA" -> {
+                            dto.setVencimiento(fechaH(row, cols, "VENCIMIENTO"));
+                            dto.setObservaciones(strH(row, cols, "OBSERVACIONES"));
+                        }
+                        case "CUAT_ARCHIVO" -> {
+                            dto.setNumero(strH(row, cols, "NUMERO", "NO.", "NO"));
+                            dto.setCierre(strH(row, cols, "CIERRE"));
+                            dto.setTipoMcScp(strH(row, cols, "MC O SCP", "MC Ó SCP"));
+                            dto.setMotivoCierre(strH(row, cols, "MOTIVO DE CIERRE", "MOTIVO CIERRE"));
+                            dto.setObservaciones(strH(row, cols, "OBSERVACIONES", "OBSERVACION", "OBS"));
+                        }
+                    }
+                    lista.add(dto);
+                }
+            }
+        }
+        return lista;
     }
 }
