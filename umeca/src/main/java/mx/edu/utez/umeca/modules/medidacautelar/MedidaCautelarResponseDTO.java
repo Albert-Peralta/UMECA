@@ -86,7 +86,7 @@ public class MedidaCautelarResponseDTO {
 
     // Ampliación
     private LocalDate fechaAmpliacion;
-    private LocalDate nuevoPlazoScp;
+    private Integer nuevoPlazoScp; // meses
     private String motivoAmpliacion;
 
     // Levantamiento

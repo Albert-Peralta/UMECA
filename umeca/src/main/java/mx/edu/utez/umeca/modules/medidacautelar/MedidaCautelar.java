@@ -201,7 +201,7 @@ public class MedidaCautelar extends BaseEntity {
     private LocalDate fechaAmpliacion;
 
     @Column(name = "nuevo_plazo_scp")
-    private LocalDate nuevoPlazoScp;
+    private Integer nuevoPlazoScp; // meses
 
     @Column(name = "motivo_ampliacion", columnDefinition = "TEXT")
     private String motivoAmpliacion;
