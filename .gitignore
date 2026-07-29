@@ -1,0 +1,25 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Archivos de sesión de Claude
+CLAUDE.md
+
+# Presentación (archivos binarios grandes)
+*.pptx
+*.pdf
+
+# Backend — build artifacts
+umeca/target/
+umeca/.mvn/wrapper/maven-wrapper.jar
+
+# Frontend — dependencias y build
+umeca-front/node_modules/
+umeca-front/dist/
+
+# Variables de entorno
+umeca-front/src/.env
+umeca-front/.env
+umeca/.env
+.claude/
+.claude/

@@ -194,19 +194,17 @@
 /* ── Acciones tabla ─────────────────────────────────────── */
 .corr-acciones { display: flex; gap: 6px; align-items: center; justify-content: center; }
 .corr-btn-ver, .corr-btn-asignar, .corr-btn-quitar, .corr-btn-editar, .corr-btn-eliminar {
-    border: none; border-radius: 6px; padding: 5px 9px; cursor: pointer;
-    font-size: 0.85rem; display: inline-flex; align-items: center; transition: opacity 0.15s;
+    background: none; border: 1px solid #376842; color: #376842;
+    border-radius: 6px; padding: 3px 7px; cursor: pointer;
+    font-size: 13px; display: inline-flex; align-items: center;
+    justify-content: center; transition: all 0.2s;
 }
-.corr-btn-ver      { background: #e0f2fe; color: #0369a1; }
-.corr-btn-ver:hover  { background: #bae6fd; }
-.corr-btn-asignar  { background: #d1fae5; color: #065f46; }
-.corr-btn-asignar:hover { background: #a7f3d0; }
-.corr-btn-quitar   { background: #fee2e2; color: #991b1b; }
-.corr-btn-quitar:hover { background: #fecaca; }
-.corr-btn-editar   { background: #fef9c3; color: #854d0e; }
-.corr-btn-editar:hover { background: #fef08a; }
-.corr-btn-eliminar { background: #fee2e2; color: #7f1d1d; }
-.corr-btn-eliminar:hover { background: #fca5a5; }
+.corr-btn-ver:hover,
+.corr-btn-asignar:hover,
+.corr-btn-quitar:hover,
+.corr-btn-editar:hover     { background: #376842; color: white; }
+.corr-btn-eliminar         { border-color: #ef4444; color: #ef4444; }
+.corr-btn-eliminar:hover   { background: #ef4444; color: white; }
 
 .corr-modal-icon-danger { background: #fee2e2; color: #dc2626; }
 

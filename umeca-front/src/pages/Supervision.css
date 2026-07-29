@@ -346,8 +346,8 @@
     border: 1px solid #376842;
     color: #376842;
     border-radius: 6px;
-    padding: 5px 10px;
-    display: flex;
+    padding: 3px 7px;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
@@ -356,8 +356,8 @@
     text-decoration: none;
 }
 .sv-btn-icon:hover { background: #376842; color: white; }
-.sv-btn-icon-del { border-color: #c62828; color: #c62828; }
-.sv-btn-icon-del:hover { background: #c62828; color: white; }
+.sv-btn-icon-del { border-color: #ef4444; color: #ef4444; }
+.sv-btn-icon-del:hover { background: #ef4444; color: white; }
 .sv-btn-maps { color: #1565c0; text-decoration: none; }
 .sv-btn-maps:hover { background: #e3f2fd; border-color: #90caf9; color: #0d47a1; }
 .sv-card-domicilio {

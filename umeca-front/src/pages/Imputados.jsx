@@ -42,9 +42,9 @@ const CIERRE_INIT = {
 const Imputados = ({ onNavigarEntrevista }) => {
     const { user } = useAuth();
     const { showToast } = useToast();
-    const puedeEditarFoto    = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION';
-    const puedeFallecimiento = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION';
-    const puedeCierreCarpeta = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION';
+    const puedeEditarFoto    = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION';
+    const puedeFallecimiento = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION';
+    const puedeCierreCarpeta = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION';
 
     const [datos, setDatos] = useState([]);
     const [busqueda, setBusqueda] = useState('');
@@ -83,6 +83,8 @@ const Imputados = ({ onNavigarEntrevista }) => {
         const id = localStorage.getItem('abrirExpedienteId');
         if (id) {
             localStorage.removeItem('abrirExpedienteId');
+            const tab = localStorage.getItem('abrirExpedienteTab') || 'entrevistas';
+            localStorage.removeItem('abrirExpedienteTab');
             cargarDatos().then ? null : null; // asegurar datos cargados
             Promise.all([
                 getImputadoById(Number(id)),
@@ -90,6 +92,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
             ]).then(([res, resSeg]) => {
                 if (res.data.ok) { setPerfil(res.data.data); setShowPerfil(true); }
                 setConteoSeg(resSeg.data?.data?.length ?? 0);
+                setTabActiva(tab);
             }).catch(err => console.warn("Error al cargar datos:", err));
         }
     }, []);
@@ -496,12 +499,20 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                     </td>
                                     <td style={{ textAlign: 'center' }}>
                                         {item.tipoMedidaActiva ? (
-                                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                                                <span className={`tipo-medida-badge ${item.tipoMedidaActiva === 'MEDIDA_CAUTELAR' ? 'tipo-mc' : 'tipo-scp'}`}>
-                                                    {item.tipoMedidaActiva === 'MEDIDA_CAUTELAR' ? 'MC' : 'SCP'}
-                                                </span>
-                                                <span className={`medida-estado-dot medida-estado-${item.estadoMedidaActiva?.toLowerCase()}`}
-                                                      title={item.estadoMedidaActiva}></span>
+                                            <div style={{ display: 'inline-block', textAlign: 'center' }}>
+                                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                                    <span className={`tipo-medida-badge ${item.tipoMedidaActiva === 'MEDIDA_CAUTELAR' ? 'tipo-mc' : 'tipo-scp'}`}>
+                                                        {item.tipoMedidaActiva === 'MEDIDA_CAUTELAR' ? 'MC' : 'SCP'}
+                                                    </span>
+                                                    <span className={`medida-estado-dot medida-estado-${item.estadoMedidaActiva?.toLowerCase()}`}
+                                                          title={item.estadoMedidaActiva}></span>
+                                                </div>
+                                                {item.vieneDeMC && (
+                                                    <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>M.C. → S.C.P.</div>
+                                                )}
+                                                {item.vieneDeScp && (
+                                                    <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>S.C.P. → M.C.</div>
+                                                )}
                                             </div>
                                         ) : (
                                             <span style={{ color: '#d1d5db', fontSize: 13 }}>—</span>
@@ -930,7 +941,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
 
                                         const accionesPorTab = {
                                             entrevistas: {
-                                                nueva: onNavigarEntrevista && (user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION') && {
+                                                nueva: onNavigarEntrevista && (user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN'  || user?.rol === 'SUPERVISION') && {
                                                     label: 'Nueva Entrevista', icon: 'bi-journal-plus',
                                                     action: () => { onNavigarEntrevista(perfil); setShowPerfil(false); setPerfil(null); }
                                                 },
@@ -938,13 +949,14 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                                     label: 'Ver formulario', icon: 'bi-eye',
                                                     action: () => {
                                                         localStorage.setItem('verEntrevistaId', ultimaEntrevista.id);
+                                                        localStorage.setItem('volverExpedienteId', perfil.id);
                                                         setShowPerfil(false); setPerfil(null);
                                                         window.dispatchEvent(new CustomEvent('navigate', { detail: 'entrevista' }));
                                                     }
                                                 }
                                             },
                                             evaluaciones: {
-                                                nueva: (user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN' || user?.rol === 'EVALUADOR_RIESGO') && {
+                                                nueva: (user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN'  || user?.rol === 'EVALUADOR_RIESGO') && {
                                                     label: 'Nueva Evaluación', icon: 'bi-shield-plus',
                                                     action: () => {
                                                         localStorage.setItem('evaluacionPreset', JSON.stringify({ causaPenal: perfil.causaPenal, nombre: perfil.nombreCompleto }));
@@ -962,7 +974,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                                 }
                                             },
                                             medidas: {
-                                                nueva: (user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION') && {
+                                                nueva: (user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN'  || user?.rol === 'SUPERVISION') && {
                                                     label: 'Nueva Medida / SCP', icon: 'bi-card-checklist',
                                                     action: () => {
                                                         localStorage.setItem('medidaPreset', JSON.stringify({ causaPenal: perfil.causaPenal, nombre: perfil.nombreCompleto }));

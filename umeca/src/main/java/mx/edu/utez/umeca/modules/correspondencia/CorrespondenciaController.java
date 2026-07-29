@@ -28,7 +28,7 @@ public class CorrespondenciaController {
 
     /** Admin: ver todos los registros */
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> findAll(@RequestParam(required = false) String buscar) {
         ApiResponse res = (buscar != null && !buscar.isBlank()) ? service.buscar(buscar) : service.findAll();
         return ResponseEntity.ok(res);

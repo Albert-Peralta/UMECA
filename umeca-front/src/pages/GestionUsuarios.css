@@ -98,6 +98,7 @@
     white-space: nowrap;
 }
 
+.gu-badge-superadmin { background: #fef9c3; color: #713f12; }
 .gu-badge-administrador { background: #e8f5e9; color: #376842; }
 .gu-badge-supervision { background: #e3f2fd; color: #1565c0; }
 .gu-badge-evaluador_riesgo { background: #fff3e0; color: #e65100; }
@@ -111,42 +112,28 @@
 }
 
 .gu-btn-editar {
-    margin-right: 8px;
+    background: none; border: 1px solid #376842; color: #376842;
+    border-radius: 6px; padding: 3px 7px; cursor: pointer; font-size: 13px;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.2s; white-space: nowrap;
 }
-
-/* ------------------------------------------------------------------------- */
-.gu-btn-editar {
-    background: #376842;
-    color: white;
-    border: none;
-    padding: 5px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 13px;
-    white-space: nowrap;
-}
+.gu-btn-editar:hover { background: #376842; color: white; }
 
 .gu-btn-desactivar {
-    background: #ffebee;
-    color: #c62828;
-    border: none;
-    padding: 5px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 13px;
-    white-space: nowrap;
+    background: none; border: 1px solid #ef4444; color: #ef4444;
+    border-radius: 6px; padding: 3px 7px; cursor: pointer; font-size: 13px;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.2s; white-space: nowrap;
 }
+.gu-btn-desactivar:hover { background: #ef4444; color: white; }
 
 .gu-btn-activar {
-    background: #e8f5e9;
-    color: #376842;
-    border: none;
-    padding: 5px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 13px;
-    white-space: nowrap;
+    background: none; border: 1px solid #376842; color: #376842;
+    border-radius: 6px; padding: 3px 7px; cursor: pointer; font-size: 13px;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.2s; white-space: nowrap;
 }
+.gu-btn-activar:hover { background: #376842; color: white; }
 
 .gu-modal-overlay {
     position: fixed;

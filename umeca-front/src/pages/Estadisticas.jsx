@@ -216,6 +216,7 @@ const Estadisticas = () => {
     const mesesLevantado = porMes(datos.levantados_por_mes);
     const mesesRevocado  = porMes(datos.revocados_por_mes);
     const mesesScpCambio = porMes(datos.scp_cambio_por_mes);
+    const mesesMcCambio  = porMes(datos.mc_cambio_por_mes);
 
     const total   = arr => arr.reduce((a, b) => a + b, 0);
     const promedio = arr => { const t = total(arr); return t === 0 ? 0 : Math.round(t / arr.filter(v => v > 0).length); };
@@ -341,19 +342,20 @@ const Estadisticas = () => {
                     </div>
                 </GraficaCard>
 
-                {/* 3. Resoluciones — azulClaro (MC→SCP) · verde oscuro (levantados) · rojo (revocados) */}
-                <GraficaCard id="chart-resoluciones" titulo="Resoluciones de Medidas" subtitulo={`MC→SCP · Levantamientos · Revocados · ${subtituloFiltro}`}>
+                {/* 3. Resoluciones — azulClaro (MC→SCP) · naranja (SCP→MC) · verde oscuro (levantados) · rojo (revocados) */}
+                <GraficaCard id="chart-resoluciones" titulo="Resoluciones de Medidas" subtitulo={`MC→SCP · SCP→MC · Levantamientos · Revocados · ${subtituloFiltro}`}>
                     <div className="est-dona-wrap">
                         <Doughnut options={doughnutOpts} data={{
-                            labels: ['MC → SCP', 'Levantados', 'Revocados'],
+                            labels: ['MC → SCP', 'SCP → MC', 'Levantados', 'Revocados'],
                             datasets: [dDataset(
-                                [datos.cambiadoAScp, datos.levantamientos, datos.revocados],
-                                [COLORES.azulClaro, COLORES.verde, COLORES.rojo]
+                                [datos.cambiadoAScp, datos.cambiadoAMc, datos.levantamientos, datos.revocados],
+                                [COLORES.azulClaro, '#f97316', COLORES.verde, COLORES.rojo]
                             )],
                         }} />
                     </div>
                     <div className="est-dona-stats">
                         <span style={{ color: COLORES.azulClaro }}><strong>{datos.cambiadoAScp ?? 0}</strong> MC→SCP</span>
+                        <span style={{ color: '#f97316' }}><strong>{datos.cambiadoAMc ?? 0}</strong> SCP→MC</span>
                         <span style={{ color: COLORES.verde }}><strong>{datos.levantamientos ?? 0}</strong> Levantados</span>
                         <span style={{ color: COLORES.rojo }}><strong>{datos.revocados ?? 0}</strong> Revocados</span>
                     </div>
@@ -662,10 +664,11 @@ const Estadisticas = () => {
                     </div>
                 </GraficaCard>
 
-                {/* 12. Resoluciones por mes — azulClaro · verde · rojo */}
-                <GraficaCard id="chart-resoluciones-mes" titulo="Resoluciones por Mes" subtitulo={`MC→SCP · Levantamientos · Revocados · ${anio}`} span2>
+                {/* 12. Resoluciones por mes — azulClaro · naranja · verde · rojo */}
+                <GraficaCard id="chart-resoluciones-mes" titulo="Resoluciones por Mes" subtitulo={`MC→SCP · SCP→MC · Levantamientos · Revocados · ${anio}`} span2>
                     <div className="est-bar-stats">
                         <span><strong>{total(mesesScpCambio)}</strong> MC→SCP</span>
+                        <span><strong>{total(mesesMcCambio)}</strong> SCP→MC</span>
                         <span><strong>{total(mesesLevantado)}</strong> Levantados</span>
                         <span><strong>{total(mesesRevocado)}</strong> Revocados</span>
                     </div>
@@ -674,6 +677,7 @@ const Estadisticas = () => {
                             labels: MESES,
                             datasets: [
                                 { label: 'MC → SCP',   data: mesesScpCambio, backgroundColor: COLORES.azulClaro + 'cc', hoverBackgroundColor: COLORES.azulClaro, borderRadius: 4 },
+                                { label: 'SCP → MC',   data: mesesMcCambio,  backgroundColor: '#f97316cc',              hoverBackgroundColor: '#f97316',          borderRadius: 4 },
                                 { label: 'Levantados', data: mesesLevantado, backgroundColor: COLORES.verde + 'cc',     hoverBackgroundColor: COLORES.verde,      borderRadius: 4 },
                                 { label: 'Revocados',  data: mesesRevocado,  backgroundColor: COLORES.rojo + 'cc',      hoverBackgroundColor: COLORES.rojo,       borderRadius: 4 },
                             ],

@@ -130,7 +130,7 @@ public class MedidaCautelar extends BaseEntity {
     private LocalDate fechaImposicionScp;
 
     @Column(name = "plazo_scp")
-    private LocalDate plazoScp;
+    private Integer plazoScp; // meses
 
     @Column(name = "canalizacion", length = 200)
     private String canalizacion;
@@ -216,6 +216,17 @@ public class MedidaCautelar extends BaseEntity {
     /** true cuando esta SCP fue creada a partir de una MC existente */
     @Column(name = "viene_de_mc")
     private Boolean vieneDeMC = false;
+
+    // ── Cambio a MC ─────────────────────────────────────────────────────────
+    @Column(name = "cambiado_a_mc")
+    private Boolean cambiadoAMc = false;
+
+    @Column(name = "fecha_cambio_mc")
+    private LocalDate fechaCambioMc;
+
+    /** true cuando esta MC fue creada a partir de una SCP existente */
+    @Column(name = "viene_de_scp")
+    private Boolean vieneDeScp = false;
 
     // ── Levantamiento ────────────────────────────────────────────────────────
     @Column(name = "fecha_levantamiento")

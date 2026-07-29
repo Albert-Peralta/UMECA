@@ -1,13 +1,15 @@
 package mx.edu.utez.umeca.modules.entrevista;
 
-import lombok.RequiredArgsConstructor;
 import mx.edu.utez.umeca.kernel.ApiResponse;
 import mx.edu.utez.umeca.modules.bitacora.Bitacora;
 import mx.edu.utez.umeca.modules.bitacora.BitacoraService;
 import mx.edu.utez.umeca.modules.imputado.Imputado;
 import mx.edu.utez.umeca.modules.imputado.ImputadoRepository;
+import mx.edu.utez.umeca.modules.medidacautelar.MedidaCautelarRepository;
 import mx.edu.utez.umeca.modules.security.user.User;
 import mx.edu.utez.umeca.modules.security.user.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,13 +24,26 @@ import java.util.List;
  * y evita duplicados de personas con entrevista activa.
  */
 @Service
-@RequiredArgsConstructor
 public class EntrevistaEncuadreService {
 
     private final EntrevistaEncuadreRepository repository;
     private final UserRepository userRepository;
     private final ImputadoRepository imputadoRepository;
     private final BitacoraService bitacoraService;
+    private final MedidaCautelarRepository medidaRepository;
+
+    @Autowired
+    public EntrevistaEncuadreService(EntrevistaEncuadreRepository repository,
+                                     UserRepository userRepository,
+                                     ImputadoRepository imputadoRepository,
+                                     BitacoraService bitacoraService,
+                                     @Lazy MedidaCautelarRepository medidaRepository) {
+        this.repository = repository;
+        this.userRepository = userRepository;
+        this.imputadoRepository = imputadoRepository;
+        this.bitacoraService = bitacoraService;
+        this.medidaRepository = medidaRepository;
+    }
 
     @Transactional(readOnly = true)
     public ApiResponse findAll() {
@@ -55,6 +70,12 @@ public class EntrevistaEncuadreService {
                 imp.put("fallecido",      e.getImputado().isFallecido());
                 imp.put("carpetaCerrada", e.getImputado().isCarpetaCerrada());
                 m.put("imputado", imp);
+
+                // Conversión MC↔SCP — buscar medida activa del imputado
+                medidaRepository.findMedidaActivaByImputadoId(e.getImputado().getId()).ifPresent(medida -> {
+                    m.put("vieneDeMC",  Boolean.TRUE.equals(medida.getVieneDeMC()));
+                    m.put("vieneDeScp", Boolean.TRUE.equals(medida.getVieneDeScp()));
+                });
             }
             return m;
         }).toList();

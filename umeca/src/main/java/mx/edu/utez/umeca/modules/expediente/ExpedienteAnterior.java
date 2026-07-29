@@ -30,7 +30,7 @@ public class ExpedienteAnterior extends BaseEntity {
 
     // ── Tipo y zona ──────────────────────────────────────────
     @Enumerated(EnumType.STRING)
-    @Column(name = "tipo", nullable = false, length = 20)
+    @Column(name = "tipo", nullable = false, length = 50)
     private TipoExpediente tipo;
 
     @Enumerated(EnumType.STRING)
@@ -38,22 +38,22 @@ public class ExpedienteAnterior extends BaseEntity {
     private Zona zona;
 
     // ── Datos del imputado ───────────────────────────────────
-    @Column(name = "numero", length = 20)
+    @Column(name = "numero", length = 50)
     private String numero;
 
-    @Column(name = "estatus", length = 500)
+    @Column(name = "estatus", columnDefinition = "TEXT")
     private String estatus;
 
-    @Column(name = "responsable", length = 500)
+    @Column(name = "responsable", columnDefinition = "TEXT")
     private String responsable;
 
-    @Column(name = "ap_paterno", length = 200)
+    @Column(name = "ap_paterno", columnDefinition = "TEXT")
     private String apPaterno;
 
-    @Column(name = "ap_materno", length = 200)
+    @Column(name = "ap_materno", columnDefinition = "TEXT")
     private String apMaterno;
 
-    @Column(name = "nombre", length = 500)
+    @Column(name = "nombre", columnDefinition = "TEXT")
     private String nombre;
 
     @Column(name = "genero", length = 20)
@@ -69,7 +69,7 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "indigena")
     private Boolean indigena;
 
-    @Column(name = "etnia_pueblo", length = 100)
+    @Column(name = "etnia_pueblo", columnDefinition = "TEXT")
     private String etniaPueblo;
 
     @Column(name = "afrodescendiente")
@@ -84,39 +84,39 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "discapacidad")
     private Boolean discapacidad;
 
-    @Column(name = "grupo_vulnerable_otro", length = 200)
+    @Column(name = "grupo_vulnerable_otro", columnDefinition = "TEXT")
     private String grupoVulnerableOtro;
 
     // ── Domicilio ─────────────────────────────────────────────
-    @Column(name = "calle", length = 200)
+    @Column(name = "calle", columnDefinition = "TEXT")
     private String calle;
 
-    @Column(name = "numero_ext", length = 20)
+    @Column(name = "numero_ext", columnDefinition = "TEXT")
     private String numeroExt;
 
     @Column(name = "colonia", length = 150)
     private String colonia;
 
-    @Column(name = "municipio", length = 100)
+    @Column(name = "municipio", columnDefinition = "TEXT")
     private String municipio;
 
-    @Column(name = "estado_domicilio", length = 100)
+    @Column(name = "estado_domicilio", columnDefinition = "TEXT")
     private String estadoDomicilio;
 
-    @Column(name = "telefono1", length = 50)
+    @Column(name = "telefono1", columnDefinition = "TEXT")
     private String telefono1;
 
-    @Column(name = "telefono2", length = 50)
+    @Column(name = "telefono2", columnDefinition = "TEXT")
     private String telefono2;
 
-    @Column(name = "ocupacion", length = 300)
+    @Column(name = "ocupacion", columnDefinition = "TEXT")
     private String ocupacion;
 
     // ── Víctima 1 ─────────────────────────────────────────────
     @Column(name = "victima1_tipo", length = 100)
     private String victima1Tipo;
 
-    @Column(name = "victima1_nombre", length = 500)
+    @Column(name = "victima1_nombre", columnDefinition = "TEXT")
     private String victima1Nombre;
 
     @Column(name = "victima1_genero", length = 20)
@@ -125,14 +125,14 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "victima1_domicilio", columnDefinition = "TEXT")
     private String victima1Domicilio;
 
-    @Column(name = "victima1_telefono", length = 100)
+    @Column(name = "victima1_telefono", columnDefinition = "TEXT")
     private String victima1Telefono;
 
     // ── Víctima 2 ─────────────────────────────────────────────
     @Column(name = "victima2_tipo", length = 100)
     private String victima2Tipo;
 
-    @Column(name = "victima2_nombre", length = 500)
+    @Column(name = "victima2_nombre", columnDefinition = "TEXT")
     private String victima2Nombre;
 
     @Column(name = "victima2_genero", length = 20)
@@ -141,7 +141,7 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "victima2_domicilio", columnDefinition = "TEXT")
     private String victima2Domicilio;
 
-    @Column(name = "victima2_telefono", length = 100)
+    @Column(name = "victima2_telefono", columnDefinition = "TEXT")
     private String victima2Telefono;
 
     // ── Campos exclusivos SCP ─────────────────────────────────
@@ -151,7 +151,7 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "fecha_imposicion_scp")
     private LocalDate fechaImposicionScp;
 
-    @Column(name = "plazo_scp", length = 100)
+    @Column(name = "plazo_scp", columnDefinition = "TEXT")
     private String plazoScp;
 
     @Column(name = "fecha_conclusion_scp")
@@ -166,7 +166,7 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "tercera_visita")
     private LocalDate terceraVisita;
 
-    @Column(name = "tipo_servicio", length = 200)
+    @Column(name = "tipo_servicio", columnDefinition = "TEXT")
     private String tipoServicio;
 
     @Column(name = "fecha_informe_final")
@@ -175,16 +175,16 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "vencimiento_plazo_scp")
     private LocalDate vencimientoPlazoScp;
 
-    @Column(name = "oficio_sobreseimiento", length = 200)
+    @Column(name = "oficio_sobreseimiento", columnDefinition = "TEXT")
     private String oficioSobreseimiento;
 
-    @Column(name = "responsable_cierre_carpeta", length = 200)
+    @Column(name = "responsable_cierre_carpeta", columnDefinition = "TEXT")
     private String responsableCierreCarpeta;
 
-    @Column(name = "ajuste", length = 200)
+    @Column(name = "ajuste", columnDefinition = "TEXT")
     private String ajuste;
 
-    @Column(name = "numero_expediente_archivo", length = 100)
+    @Column(name = "numero_expediente_archivo", columnDefinition = "TEXT")
     private String numeroExpedienteArchivo;
 
     // ── Oficio de imposición ──────────────────────────────────
@@ -197,13 +197,13 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "delito", columnDefinition = "TEXT")
     private String delito;
 
-    @Column(name = "modalidad", length = 200)
+    @Column(name = "modalidad", columnDefinition = "TEXT")
     private String modalidad;
 
-    @Column(name = "sede", length = 200)
+    @Column(name = "sede", columnDefinition = "TEXT")
     private String sede;
 
-    @Column(name = "nombre_juez", length = 200)
+    @Column(name = "nombre_juez", columnDefinition = "TEXT")
     private String nombreJuez;
 
     @Column(name = "fecha_formulacion")
@@ -251,7 +251,7 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "no_aplica_sin_fuentes")
     private Boolean noAplicaSinFuentes;
 
-    @Column(name = "no_aplica_otro", length = 200)
+    @Column(name = "no_aplica_otro", columnDefinition = "TEXT")
     private String noAplicaOtro;
 
     // ── Medidas Cautelares Art. 155 (I–XIV) ──────────────────
@@ -274,7 +274,7 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "fecha_canalizacion")
     private LocalDate fechaCanalizacion;
 
-    @Column(name = "a_disposicion", length = 100)
+    @Column(name = "a_disposicion", columnDefinition = "TEXT")
     private String aDisposicion;
 
     @Column(name = "coordenadas_domicilio", columnDefinition = "TEXT")
@@ -283,16 +283,16 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "presentacion_periodica", columnDefinition = "TEXT")
     private String presentacionPeriodica;
 
-    @Column(name = "no_biometrico", length = 100)
+    @Column(name = "no_biometrico", columnDefinition = "TEXT")
     private String noBiometrico;
 
-    @Column(name = "no_libro", length = 100)
+    @Column(name = "no_libro", columnDefinition = "TEXT")
     private String noLibro;
 
-    @Column(name = "no_pagina", length = 100)
+    @Column(name = "no_pagina", columnDefinition = "TEXT")
     private String noPagina;
 
-    @Column(name = "cumpliendo_incumpliendo", length = 200)
+    @Column(name = "cumpliendo_incumpliendo", columnDefinition = "TEXT")
     private String cumpliendoIncumpliendo;
 
     @Column(name = "distrito_judicial", columnDefinition = "TEXT")
@@ -301,7 +301,7 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "ultimo_informe_mc", columnDefinition = "TEXT")
     private String ultimoInformeMc;
 
-    @Column(name = "acuerdo_reparatorio", length = 300)
+    @Column(name = "acuerdo_reparatorio", columnDefinition = "TEXT")
     private String acuerdoReparatorio;
 
     @Column(name = "fecha_acuerdo_reparatorio")
@@ -316,7 +316,7 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "fecha_termino_mc")
     private LocalDate fechaTerminoMc;
 
-    @Column(name = "estado_final", length = 300)
+    @Column(name = "estado_final", columnDefinition = "TEXT")
     private String estadoFinal;
 
     // ── Seguimientos (hasta 15) ───────────────────────────────
@@ -331,11 +331,11 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "fecha_registro_hist")
     private LocalDate fechaRegistroHist;
 
-    @Column(name = "situacion_juridica", length = 300)
+    @Column(name = "situacion_juridica", columnDefinition = "TEXT")
     private String situacionJuridica;
 
     // ── Campos SUSTRAIDO ──────────────────────────────────────
-    @Column(name = "archivo", length = 100)
+    @Column(name = "archivo", columnDefinition = "TEXT")
     private String archivo;
 
     @Column(name = "tipo_mc_scp", length = 20)
@@ -344,32 +344,32 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "sustraccion", columnDefinition = "TEXT")
     private String sustraccion;
 
-    @Column(name = "supervisor", length = 300)
+    @Column(name = "supervisor", columnDefinition = "TEXT")
     private String supervisor;
 
     // ── Campos nuevos Base Jojutla / Cuautla ──────────────────
     @Column(name = "resolucion", columnDefinition = "TEXT")
     private String resolucion;
 
-    @Column(name = "sexo", length = 20)
+    @Column(name = "sexo", columnDefinition = "TEXT")
     private String sexo;
 
     @Column(name = "bitacora", columnDefinition = "TEXT")
     private String bitacora;
 
-    @Column(name = "juez", length = 300)
+    @Column(name = "juez", columnDefinition = "TEXT")
     private String juez;
 
     @Column(name = "fecha_imposicion")
     private LocalDate fechaImposicion;
 
-    @Column(name = "plazo", length = 200)
+    @Column(name = "plazo", columnDefinition = "TEXT")
     private String plazo;
 
     @Column(name = "fecha_vencimiento")
     private LocalDate fechaVencimiento;
 
-    @Column(name = "asignado", length = 300)
+    @Column(name = "asignado", columnDefinition = "TEXT")
     private String asignado;
 
     @Column(name = "vencimiento")
@@ -378,7 +378,7 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "motivo_cierre", columnDefinition = "TEXT")
     private String motivoCierre;
 
-    @Column(name = "cierre", length = 200)
+    @Column(name = "cierre", columnDefinition = "TEXT")
     private String cierre;
 
     @Column(name = "observaciones2", columnDefinition = "TEXT")
@@ -396,13 +396,15 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "observaciones6", columnDefinition = "TEXT")
     private String observaciones6;
 
-    @Column(name = "carpeta_xochitepec", length = 300)
+    @Column(name = "carpeta_xochitepec", columnDefinition = "TEXT")
     private String carpetaXochitepec;
 
     public enum TipoExpediente {
         MC, SCP, HISTORICO, REGISTRO_HISTORICO, SUSTRAIDO,
         JOJU_SUSTRAIDO, JOJU_PRISION, JOJU_DEFUNCION, JOJU_SOBRESEIMIENTO, JOJU_ARCHIVO, JOJU_CARPETAS_INACTIVAS,
-        CUAT_PRISION, CUAT_ESPERA, CUAT_CARPETAS_CERRAR, CUAT_OFICIOS, CUAT_SUSTRAIDO, CUAT_TTA, CUAT_ARCHIVO
+        CUAT_PRISION, CUAT_ESPERA, CUAT_CARPETAS_CERRAR, CUAT_OFICIOS, CUAT_SUSTRAIDO, CUAT_TTA, CUAT_ARCHIVO,
+        // Inactivos Xochitepec
+        XOCHI_MC_INACTIVA, XOCHI_SCP_INACTIVO, XOCHI_HISTORICO_INACTIVO
     }
     public enum Zona { XOCHITEPEC, CUAUTLA, JOJUTLA }
 }

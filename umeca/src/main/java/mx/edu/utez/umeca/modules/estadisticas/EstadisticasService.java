@@ -120,6 +120,7 @@ public class EstadisticasService {
                     "REVOCADO",   medidaRepository.countByEstadoYRango("REVOCADO",   fInicio, fFin)
             ));
             data.put("cambiadoAScp",   medidaRepository.countByCambiadoAScpYRango(fInicio, fFin));
+            data.put("cambiadoAMc",    medidaRepository.countByCambiadoAMcYRango(fInicio, fFin));
             data.put("levantamientos", medidaRepository.countByEstadoYRango("LEVANTADO", fInicio, fFin));
             data.put("revocados",      medidaRepository.countByEstadoYRango("REVOCADO",  fInicio, fFin));
             data.put("cumplimientoMC", Map.of(
@@ -162,6 +163,7 @@ public class EstadisticasService {
                     "REVOCADO",   medidaRepository.countByEstadoAndAnioMes("REVOCADO",   anio, mes)
             ));
             data.put("cambiadoAScp",  medidaRepository.countByCambiadoAScpAndAnioMes(anio, mes));
+            data.put("cambiadoAMc",   medidaRepository.countByCambiadoAMcAndAnioMes(anio, mes));
             data.put("levantamientos", medidaRepository.countByEstadoAndAnioMes("LEVANTADO", anio, mes));
             data.put("revocados",      medidaRepository.countByEstadoAndAnioMes("REVOCADO",  anio, mes));
             data.put("cumplimientoMC", Map.of(
@@ -200,6 +202,7 @@ public class EstadisticasService {
                     "REVOCADO",   medidaRepository.countByEstadoAndAnio("REVOCADO",   anio)
             ));
             data.put("cambiadoAScp",  medidaRepository.countByCambiadoAScpAndAnio(anio));
+            data.put("cambiadoAMc",   medidaRepository.countByCambiadoAMcAndAnio(anio));
             data.put("levantamientos", medidaRepository.countByEstadoAndAnio("LEVANTADO", anio));
             data.put("revocados",      medidaRepository.countByEstadoAndAnio("REVOCADO",  anio));
             data.put("cumplimientoMC", Map.of(
@@ -234,6 +237,7 @@ public class EstadisticasService {
         data.put("levantados_por_mes",    medidaRepository.countPorMesYEstado("LEVANTADO", anio));
         data.put("revocados_por_mes",     medidaRepository.countPorMesYEstado("REVOCADO",  anio));
         data.put("scp_cambio_por_mes",    medidaRepository.countByCambiadoAScpPorMes(anio));
+        data.put("mc_cambio_por_mes",     medidaRepository.countByCambiadoAMcPorMes(anio));
         data.put("llamadas_por_mes",      supervisionRepository.countPorMesYTipo(anio, "LLAMADA"));
         data.put("visitas_por_mes",       supervisionRepository.countPorMesYTipo(anio, "VISITA_DOMICILIARIA"));
         data.put("supervisiones_por_mes", supervisionRepository.countPorMes(anio));

@@ -75,6 +75,9 @@ const menuPorRol = {
         { key: 'entrevista', label: 'Entrevista de encuadre', icon: 'bi bi-journal-text' },
         { key: 'medidas',    label: 'Medidas y Suspensiones', icon: 'bi bi-card-checklist' },
         { key: 'supervision',label: 'Supervisión',            icon: 'bi bi-eye' },
+        { separator: true,   label: 'Evaluación' },
+        { key: 'evaluacion',  label: 'Evaluación de riesgos',  icon: 'bi bi-shield-check' },
+        { key: 'consultas',   label: 'Consulta de Registros',  icon: 'bi bi-search' },
         { separator: true,   label: 'Oficios' },
         { key: 'correspondencia', label: 'Correspondencia',        icon: 'bi bi-envelope-paper' },
         { separator: true,   label: 'Histórico' },
@@ -84,12 +87,14 @@ const menuPorRol = {
         { separator: true,   label: 'General' },
         { key: 'imputados',   label: 'Imputados',              icon: 'bi bi-people' },
         { key: 'reporte',     label: 'Reporte Diario',         icon: 'bi bi-clipboard-data' },
+        { separator: true,   label: 'Supervisión' },
+        { key: 'entrevista',  label: 'Entrevista de Encuadre', icon: 'bi bi-journal-text' },
+        { key: 'medidas',     label: 'Medidas y Suspensiones', icon: 'bi bi-card-checklist' },
+        { key: 'supervision', label: 'Supervisión',            icon: 'bi bi-eye' },
         { separator: true,   label: 'Evaluación' },
         { key: 'evaluacion',  label: 'Evaluación de riesgos',  icon: 'bi bi-shield-check' },
         { key: 'consultas',   label: 'Consulta de Registros',  icon: 'bi bi-search' },
         { key: 'suspension',  label: 'Suspensión Condicional', icon: 'bi bi-hourglass-split' },
-        { separator: true,   label: 'Supervisión' },
-        { key: 'supervision', label: 'Supervisión',             icon: 'bi bi-eye' },
         { separator: true,   label: 'Oficios' },
         { key: 'correspondencia', label: 'Correspondencia',        icon: 'bi bi-envelope-paper' },
         { separator: true,   label: 'Histórico' },
@@ -243,7 +248,11 @@ const Dashboard = () => {
         case 'correspondencia':  return <Correspondencia />;
         case 'expedientes':      return <ExpedientesAnteriores />;
         case 'perfil':           return <Perfil />;
-        default: return null;
+        default: {
+            const primerKey = (menuPorRol[user?.rol] || []).find(i => !i.separator)?.key || 'imputados';
+            navegarA(primerKey);
+            return null;
+        }
     }
 };
 

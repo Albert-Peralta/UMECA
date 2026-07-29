@@ -58,7 +58,7 @@ public class MedidaCautelarResponseDTO {
 
     // SCP específico
     private LocalDate fechaImposicionScp;
-    private LocalDate plazoScp;
+    private Integer plazoScp; // meses
     private String canalizacion;
     private String tipoServicio;
     private LocalDate fechaInformeFinal;
@@ -100,6 +100,11 @@ public class MedidaCautelarResponseDTO {
     private Boolean cambiadoAScp;
     private LocalDate fechaCambioScp;
     private Boolean vieneDeMC;
+
+    // Cambio a MC
+    private Boolean cambiadoAMc;
+    private LocalDate fechaCambioMc;
+    private Boolean vieneDeScp;
 
     private List<SeguimientoDTO> seguimientos;
 
@@ -213,6 +218,11 @@ public class MedidaCautelarResponseDTO {
         dto.setCambiadoAScp(Boolean.TRUE.equals(m.getCambiadoAScp()));
         dto.setVieneDeMC(Boolean.TRUE.equals(m.getVieneDeMC()));
         dto.setFechaCambioScp(m.getFechaCambioScp());
+
+        // Cambio a MC
+        dto.setCambiadoAMc(Boolean.TRUE.equals(m.getCambiadoAMc()));
+        dto.setVieneDeScp(Boolean.TRUE.equals(m.getVieneDeScp()));
+        dto.setFechaCambioMc(m.getFechaCambioMc());
 
         // Levantamiento
         dto.setFechaLevantamiento(m.getFechaLevantamiento());

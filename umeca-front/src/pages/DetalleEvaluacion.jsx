@@ -36,7 +36,7 @@ const sec = (titulo) => (
 const DetalleEvaluacion = ({ evaluacion: d, onVolver, onEditar, puedeEditar }) => {
     const { user } = useAuth();
     const { showToast } = useToast();
-    const esAdmin = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN';
+    const esAdmin = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' ;
     const [imprimiendo, setImprimiendo]         = useState(false);
     const [showInforme, setShowInforme]         = useState(false);
 
@@ -72,6 +72,7 @@ const DetalleEvaluacion = ({ evaluacion: d, onVolver, onEditar, puedeEditar }) =
                             const id = localStorage.getItem('volverExpedienteId');
                             localStorage.removeItem('volverExpedienteId');
                             localStorage.setItem('abrirExpedienteId', id);
+                            localStorage.setItem('abrirExpedienteTab', 'evaluaciones');
                             window.dispatchEvent(new CustomEvent('navigate', { detail: 'imputados' }));
                         }}>
                             <i className="bi bi-person-vcard"></i> Volver al Expediente

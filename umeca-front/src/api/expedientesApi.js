@@ -56,3 +56,11 @@ export const importarBaseCuautla = (archivo) => {
         headers: { 'Content-Type': 'multipart/form-data' },
     });
 };
+
+export const importarInactivosXochi = (archivo) => {
+    const form = new FormData();
+    form.append('archivo', archivo);
+    return api.post('/expedientes-anteriores/importar-inactivos-xochi', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+};

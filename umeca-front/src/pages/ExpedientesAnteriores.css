@@ -121,11 +121,12 @@
 
 /* Botón ver */
 .exp-btn-ver {
-    background: #f0fdf4; border: 1.5px solid #86efac; color: #15803d;
-    border-radius: 7px; padding: 5px 10px; cursor: pointer; font-size: 0.95rem;
-    transition: background 0.12s;
+    background: none; border: 1px solid #376842; color: #376842;
+    border-radius: 6px; padding: 3px 7px; cursor: pointer; font-size: 13px;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
 }
-.exp-btn-ver:hover:not(:disabled) { background: #dcfce7; }
+.exp-btn-ver:hover:not(:disabled) { background: #376842; color: white; }
 .exp-btn-ver:disabled { opacity: 0.5; }
 
 /* ── Detalle ─────────────────────────────────────────────── */
@@ -205,6 +206,17 @@
     font-size: 0.88rem; color: #374151; line-height: 1.7;
     background: #f9fafb; border-radius: 8px; padding: 10px 14px;
     border: 1px solid #e5e7eb; margin: 0;
+}
+.exp-obs-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.exp-obs-item {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 12px;
+    font-size: 0.85rem; color: #374151;
+}
+.exp-obs-num {
+    background: #1e40af; color: #fff; border-radius: 50%;
+    width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
+    font-size: 0.72rem; font-weight: 700; flex-shrink: 0;
 }
 
 /* ── Botón importar ──────────────────────────────────────── */
@@ -507,6 +519,10 @@
 .exp-tipo-pill-base_cuat { border-color: #93c5fd; color: #1e40af; }
 .exp-tipo-pill-base_cuat:hover { background: #dbeafe; }
 .exp-tipo-pill-base_cuat.exp-tipo-pill-active { background: #1e40af; color: #fff; border-color: #1e40af; }
+
+.exp-tipo-pill-inactivos_xochi { border-color: #86efac; color: #14532d; background: #f0fdf4; }
+.exp-tipo-pill-inactivos_xochi:hover { background: #dcfce7; }
+.exp-tipo-pill-inactivos_xochi.exp-tipo-pill-active { background: #14532d; color: #fff; border-color: #14532d; }
 
 /* ── Barra de subtipos ───────────────────────────────────── */
 .exp-subtipo-bar {

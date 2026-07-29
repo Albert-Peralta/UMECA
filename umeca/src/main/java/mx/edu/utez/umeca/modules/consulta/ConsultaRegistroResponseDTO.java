@@ -29,6 +29,7 @@ public class ConsultaRegistroResponseDTO {
     private String resultado;
     private String observaciones;
     private String registradoPor;
+    private String zona;
     private LocalDateTime createdAt;
 
     // Consultas previas del mismo imputado
@@ -68,6 +69,8 @@ public class ConsultaRegistroResponseDTO {
         dto.setCreatedAt(c.getCreatedAt());
         if (c.getRegistradoPor() != null) {
             dto.setRegistradoPor(c.getRegistradoPor().getNombre() + " " + c.getRegistradoPor().getApPaterno());
+            if (c.getRegistradoPor().getZona() != null)
+                dto.setZona(c.getRegistradoPor().getZona().name());
         }
         return dto;
     }

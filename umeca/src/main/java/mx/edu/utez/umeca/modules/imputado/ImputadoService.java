@@ -85,6 +85,8 @@ public class ImputadoService {
             if (mInfo != null) {
                 dto.setTipoMedidaActiva(mInfo[1].toString());
                 dto.setEstadoMedidaActiva(mInfo[2].toString());
+                dto.setVieneDeMC(Boolean.TRUE.equals(mInfo[3]));
+                dto.setVieneDeScp(Boolean.TRUE.equals(mInfo[4]));
             }
             dto.setZona(zonas.get(i.getId()));
             return dto;

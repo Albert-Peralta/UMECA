@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getExpedientes, getExpedienteById, importarExpedientesExcel, importarRegistroHistorico, importarSustraidos, importarBaseJojutla, importarBaseCuautla, getLotes, eliminarLote } from '../api/expedientesApi';
+import { getExpedientes, getExpedienteById, importarExpedientesExcel, importarRegistroHistorico, importarSustraidos, importarBaseJojutla, importarBaseCuautla, importarInactivosXochi, getLotes, eliminarLote } from '../api/expedientesApi';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import './ExpedientesAnteriores.css';
@@ -14,12 +14,14 @@ const SUBTIPO_LABELS = {
     CUAT_PRISION: 'Prisión Preventiva', CUAT_ESPERA: 'Espera Sobreseimientos',
     CUAT_CARPETAS_CERRAR: 'Carpetas para Cerrar', CUAT_OFICIOS: 'Oficios Sobreseimientos',
     CUAT_SUSTRAIDO: 'Sustraídos', CUAT_TTA: 'TTA', CUAT_ARCHIVO: 'Archivo',
+    XOCHI_MC_INACTIVA: 'MC Inactiva', XOCHI_SCP_INACTIVO: 'SCP Inactivo', XOCHI_HISTORICO_INACTIVO: 'Histórico',
 };
 
 const SUBTIPOS_POR_BASE = {
-    BASE_XOCHI: ['MC', 'SCP', 'HISTORICO'],
-    BASE_JOJU:  ['JOJU_SUSTRAIDO', 'JOJU_PRISION', 'JOJU_DEFUNCION', 'JOJU_SOBRESEIMIENTO', 'JOJU_ARCHIVO', 'JOJU_CARPETAS_INACTIVAS'],
-    BASE_CUAT:  ['CUAT_PRISION', 'CUAT_ESPERA', 'CUAT_CARPETAS_CERRAR', 'CUAT_OFICIOS', 'CUAT_SUSTRAIDO', 'CUAT_TTA', 'CUAT_ARCHIVO'],
+    BASE_XOCHI:         ['MC', 'SCP', 'HISTORICO'],
+    BASE_JOJU:          ['JOJU_SUSTRAIDO', 'JOJU_PRISION', 'JOJU_DEFUNCION', 'JOJU_SOBRESEIMIENTO', 'JOJU_ARCHIVO', 'JOJU_CARPETAS_INACTIVAS'],
+    BASE_CUAT:          ['CUAT_PRISION', 'CUAT_ESPERA', 'CUAT_CARPETAS_CERRAR', 'CUAT_OFICIOS', 'CUAT_SUSTRAIDO', 'CUAT_TTA', 'CUAT_ARCHIVO'],
+    INACTIVOS_XOCHI:    ['XOCHI_MC_INACTIVA', 'XOCHI_SCP_INACTIVO', 'XOCHI_HISTORICO_INACTIVO'],
 };
 
 const ZONA_LABELS = { XOCHITEPEC: 'Xochitepec', CUAUTLA: 'Cuautla', JOJUTLA: 'Jojutla' };
@@ -79,14 +81,15 @@ export default function ExpedientesAnteriores() {
             let zona      = undefined;
 
             if (SUBTIPOS_POR_BASE[tipoFiltro]) {
-                // Es una base (XOCHI/JOJU/CUAT)
+                // Es una base (XOCHI/JOJU/CUAT/INACTIVOS_XOCHI)
                 zona = tipoFiltro === 'BASE_XOCHI' ? 'XOCHITEPEC'
                      : tipoFiltro === 'BASE_JOJU'  ? 'JOJUTLA'
+                     : tipoFiltro === 'BASE_CUAT'  ? 'CUAUTLA'
+                     : tipoFiltro === 'INACTIVOS_XOCHI' ? 'XOCHITEPEC'
                      : 'CUAUTLA';
                 if (subtipoFiltro) {
-                    tipo = subtipoFiltro; // subtipo específico
+                    tipo = subtipoFiltro;
                 } else {
-                    // Todos los de esta base — enviamos tipoIn para no mezclar con SUSTRAIDO etc.
                     tipoIn = SUBTIPOS_POR_BASE[tipoFiltro].join(',');
                 }
             } else {
@@ -138,6 +141,9 @@ export default function ExpedientesAnteriores() {
                 if (importZona === 'JOJUTLA') res = await importarBaseJojutla(importArchivo);
                 else if (importZona === 'CUAUTLA') res = await importarBaseCuautla(importArchivo);
                 else res = await importarExpedientesExcel(importArchivo, importZona);
+            } else if (importTipo === 'INACTIVOS') {
+                if (importZona === 'XOCHITEPEC') res = await importarInactivosXochi(importArchivo);
+                else res = await importarInactivosXochi(importArchivo); // placeholder para futuras sedes
             } else {
                 res = await importarExpedientesExcel(importArchivo, importZona);
             }
@@ -147,6 +153,17 @@ export default function ExpedientesAnteriores() {
                 if (omitidos > 0) msg += ` Se omitieron ${omitidos} fila${omitidos !== 1 ? 's' : ''} sin datos válidos.`;
                 setImportExito(msg);
                 showToast(msg);
+                // Redirigir al filtro correspondiente
+                if (importTipo === 'INACTIVOS') {
+                    setTipoFiltro('INACTIVOS_XOCHI'); setSubtipoFiltro(null);
+                } else if (importTipo === 'BASE_IMPUTADOS') {
+                    setTipoFiltro(importZona === 'JOJUTLA' ? 'BASE_JOJU' : importZona === 'CUAUTLA' ? 'BASE_CUAT' : 'BASE_XOCHI');
+                    setSubtipoFiltro(null);
+                } else if (importTipo === 'SUSTRAIDO') {
+                    setTipoFiltro('SUSTRAIDO'); setSubtipoFiltro(null);
+                } else if (importTipo === 'REGISTRO_HISTORICO') {
+                    setTipoFiltro('REGISTRO_HISTORICO'); setSubtipoFiltro(null);
+                }
                 cargar(0); setPagina(0);
             } else {
                 setImportError(res.data?.message || 'Error al importar el archivo.');
@@ -504,7 +521,17 @@ export default function ExpedientesAnteriores() {
                     {detalle.observaciones && !detalle.tipo?.startsWith('JOJU_') && !detalle.tipo?.startsWith('CUAT_') && (
                         <div className="exp-seccion exp-seccion-full">
                             <div className="exp-seccion-titulo"><i className="bi bi-chat-left-text-fill" /> Observaciones</div>
-                            <p className="exp-observaciones">{detalle.observaciones}</p>
+                            {detalle.observaciones.includes('\n')
+                                ? <ol className="exp-obs-list">
+                                    {detalle.observaciones.split('\n').filter(Boolean).map((obs, i) => (
+                                        <li key={i} className="exp-obs-item">
+                                            <span className="exp-obs-num">{i + 1}</span>
+                                            <span>{obs}</span>
+                                        </li>
+                                    ))}
+                                  </ol>
+                                : <p className="exp-observaciones">{detalle.observaciones}</p>
+                            }
                         </div>
                     )}
                 </div>
@@ -526,11 +553,12 @@ export default function ExpedientesAnteriores() {
                     <div className="exp-topbar-sep" />
                     <div className="exp-tipo-pills">
                         {[
-                            ['BASE_XOCHI', 'Base Xochi'],
-                            ['BASE_CUAT',  'Base Cuautla'],
-                            ['BASE_JOJU',  'Base Jojutla'],
+                            ['BASE_XOCHI',         'Base Xochi'],
+                            ['BASE_JOJU',          'Base Joju'],
+                            ['BASE_CUAT',          'Base Cuautla'],
+                            ['INACTIVOS_XOCHI',    'Inactivos Xochi'],
                             ['REGISTRO_HISTORICO', 'Reg. Histórico'],
-                            ['SUSTRAIDO', 'Sustraídos'],
+                            ['SUSTRAIDO',          'Sustraídos'],
                         ].map(([v, l]) => (
                             <button key={v}
                                 className={`exp-tipo-pill ${tipoFiltro === v ? 'exp-tipo-pill-active' : ''} exp-tipo-pill-${v.toLowerCase()}`}
@@ -554,7 +582,7 @@ export default function ExpedientesAnteriores() {
 
                 {/* Fila 2: subtipos de la base seleccionada */}
                 {SUBTIPOS_POR_BASE[tipoFiltro] && (
-                    <div className={`exp-subtipo-bar exp-base-${tipoFiltro === 'BASE_XOCHI' ? 'xochi' : tipoFiltro === 'BASE_JOJU' ? 'joju' : 'cuat'}`}>
+                    <div className={`exp-subtipo-bar exp-base-${tipoFiltro === 'BASE_XOCHI' ? 'xochi' : tipoFiltro === 'BASE_JOJU' ? 'joju' : tipoFiltro === 'INACTIVOS_XOCHI' ? 'xochi' : 'cuat'}`}>
                         <span className="exp-subtipo-label">Sección:</span>
                         <button
                             className={`exp-tipo-pill exp-subtipo-pill ${subtipoFiltro === null ? 'exp-tipo-pill-active' : ''}`}
@@ -590,7 +618,7 @@ export default function ExpedientesAnteriores() {
                         <button className="exp-btn-gestion" onClick={abrirGestion}>
                             <i className="bi bi-archive-fill" /> Gestionar importaciones
                         </button>
-                        <button className="exp-btn-importar" onClick={() => { setShowImport(true); setImportTipo('BASE_IMPUTADOS'); setImportArchivo(null); setImportPaso(1); setImportError(null); setImportExito(null); }}>
+                        <button className="exp-btn-importar" onClick={() => { setShowImport(true); setImportTipo(tipoFiltro === 'INACTIVOS_XOCHI' ? 'INACTIVOS' : 'BASE_IMPUTADOS'); setImportZona(tipoFiltro === 'INACTIVOS_XOCHI' ? 'XOCHITEPEC' : 'XOCHITEPEC'); setImportArchivo(null); setImportPaso(1); setImportError(null); setImportExito(null); }}>
                             <i className="bi bi-file-earmark-arrow-up-fill" /> Importar Excel
                         </button>
                     </div>
@@ -846,6 +874,7 @@ export default function ExpedientesAnteriores() {
                                         <div className="exp-modal-opts" style={{flexDirection:'column',gap:'8px'}}>
                                             {[
                                                 ['BASE_IMPUTADOS',    'bi-people-fill',           'Base de Imputados',        'Archivo de base de imputados por sede (MC/SCP/Histórico, Prisión Preventiva, Sustraídos, etc.)'],
+                                                ['INACTIVOS',        'bi-archive-fill',          'Inactivos',                'Expedientes inactivos por sede — hojas: MC INACTIVAS, SCP INACTIVO, HISTORICO.'],
                                                 ['REGISTRO_HISTORICO','bi-clock-history',         'Registro Histórico',       'Formato simple: CAUSA PENAL, NOMBRE, FECHA, SITUACIÓN JURÍDICA.'],
                                                 ['SUSTRAIDO',         'bi-person-dash-fill',      'Sustraídos',               'Archivo con hojas por zona (Cuernavaca / Jojutla / Cuautla).'],
                                             ].map(([v, icon, titulo, desc]) => (
@@ -862,9 +891,9 @@ export default function ExpedientesAnteriores() {
                                             ))}
                                         </div>
                                     </div>
-                                    {(importTipo === 'BASE_IMPUTADOS' || importTipo === 'REGISTRO_HISTORICO') && (
+                                    {(importTipo === 'BASE_IMPUTADOS' || importTipo === 'REGISTRO_HISTORICO' || importTipo === 'INACTIVOS') && (
                                     <div className="exp-modal-field">
-                                        <label>{importTipo === 'REGISTRO_HISTORICO' ? 'Zona (opcional)' : 'Zona *'}</label>
+                                        <label>{importTipo === 'REGISTRO_HISTORICO' ? 'Zona (opcional)' : 'Sede *'}</label>
                                         <div className="exp-modal-opts">
                                             {[['XOCHITEPEC','Xochitepec'],['CUAUTLA','Cuautla'],['JOJUTLA','Jojutla']].map(([v,l]) => (
                                                 <button key={v}
@@ -874,7 +903,7 @@ export default function ExpedientesAnteriores() {
                                                 </button>
                                             ))}
                                         </div>
-                                        {importTipo === 'BASE_IMPUTADOS' && importZona && (
+                                        {(importTipo === 'BASE_IMPUTADOS' || importTipo === 'INACTIVOS') && importZona && (
                                             <div className="exp-zona-alerta">
                                                 <i className="bi bi-exclamation-triangle-fill" />
                                                 Verifica que el archivo corresponde a la sede <strong>{ZONA_LABELS[importZona]}</strong> antes de continuar.

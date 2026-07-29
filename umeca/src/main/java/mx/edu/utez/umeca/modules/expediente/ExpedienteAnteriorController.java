@@ -78,6 +78,17 @@ public class ExpedienteAnteriorController {
     }
 
     /**
+     * Importación de Inactivos Xochitepec (BASE IMPUTADOS XOCHITEPEC actual).
+     * Hojas: MC INACTIVAS, SCP INACTIVO, HISTORICO.
+     */
+    @PostMapping("/importar-inactivos-xochi")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR')")
+    public ResponseEntity<ApiResponse> importarInactivosXochi(
+            @RequestParam("archivo") MultipartFile archivo) {
+        return ResponseEntity.ok(service.importarInactivosXochi(archivo));
+    }
+
+    /**
      * Importación masiva por JSON — solo ADMINISTRADOR.
      */
     @PostMapping("/importar")

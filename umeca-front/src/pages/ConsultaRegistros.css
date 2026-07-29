@@ -21,16 +21,16 @@
 
 .cr-toolbar {
     display: flex; align-items: center; justify-content: space-between;
-    gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
+    gap: 10px; margin-bottom: 16px; flex-wrap: nowrap;
 }
-.cr-toolbar-left { display: flex; align-items: center; gap: 10px; flex: 1; }
+.cr-toolbar-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
 .cr-search-box {
     display: flex; align-items: center; gap: 8px;
     border: 1px solid #d0d0d0; border-radius: 8px;
-    padding: 9px 14px; background: #fff; flex: 1; max-width: 440px;
+    padding: 9px 14px; background: #fff; flex: 1; min-width: 0;
 }
-.cr-search-box i { color: #999; font-size: 14px; }
-.cr-search-box input { border: none; outline: none; font-size: 14px; width: 100%; }
+.cr-search-box i { color: #999; font-size: 14px; flex-shrink: 0; }
+.cr-search-box input { border: none; outline: none; font-size: 14px; width: 100%; min-width: 0; }
 
 .cr-btn-nuevo {
     background: #376842; color: white; border: none;
@@ -58,6 +58,154 @@
 .cr-td-nombre strong { color: #111; font-size: 14px; }
 .cr-td-nombre span   { display: block; font-size: 12px; color: #999; margin-top: 1px; }
 
+/* ── Buscador global ───────────────────────────────────────── */
+.cr-global-wrap { position: relative; margin-bottom: 12px; }
+.cr-global-box {
+    display: flex; align-items: center; gap: 10px;
+    background: #fff; border: 1.5px solid #376842;
+    border-radius: 10px; padding: 10px 16px;
+    box-shadow: 0 2px 8px rgba(55,104,66,.10);
+}
+.cr-global-box i { color: #376842; font-size: 16px; flex-shrink: 0; }
+.cr-global-input { border: none; outline: none; font-size: 14px; width: 100%; color: #222; }
+.cr-global-input::placeholder { color: #aaa; }
+.cr-global-clear { background: none; border: none; cursor: pointer; color: #aaa; font-size: 18px; padding: 0; line-height: 1; }
+.cr-global-clear:hover { color: #666; }
+.cr-spin { animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.cr-global-dropdown {
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(0,0,0,.14); z-index: 200;
+    overflow: hidden; max-height: 480px; overflow-y: auto;
+}
+
+/* Sección */
+.cr-dd-section { padding: 6px 0 8px; border-bottom: 1px solid #f3f4f6; }
+.cr-dd-section:last-child { border-bottom: none; }
+
+/* Header de sección */
+.cr-dd-label {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 16px 6px;
+    font-size: 10.5px; font-weight: 700; color: #6b7280;
+    text-transform: uppercase; letter-spacing: .6px;
+}
+.cr-dd-label-icon {
+    width: 20px; height: 20px; border-radius: 5px;
+    display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0;
+}
+.cr-dd-icon-imp  { background: #dcfce7; color: #166534; }
+.cr-dd-icon-ent  { background: #dbeafe; color: #1d4ed8; }
+.cr-dd-icon-eval { background: #fef3c7; color: #92400e; }
+.cr-dd-icon-med  { background: #ede9fe; color: #6d28d9; }
+.cr-dd-count {
+    margin-left: auto; background: #f3f4f6; color: #6b7280;
+    font-size: 10px; font-weight: 700; border-radius: 20px; padding: 1px 7px;
+}
+
+/* Item */
+.cr-dd-item {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; background: none; border: none; cursor: pointer;
+    padding: 8px 16px; text-align: left; color: #333;
+    transition: background .12s;
+}
+.cr-dd-item:hover { background: #f8fafc; }
+
+/* Avatar circular */
+.cr-dd-avatar {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+}
+.cr-dd-avatar-imp  { background: #dcfce7; color: #166534; font-size: 14px; }
+.cr-dd-avatar-ent  { background: #dbeafe; color: #1d4ed8; }
+.cr-dd-avatar-eval { background: #fef3c7; color: #92400e; }
+.cr-dd-avatar-med  { background: #ede9fe; color: #6d28d9; }
+
+/* Tipo medida (M.C. / S.C.P.) */
+.cr-dd-tipo-medida_cautelar       { background: #dcfce7; color: #166534; }
+.cr-dd-tipo-suspension_condicional { background: #dbeafe; color: #1d4ed8; }
+
+/* Estado medida */
+.cr-dd-med-estado-activo     { background: #dcfce7; color: #166534; }
+.cr-dd-med-estado-finalizado { background: #f3f4f6; color: #6b7280; }
+.cr-dd-med-estado-revocado   { background: #fee2e2; color: #991b1b; }
+.cr-dd-med-estado-levantado  { background: #e0e7ff; color: #3730a3; }
+
+/* Info columna */
+.cr-dd-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.cr-dd-row  { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.cr-dd-nombre { font-size: 13px; font-weight: 600; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cr-dd-folio {
+    font-size: 10.5px; font-weight: 700; color: #1d4ed8;
+    background: #eff6ff; border-radius: 4px; padding: 1px 6px; white-space: nowrap; flex-shrink: 0;
+}
+.cr-dd-meta { font-size: 11.5px; color: #9ca3af; display: flex; align-items: center; gap: 4px; }
+.cr-dd-meta i { font-size: 10px; }
+
+/* Badge estatus evaluación */
+.cr-dd-estatus {
+    font-size: 10px; font-weight: 700; border-radius: 4px;
+    padding: 1px 7px; white-space: nowrap; flex-shrink: 0; text-transform: uppercase;
+}
+/* Estatus interno (flujo) */
+.cr-dd-estatus-pendiente   { background: #fef3c7; color: #92400e; }
+.cr-dd-estatus-trabajando  { background: #dbeafe; color: #1e40af; }
+.cr-dd-estatus-finalizado  { background: #f3f4f6; color: #6b7280; }
+
+/* Resultado de riesgo (colores del formulario) */
+.cr-dd-resultado-flexible       { background: #dcfce7; color: #166534; }
+.cr-dd-resultado-estricto       { background: #fef3c7; color: #92400e; }
+.cr-dd-resultado-dificil_cumplir { background: #fee2e2; color: #991b1b; }
+
+/* Sin resultados */
+.cr-dd-nada {
+    padding: 32px 20px; text-align: center; color: #9ca3af;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    font-size: 13px;
+}
+.cr-dd-nada-icon {
+    width: 48px; height: 48px; border-radius: 50%; background: #f3f4f6;
+    display: flex; align-items: center; justify-content: center; font-size: 22px; color: #d1d5db;
+}
+.cr-dd-empty { display: block; padding: 4px 16px 8px; font-size: 12px; color: #bbb; }
+
+/* Aviso de resultados adicionales */
+.cr-dd-ver-mas {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 16px 4px;
+    font-size: 11.5px; color: #9ca3af; font-style: italic;
+}
+
+/* ── Topbar lista ──────────────────────────────────────────── */
+.cr-topbar-lista {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px; margin-bottom: 14px;
+    background: #fff; border: 1px solid #e5e7eb;
+    border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.05);
+}
+.cr-pag-info { font-size: 13px; color: #555; }
+.cr-pag-info strong { color: #111; }
+.cr-pag-controles { display: flex; align-items: center; gap: 6px; }
+.cr-pag-btn {
+    background: #fff; border: 1px solid #d0d0d0; border-radius: 6px;
+    padding: 5px 10px; cursor: pointer; color: #444; font-size: 13px;
+}
+.cr-pag-btn:disabled { opacity: .35; cursor: default; }
+.cr-pag-btn:not(:disabled):hover { background: #f0f0f0; }
+.cr-pag-num { font-size: 13px; color: #444; min-width: 48px; text-align: center; }
+
+/* ── Select filtro resultado ───────────────────────────────── */
+.cr-select-filtro {
+    border: 1px solid #d0d0d0; border-radius: 8px;
+    padding: 9px 14px; font-size: 14px; background: #fff;
+    color: #333; cursor: pointer; outline: none;
+}
+.cr-select-filtro:focus { border-color: #376842; }
+
 /* ── Badges ─────────────────────────────────────────────────── */
 .cr-badge {
     display: inline-flex; align-items: center; gap: 5px;
@@ -77,12 +225,23 @@
 .cr-empty small { font-size: 13px; color: #ccc; }
 
 /* ── Botones tabla ─────────────────────────────────────────── */
-.cr-btn-rm {
-    background: none; border: none; cursor: pointer;
-    color: #ccc; font-size: 16px; padding: 5px 8px; border-radius: 6px;
-    transition: all .15s;
+.cr-td-acciones { display: flex; align-items: center; gap: 6px; }
+
+.cr-btn-ver, .cr-btn-editar-fila {
+    background: none; border: 1px solid #376842; color: #376842;
+    border-radius: 6px; padding: 3px 7px; cursor: pointer;
+    font-size: 13px; display: inline-flex; align-items: center;
+    justify-content: center; transition: all 0.2s;
 }
-.cr-btn-rm:hover { background: #fee2e2; color: #b91c1c; }
+.cr-btn-ver:hover, .cr-btn-editar-fila:hover { background: #376842; color: white; }
+
+.cr-btn-rm {
+    background: none; border: 1px solid #ef4444; color: #ef4444;
+    border-radius: 6px; padding: 3px 7px; cursor: pointer;
+    font-size: 13px; display: inline-flex; align-items: center;
+    justify-content: center; transition: all 0.2s;
+}
+.cr-btn-rm:hover { background: #ef4444; color: white; }
 
 /* ── Formulario ────────────────────────────────────────────── */
 .cr-form-container { max-width: 960px; margin: 0 auto; padding: 20px; }
@@ -322,38 +481,6 @@
 .cr-cumplio.si { background: #d1fae5; color: #065f46; }
 .cr-cumplio.no { background: #fee2e2; color: #991b1b; }
 
-/* ── Paginación ──────────────────────────────────────────────────────────── */
-.cr-paginacion {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 16px;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    margin-bottom: 12px;
-    background: #fff;
-    font-size: 13px;
-    color: #555;
-}
-.cr-pag-info strong { color: #111; }
-.cr-pag-controles {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.cr-pag-btn {
-    background: none;
-    border: 1px solid #d1d5db;
-    border-radius: 50%;
-    width: 30px; height: 30px;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    color: #374151;
-    transition: background .15s;
-}
-.cr-pag-btn:hover:not(:disabled) { background: #f3f4f6; }
-.cr-pag-btn:disabled { opacity: .35; cursor: default; }
-.cr-pag-num { font-weight: 600; color: #111; min-width: 36px; text-align: center; }
 
 /* ── Imputados dinámicos ────────────────────────────────────── */
 .cr-btn-add-imp {

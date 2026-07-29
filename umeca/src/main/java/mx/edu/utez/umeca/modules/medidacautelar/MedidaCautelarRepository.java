@@ -16,6 +16,9 @@ public interface MedidaCautelarRepository extends JpaRepository<MedidaCautelar, 
 
     List<MedidaCautelar> findByImputadoIdOrderByCreatedAtDesc(Long imputadoId);
 
+    @Query("SELECT m FROM MedidaCautelar m WHERE m.imputado.id = :imputadoId AND CAST(m.estado AS string) = 'ACTIVO' ORDER BY m.createdAt DESC LIMIT 1")
+    java.util.Optional<MedidaCautelar> findMedidaActivaByImputadoId(@Param("imputadoId") Long imputadoId);
+
     // Excluye medidas que ya fueron convertidas (cambiadoAScp=true o vieneDeMC=true)
     @Query("SELECT COUNT(m) > 0 FROM MedidaCautelar m WHERE m.imputado.id = :imputadoId " +
            "AND LOWER(m.causaPenal) = LOWER(:causaPenal) AND m.tipo = :tipo " +
@@ -25,8 +28,8 @@ public interface MedidaCautelarRepository extends JpaRepository<MedidaCautelar, 
             @org.springframework.data.repository.query.Param("causaPenal") String causaPenal,
             @org.springframework.data.repository.query.Param("tipo") MedidaCautelar.TipoMedida tipo);
 
-    /** Devuelve [imputadoId, tipo, estado] de la medida más reciente por imputado (para la lista general) */
-    @Query("SELECT m.imputado.id, m.tipo, m.estado FROM MedidaCautelar m WHERE m.imputado.id IN :ids AND m.createdAt = (SELECT MAX(m2.createdAt) FROM MedidaCautelar m2 WHERE m2.imputado.id = m.imputado.id)")
+    /** Devuelve [imputadoId, tipo, estado, vieneDeMC, vieneDeScp] de la medida más reciente por imputado (para la lista general) */
+    @Query("SELECT m.imputado.id, m.tipo, m.estado, m.vieneDeMC, m.vieneDeScp FROM MedidaCautelar m WHERE m.imputado.id IN :ids AND m.createdAt = (SELECT MAX(m2.createdAt) FROM MedidaCautelar m2 WHERE m2.imputado.id = m.imputado.id)")
     List<Object[]> tipoActivoPorImputados(@Param("ids") List<Long> ids);
 
     @Query("SELECT m FROM MedidaCautelar m WHERE " +
@@ -71,6 +74,12 @@ public interface MedidaCautelarRepository extends JpaRepository<MedidaCautelar, 
     @Query("SELECT COUNT(m) FROM MedidaCautelar m WHERE m.cambiadoAScp = true AND YEAR(m.createdAt) = :anio AND MONTH(m.createdAt) = :mes")
     long countByCambiadoAScpAndAnioMes(@Param("anio") int anio, @Param("mes") int mes);
 
+    @Query("SELECT COUNT(m) FROM MedidaCautelar m WHERE m.cambiadoAMc = true AND YEAR(m.createdAt) = :anio")
+    long countByCambiadoAMcAndAnio(@Param("anio") int anio);
+
+    @Query("SELECT COUNT(m) FROM MedidaCautelar m WHERE m.cambiadoAMc = true AND YEAR(m.createdAt) = :anio AND MONTH(m.createdAt) = :mes")
+    long countByCambiadoAMcAndAnioMes(@Param("anio") int anio, @Param("mes") int mes);
+
     @Query("SELECT MONTH(m.createdAt), COUNT(m) FROM MedidaCautelar m " +
            "WHERE CAST(m.estado AS string) = :estado AND YEAR(m.createdAt) = :anio " +
            "GROUP BY MONTH(m.createdAt) ORDER BY MONTH(m.createdAt)")
@@ -80,6 +89,11 @@ public interface MedidaCautelarRepository extends JpaRepository<MedidaCautelar, 
            "WHERE m.cambiadoAScp = true AND YEAR(m.createdAt) = :anio " +
            "GROUP BY MONTH(m.createdAt) ORDER BY MONTH(m.createdAt)")
     List<Object[]> countByCambiadoAScpPorMes(@Param("anio") int anio);
+
+    @Query("SELECT MONTH(m.createdAt), COUNT(m) FROM MedidaCautelar m " +
+           "WHERE m.cambiadoAMc = true AND YEAR(m.createdAt) = :anio " +
+           "GROUP BY MONTH(m.createdAt) ORDER BY MONTH(m.createdAt)")
+    List<Object[]> countByCambiadoAMcPorMes(@Param("anio") int anio);
 
     // ── Semana (rango de fechas) ──────────────────────────────────────────────
     @Query("SELECT COUNT(m) FROM MedidaCautelar m WHERE m.createdAt >= :inicio AND m.createdAt < :fin")
@@ -101,6 +115,9 @@ public interface MedidaCautelarRepository extends JpaRepository<MedidaCautelar, 
 
     @Query("SELECT COUNT(m) FROM MedidaCautelar m WHERE m.cambiadoAScp = true AND m.createdAt >= :inicio AND m.createdAt < :fin")
     long countByCambiadoAScpYRango(@Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin);
+
+    @Query("SELECT COUNT(m) FROM MedidaCautelar m WHERE m.cambiadoAMc = true AND m.createdAt >= :inicio AND m.createdAt < :fin")
+    long countByCambiadoAMcYRango(@Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin);
 
     // ── TTA ───────────────────────────────────────────────────────────────────
     @Query(value = "SELECT COUNT(*) FROM medidas_cautelares WHERE detalles_fracciones LIKE '%\"esTTA\":true%' AND estado = 'ACTIVO'", nativeQuery = true)

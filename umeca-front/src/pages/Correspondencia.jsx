@@ -77,9 +77,8 @@ export default function Correspondencia() {
         setLoading(true);
         try {
             let res;
-            if (esPersonal)             res = await getMisAsignados();
-            else if (esCorrespondencia) res = await getMisRegistros();
-            else                        res = await getCorrespondencia(); // admin
+            if (esPersonal) res = await getMisAsignados();
+            else            res = await getCorrespondencia(); // admin + CORRESPONDENCIA ven todos
             setLista(res.data?.data || []);
             // Contadores de pendientes (solo admin y personal, no CORRESPONDENCIA)
             if (!esCorrespondencia) {

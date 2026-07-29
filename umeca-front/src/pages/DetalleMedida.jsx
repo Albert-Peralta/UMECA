@@ -53,7 +53,7 @@ const ESTADO_CLASE  = { ACTIVO: 'dm-badge-activo', SUSPENDIDO: 'dm-badge-suspend
 const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, onEditar, onActualizado, onCambiarSCP, onCambiarMC }) => {
     const { user } = useAuth();
     const { showToast } = useToast();
-    const esAdmin = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN';
+    const esAdmin = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' ;
     const esMC = m.tipo === 'MEDIDA_CAUTELAR';
     const FRAC_LIST = esMC ? FRACCIONES_MC : FRACCIONES_SCP;
 
@@ -225,21 +225,24 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                                 const id = localStorage.getItem('volverExpedienteId');
                                 localStorage.removeItem('volverExpedienteId');
                                 localStorage.setItem('abrirExpedienteId', id);
+                                localStorage.setItem('abrirExpedienteTab', 'medidas');
                                 window.dispatchEvent(new CustomEvent('navigate', { detail: 'imputados' }));
                             }}>
                                 <i className="bi bi-person-vcard" /> Volver al Expediente
                             </button>
                         )}
-                        <div>
-                            <h2 className="dm-titulo">
-                                {esMC ? 'MEDIDA CAUTELAR' : 'SUSPENSIÓN CONDICIONAL DEL PROCESO'}
-                            </h2>
-                            <p className="dm-subtitulo">{m.nombreImputado} — {m.causaPenal}</p>
-                        </div>
                     </div>
-                    <span className={`dm-badge ${ESTADO_CLASE[m.estado]}`}>
-                        {ESTADO_LABELS[m.estado] ?? m.estado}
-                    </span>
+                    <div style={{ textAlign: 'center' }}>
+                        <h2 className="dm-titulo">
+                            {esMC ? 'MEDIDA CAUTELAR' : 'SUSPENSIÓN CONDICIONAL DEL PROCESO'}
+                        </h2>
+                        <p className="dm-subtitulo">{m.nombreImputado} — {m.causaPenal}</p>
+                    </div>
+                    <div className="dm-header-right">
+                        <span className={`dm-badge ${ESTADO_CLASE[m.estado]}`}>
+                            {ESTADO_LABELS[m.estado] ?? m.estado}
+                        </span>
+                    </div>
                 </div>
                 {/* Fila 2: Botones de acción */}
                 <div className="dm-header-actions">

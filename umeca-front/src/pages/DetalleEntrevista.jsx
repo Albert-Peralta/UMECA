@@ -65,8 +65,8 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const puedeEditar  = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION';
-    const esAdmin      = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN';
+    const puedeEditar  = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN'  || user?.rol === 'SUPERVISION';
+    const esAdmin      = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' ;
     const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
 
     // ── Acciones exclusivas del Admin ──
@@ -238,6 +238,7 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
                             const id = localStorage.getItem('volverExpedienteId');
                             localStorage.removeItem('volverExpedienteId');
                             localStorage.setItem('abrirExpedienteId', id);
+                            localStorage.setItem('abrirExpedienteTab', 'entrevistas');
                             window.dispatchEvent(new CustomEvent('navigate', { detail: 'imputados' }));
                         }}>
                             <i className="bi bi-person-vcard"></i> Volver al Expediente

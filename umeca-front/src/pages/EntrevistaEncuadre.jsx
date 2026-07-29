@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getEntrevistas, getEntrevistaById } from '../api/entrevistasApi';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import './EntrevistaEncuadre.css';
 import './Imputados.css';
 import FormularioEntrevista from './FormularioEntrevista';
@@ -8,6 +9,8 @@ import DetalleEntrevista from './DetalleEntrevista';
 
 const EntrevistaEncuadre = () => {
     const { showToast } = useToast();
+    const { user } = useAuth();
+    const puedeCrear = ['ADMINISTRADOR', 'SUPERADMIN', 'SUPERVISION'].includes(user?.rol);
     const [mostrarFormulario, setMostrarFormulario] = useState(false);
     const [entrevistaSeleccionada, setEntrevistaSeleccionada] = useState(null);
     const [entrevistas, setEntrevistas] = useState([]);
@@ -121,9 +124,11 @@ const EntrevistaEncuadre = () => {
                             <i className="bi bi-chevron-right"></i>
                         </button>
                     </div>
-                    <button className="ee-btn-nueva" onClick={() => setMostrarFormulario(true)}>
-                        + Nueva Entrevista
-                    </button>
+                    {puedeCrear && (
+                        <button className="ee-btn-nueva" onClick={() => setMostrarFormulario(true)}>
+                            + Nueva Entrevista
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -187,9 +192,21 @@ const EntrevistaEncuadre = () => {
                                     <td>{e.estadoCivil || '—'}</td>
                                     <td>
                                         {e.tipoSeguimiento ? (
-                                            <span className={`ee-tipo ee-tipo-${e.tipoSeguimiento.toLowerCase()}`}>
-                                                {e.tipoSeguimiento}
-                                            </span>
+                                            <div>
+                                                <span className={`ee-tipo ee-tipo-${e.tipoSeguimiento.toLowerCase()}`}>
+                                                    {e.tipoSeguimiento}
+                                                </span>
+                                                {e.vieneDeMC && (
+                                                    <span style={{ display: 'block', fontSize: 10, color: '#94a3b8', marginTop: 2 }}>
+                                                        M.C. → S.C.P.
+                                                    </span>
+                                                )}
+                                                {e.vieneDeScp && (
+                                                    <span style={{ display: 'block', fontSize: 10, color: '#94a3b8', marginTop: 2 }}>
+                                                        S.C.P. → M.C.
+                                                    </span>
+                                                )}
+                                            </div>
                                         ) : '—'}
                                     </td>
                                     <td>

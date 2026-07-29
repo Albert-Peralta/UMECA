@@ -65,7 +65,7 @@ const Login = () => {
             <img src={headerImg} alt="Header" className="login-header-img" />
 
             <div className="login-body">
-                <h1 className="login-title">Sistema de Gestión interna</h1>
+                <h1 className="login-title">Sistema de Gestión Interna</h1>
                 <p className="login-subtitle">
                     Dirección de la Unidad de Medidas Cautelares y Salidas Alternas para Adultos
                 </p>

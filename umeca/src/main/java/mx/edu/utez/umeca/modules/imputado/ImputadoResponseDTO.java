@@ -39,6 +39,8 @@ public class ImputadoResponseDTO {
     private String notasCierre;
     private String tipoMedidaActiva;   // null = sin medida, "MEDIDA_CAUTELAR" | "SUSPENSION_CONDICIONAL"
     private String estadoMedidaActiva; // "ACTIVO" | "LEVANTADO" | "FINALIZADO" | etc.
+    private Boolean vieneDeMC;         // la medida activa viene de conversión MC→SCP
+    private Boolean vieneDeScp;        // la medida activa viene de conversión SCP→MC
     private String zona;               // zona de la última entrevista del imputado
 
     // Resúmenes relacionados

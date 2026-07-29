@@ -109,6 +109,162 @@ public class ExpedienteExcelParser {
     private static final int MAX_SEGUIMIENTOS = 20;
 
     /**
+     * Parsea el Excel de "Inactivos Xochitepec" (BASE IMPUTADOS XOCHITEPEC actual).
+     * Hojas reconocidas:
+     *   "MC INACTIVAS"  → TipoExpediente.XOCHI_MC_INACTIVA  (mismas columnas que MC)
+     *   "SCP INACTIVO"  → TipoExpediente.XOCHI_SCP_INACTIVO (mismas columnas que SCP)
+     *   "HISTORICO"     → TipoExpediente.XOCHI_HISTORICO_INACTIVO (cols 94-107 = obs 1-14)
+     * Zona siempre XOCHITEPEC.
+     */
+    public List<ExpedienteAnteriorDTO> parsearInactivosXochi(MultipartFile file) throws Exception {
+        List<ExpedienteAnteriorDTO> lista = new ArrayList<>();
+        try (InputStream is = file.getInputStream();
+             Workbook wb = new XSSFWorkbook(is)) {
+
+            for (int s = 0; s < wb.getNumberOfSheets(); s++) {
+                Sheet sheet = wb.getSheetAt(s);
+                String nombreHoja = sheet.getSheetName().trim().toUpperCase()
+                    .replace("Ó", "O").replace("Ó", "O").replace("Ú", "U");
+
+                String tipo;
+                if (nombreHoja.equals("MC INACTIVAS"))       tipo = "XOCHI_MC_INACTIVA";
+                else if (nombreHoja.equals("SCP INACTIVO"))  tipo = "XOCHI_SCP_INACTIVO";
+                else if (nombreHoja.startsWith("HIST"))      tipo = "XOCHI_HISTORICO_INACTIVO";
+                else continue; // saltar DATOS y hojas desconocidas
+
+                lista.addAll(parsearHojaInactivosXochi(sheet, tipo));
+            }
+        }
+        return lista;
+    }
+
+    private List<ExpedienteAnteriorDTO> parsearHojaInactivosXochi(Sheet sheet, String tipo) {
+        List<ExpedienteAnteriorDTO> lista = new ArrayList<>();
+        // MC INACTIVAS y SCP INACTIVO tienen fila 1=grupo, fila 2=encabezados → datos desde fila 3 (índice 2)
+        // XOCHI_HISTORICO_INACTIVO tiene fila 1=encabezados → datos desde fila 2 (índice 1)
+        int filaDatos = "XOCHI_HISTORICO_INACTIVO".equals(tipo) ? FILA_DATOS_HISTORICO : FILA_DATOS_MC_SCP;
+
+        for (int i = filaDatos; i <= sheet.getLastRowNum(); i++) {
+            Row row = sheet.getRow(i);
+            if (row == null) continue;
+            if ("XOCHI_HISTORICO_INACTIVO".equals(tipo) && esFilaVaciaHistorico(row)) continue;
+            else if (!"XOCHI_HISTORICO_INACTIVO".equals(tipo) && esFilaVacia(row)) continue;
+
+            ExpedienteAnteriorDTO dto = new ExpedienteAnteriorDTO();
+            dto.setTipo(tipo);
+            dto.setZona("XOCHITEPEC");
+
+            if ("XOCHI_MC_INACTIVA".equals(tipo)) {
+                parsearFilaMc(row, dto);
+            } else if ("XOCHI_SCP_INACTIVO".equals(tipo)) {
+                parsearFilaScp(row, dto);
+            } else {
+                parsearFilaHistoricoInactivosXochi(row, dto);
+            }
+            lista.add(dto);
+        }
+        return lista;
+    }
+
+    /**
+     * Parsea una fila de la hoja HISTORICO del Excel de Inactivos Xochi.
+     * Estructura idéntica a parsearFilaHistorico hasta col 93,
+     * luego cols 94-107 = OBSERVACIONES 1-14 (sin seguimientos).
+     */
+    private ExpedienteAnteriorDTO parsearFilaHistoricoInactivosXochi(Row row, ExpedienteAnteriorDTO dto) {
+        // Columnas 0-93: misma estructura que el HISTORICO existente
+        dto.setNumero(str(row, 0));
+        dto.setEstatus(str(row, 1));
+        dto.setResponsable(str(row, 2));
+        dto.setNombre(str(row, 3));            // NOMBRE DEL IMPUTADO (campo único)
+        dto.setCausaPenal(str(row, 4));
+        dto.setGenero(str(row, 5));
+        dto.setFechaRecepcion(fecha(row, 6));  // FECHA ASIGNACION
+        dto.setSede(str(row, 7));              // SEDE JUDICIAL
+        dto.setFechaNacimiento(fecha(row, 8));
+        dto.setEdad(entero(row, 9));
+        dto.setCalle(str(row, 10));            // DOMICILIO (campo único)
+        dto.setTelefono1(str(row, 11));
+        dto.setOcupacion(str(row, 12));
+
+        dto.setVictima1Nombre(str(row, 13));
+        dto.setVictima1Genero(str(row, 14));
+        dto.setVictima1Domicilio(str(row, 15));
+        dto.setVictima1Telefono(str(row, 16));
+
+        dto.setDelito(str(row, 17));
+        dto.setModalidad(str(row, 18));
+        dto.setFechaFormulacion(fecha(row, 19));
+        dto.setFechaVinculacionProceso(fecha(row, 20));
+        dto.setNoAplicaMpNoSolicito(bool(row, 21));   // CUENTA CON A.E.R.
+        dto.setNoAplicaSinTiempo(bool(row, 22));      // CUENTA CON E.D.E.
+        dto.setNoAplicaPersonaNoAccedio(bool(row, 23)); // CUENTA CON E.D.S.M.C.
+
+        // MC I-XIV (cols 24-37)
+        dto.setMcI(bool(row, 24));   dto.setMcIi(bool(row, 25));  dto.setMcIii(bool(row, 26));
+        dto.setMcIv(bool(row, 27));  dto.setMcV(bool(row, 28));   dto.setMcVi(bool(row, 29));
+        dto.setMcVii(bool(row, 30)); dto.setMcViii(bool(row, 31));dto.setMcIx(bool(row, 32));
+        dto.setMcX(bool(row, 33));   dto.setMcXi(bool(row, 34));  dto.setMcXii(bool(row, 35));
+        dto.setMcXiii(bool(row, 36));dto.setMcXiv(bool(row, 37));
+
+        dto.setTipoServicio(str(row, 38));         // SE CANALIZA A TERAPIA
+        dto.setFechaCanalizacion(fecha(row, 39));
+        dto.setCoordenadasDomicilio(str(row, 40)); // LUGAR DE VIGILANCIA
+        dto.setADisposicion(str(row, 41));
+        // 42, 43 = fotos → skip
+        dto.setPresentacionPeriodica(str(row, 44));
+        dto.setNoBiometrico(str(row, 45));
+        dto.setNoLibro(str(row, 46));
+        dto.setNoPagina(str(row, 47));
+        dto.setCumpliendoIncumpliendo(str(row, 48));
+        dto.setEstatusFinal(str(row, 49));         // ESTATUS DE LA CAUSA PENAL
+        dto.setEstadoFinal(str(row, 50));          // UBICACION DEL EXP.
+        dto.setDistritoJudicial(str(row, 52));     // DISTRITO JUDICIAL
+        dto.setUltimoInformeMc(str(row, 53));      // ULTIMO INFORME MC
+        dto.setAcuerdoReparatorio(str(row, 54));
+        dto.setFechaAcuerdoReparatorio(fecha(row, 55));
+        dto.setFechaCumplimientoAcuerdo(fecha(row, 56));
+        // 57 = VERIFICACION → skip
+        dto.setResponsableCierreCarpeta(str(row, 58)); // FORMA DE CONCLUSION
+        dto.setFechaTerminoMc(fecha(row, 59));
+        // 60 = FECHA ENVIO AL ARCHIVO → skip
+        // 61 = S.C.P. flag → skip
+        dto.setFechaImposicionScp(fecha(row, 62));
+        dto.setPlazoScp(str(row, 63));
+        // 64-77 = I-XIV SCP → skip
+        dto.setPrimeraVisita(fecha(row, 78));
+        dto.setSegundaVisita(fecha(row, 79));
+        dto.setTerceraVisita(fecha(row, 80));
+        dto.setAjuste(str(row, 81));               // CANALIZACION
+        dto.setTipoServicio(str(row, 82));         // TIPO DE SERVICIO SCP
+        // 83 = FECHA CANALIZACION SCP → skip
+        // 84 = PRESENTACION PERIODICA SCP → skip
+        // 85 = CUMPLIENDO SCP → skip
+        dto.setNoLibro(str(row, 86));              // LIBRO SCP
+        dto.setNoPagina(str(row, 87));             // PAGINA SCP
+        String ultInfScp = str(row, 88);
+        if (ultInfScp != null) dto.setUltimoInformeMc(ultInfScp); // ULTIMO INFORME SCP
+        dto.setVencimientoPlazoScp(fecha(row, 89));
+        // 90 = FORMA CONCLUSION SCP → skip
+        dto.setOficioSobreseimiento(str(row, 91));
+        // 92 = FECHA ENVIO SCP → skip
+        dto.setFechaInformeFinal(fecha(row, 93));
+
+        // OBSERVACIONES 1-14 (cols 94-107) → concatenar en campo observaciones
+        StringBuilder obs = new StringBuilder();
+        for (int o = 0; o < 14; o++) {
+            String val = str(row, 94 + o);
+            if (val != null && !val.isBlank()) {
+                if (obs.length() > 0) obs.append("\n");
+                obs.append(val);
+            }
+        }
+        if (obs.length() > 0) dto.setObservaciones(obs.toString());
+
+        return dto;
+    }
+
+    /**
      * Parsea todas las hojas del Excel.
      * El tipo se detecta automáticamente por el nombre de la pestaña:
      *   "MC" → TipoExpediente.MC
@@ -160,131 +316,121 @@ public class ExpedienteExcelParser {
                 lista.add(parsearFilaHistorico(row, dto));
                 continue;
             }
-
-                // Datos del imputado
-                dto.setNumero(str(row, 0));
-                dto.setEstatus(str(row, 1));
-                dto.setResponsable(str(row, 2));
-                dto.setApPaterno(str(row, 3));
-                dto.setApMaterno(str(row, 4));
-                dto.setNombre(str(row, 5));
-                // col 6 = nombre concatenado, se ignora
-                dto.setGenero(str(row, 7));
-                dto.setFechaNacimiento(fecha(row, 8));
-                dto.setEdad(entero(row, 9));
-
-                // Grupos vulnerables
-                dto.setIndigena(bool(row, 10));
-                dto.setEtniaPueblo(str(row, 11));
-                dto.setAfrodescendiente(bool(row, 12));
-                dto.setExtranjeroMigrante(bool(row, 13));
-                dto.setComunidadLgbt(bool(row, 14));
-                dto.setDiscapacidad(bool(row, 15));
-                // col 16 = Ninguno, se ignora
-                dto.setGrupoVulnerableOtro(str(row, 17));
-
-                // Domicilio
-                dto.setCalle(str(row, 18));
-                dto.setNumeroExt(str(row, 19));
-                dto.setColonia(str(row, 20));
-                dto.setMunicipio(str(row, 21));
-                dto.setEstadoDomicilio(str(row, 22));
-                dto.setTelefono1(str(row, 23));
-                dto.setTelefono2(str(row, 24));
-                dto.setOcupacion(str(row, 25));
-
-                // Víctima 1
-                dto.setVictima1Tipo(str(row, 26));
-                dto.setVictima1Nombre(str(row, 27));
-                dto.setVictima1Genero(str(row, 28));
-                dto.setVictima1Domicilio(str(row, 29));
-                dto.setVictima1Telefono(str(row, 30));
-
-                // Víctima 2 (AF=31 tipo, AG=32 nombre, AH=33 género, AI=34 dom, AJ=35 tel)
-                dto.setVictima2Tipo(str(row, 31));
-                dto.setVictima2Nombre(str(row, 32));
-                dto.setVictima2Genero(str(row, 33));
-                dto.setVictima2Domicilio(str(row, 34));
-                dto.setVictima2Telefono(str(row, 35));
-
-                // Oficio de imposición (AK=36 … AP=41)
-                dto.setFechaRecepcion(fecha(row, 36));
-                dto.setCausaPenal(str(row, 37));
-                dto.setDelito(str(row, 38));
-                dto.setModalidad(str(row, 39));
-                dto.setSede(str(row, 40));
-                dto.setNombreJuez(str(row, 41));
-                dto.setFechaFormulacion(fecha(row, 42));          // AQ=42
-                dto.setFechaVinculacionProceso(fecha(row, 43));   // AR=43
-                dto.setFechaEntrevistaEvaluacion(fecha(row, 44)); // AS=44
-                dto.setFechaAudienciaImposicion(fecha(row, 45));  // AT=45
-                // AU=46 = segunda fecha evaluación (se ignora, ya está en AS)
-                dto.setFechaEntrevistaEncuadre(fecha(row, 47));   // AV=47
-
-                // Riesgos procesales (AW=48 … AZ=51)
-                dto.setRiesgoSustraccion(bool(row, 48));          // AW=48
-                dto.setRiesgoObstaculizacion(bool(row, 49));      // AX=49
-                dto.setRiesgoVictima(bool(row, 50));              // AY=50
-                dto.setOpinionTecnicaRiesgos(str(row, 51));       // AZ=51
-                dto.setInforme(str(row, 52));                     // BA=52
-
-                // No aplica (BB=53 general → ignora; BC–BG = motivos)
-                // BB=53 = "No aplica (no entregó ninguno)" → se ignora
-                dto.setNoAplicaMpNoSolicito(bool(row, 54));       // BC=54
-                dto.setNoAplicaSinTiempo(bool(row, 55));          // BD=55
-                dto.setNoAplicaPersonaNoAccedio(bool(row, 56));   // BE=56
-                dto.setNoAplicaSinFuentes(bool(row, 57));         // BF=57
-                dto.setNoAplicaOtro(str(row, 58));                // BG=58
-
-                // Medidas cautelares Art.155 I–XIV (BH=59 … BU=72)
-                dto.setMcI(bool(row, 59));
-                dto.setMcIi(bool(row, 60));
-                dto.setMcIii(bool(row, 61));
-                dto.setMcIv(bool(row, 62));
-                dto.setMcV(bool(row, 63));
-                dto.setMcVi(bool(row, 64));
-                dto.setMcVii(bool(row, 65));
-                dto.setMcViii(bool(row, 66));
-                dto.setMcIx(bool(row, 67));
-                dto.setMcX(bool(row, 68));
-                dto.setMcXi(bool(row, 69));
-                dto.setMcXii(bool(row, 70));
-                dto.setMcXiii(bool(row, 71));
-                dto.setMcXiv(bool(row, 72));
-
-                // Datos MC (BV=73 … CI=86)
-                dto.setFechaCanalizacion(fecha(row, 73));         // BV=73
-                dto.setADisposicion(str(row, 74));                // BW=74
-                dto.setCoordenadasDomicilio(str(row, 75));        // BX=75
-                dto.setPresentacionPeriodica(str(row, 76));       // BY=76
-                dto.setNoBiometrico(str(row, 77));                // BZ=77
-                dto.setNoLibro(str(row, 78));                     // CA=78
-                dto.setNoPagina(str(row, 79));                    // CB=79
-                dto.setCumpliendoIncumpliendo(str(row, 80));      // CC=80
-                dto.setDistritoJudicial(str(row, 81));            // CD=81
-                dto.setUltimoInformeMc(str(row, 82));             // CE=82
-                dto.setAcuerdoReparatorio(str(row, 83));          // CF=83
-                dto.setFechaAcuerdoReparatorio(fecha(row, 84));   // CG=84
-                dto.setFechaCumplimientoAcuerdo(fecha(row, 85));  // CH=85
-                dto.setEstatusFinal(str(row, 86));                // CI=86
-                // CJ–CU (cols 87–98) = columnas ocultas, se omiten
-                dto.setFechaTerminoMc(fecha(row, 99));            // CV=99
-                dto.setEstadoFinal(str(row, 100));                // CW=100
-
-                // Observaciones (CX=101)
-                dto.setObservaciones(str(row, 101));
-
-                // Seguimientos dinámicos
-                List<String> segs = new ArrayList<>();
-                for (int s = 0; s < MAX_SEGUIMIENTOS; s++) {
-                    String seg = str(row, COL_SEGUIMIENTO_INICIO_MC + s);
-                    if (seg != null && !seg.isBlank()) segs.add(seg);
-                }
-                if (!segs.isEmpty()) dto.setSeguimientos(segs);
-
-                lista.add(dto);
-            }
+            lista.add(parsearFilaMc(row, dto));
+        }
         return lista;
+    }
+
+    // ── Parser específico MC ─────────────────────────────────
+    private ExpedienteAnteriorDTO parsearFilaMc(Row row, ExpedienteAnteriorDTO dto) {
+        // Datos del imputado
+        dto.setNumero(str(row, 0));
+        dto.setEstatus(str(row, 1));
+        dto.setResponsable(str(row, 2));
+        dto.setApPaterno(str(row, 3));
+        dto.setApMaterno(str(row, 4));
+        dto.setNombre(str(row, 5));
+        // col 6 = nombre concatenado, se ignora
+        dto.setGenero(str(row, 7));
+        dto.setFechaNacimiento(fecha(row, 8));
+        dto.setEdad(entero(row, 9));
+
+        // Grupos vulnerables
+        dto.setIndigena(bool(row, 10));
+        dto.setEtniaPueblo(str(row, 11));
+        dto.setAfrodescendiente(bool(row, 12));
+        dto.setExtranjeroMigrante(bool(row, 13));
+        dto.setComunidadLgbt(bool(row, 14));
+        dto.setDiscapacidad(bool(row, 15));
+        // col 16 = Ninguno, se ignora
+        dto.setGrupoVulnerableOtro(str(row, 17));
+
+        // Domicilio
+        dto.setCalle(str(row, 18));
+        dto.setNumeroExt(str(row, 19));
+        dto.setColonia(str(row, 20));
+        dto.setMunicipio(str(row, 21));
+        dto.setEstadoDomicilio(str(row, 22));
+        dto.setTelefono1(str(row, 23));
+        dto.setTelefono2(str(row, 24));
+        dto.setOcupacion(str(row, 25));
+
+        // Víctima 1
+        dto.setVictima1Tipo(str(row, 26));
+        dto.setVictima1Nombre(str(row, 27));
+        dto.setVictima1Genero(str(row, 28));
+        dto.setVictima1Domicilio(str(row, 29));
+        dto.setVictima1Telefono(str(row, 30));
+
+        // Víctima 2
+        dto.setVictima2Tipo(str(row, 31));
+        dto.setVictima2Nombre(str(row, 32));
+        dto.setVictima2Genero(str(row, 33));
+        dto.setVictima2Domicilio(str(row, 34));
+        dto.setVictima2Telefono(str(row, 35));
+
+        // Oficio de imposición
+        dto.setFechaRecepcion(fecha(row, 36));
+        dto.setCausaPenal(str(row, 37));
+        dto.setDelito(str(row, 38));
+        dto.setModalidad(str(row, 39));
+        dto.setSede(str(row, 40));
+        dto.setNombreJuez(str(row, 41));
+        dto.setFechaFormulacion(fecha(row, 42));
+        dto.setFechaVinculacionProceso(fecha(row, 43));
+        dto.setFechaEntrevistaEvaluacion(fecha(row, 44));
+        dto.setFechaAudienciaImposicion(fecha(row, 45));
+        dto.setFechaEntrevistaEncuadre(fecha(row, 47));
+
+        // Riesgos procesales
+        dto.setRiesgoSustraccion(bool(row, 48));
+        dto.setRiesgoObstaculizacion(bool(row, 49));
+        dto.setRiesgoVictima(bool(row, 50));
+        dto.setOpinionTecnicaRiesgos(str(row, 51));
+        dto.setInforme(str(row, 52));
+
+        // No aplica
+        dto.setNoAplicaMpNoSolicito(bool(row, 54));
+        dto.setNoAplicaSinTiempo(bool(row, 55));
+        dto.setNoAplicaPersonaNoAccedio(bool(row, 56));
+        dto.setNoAplicaSinFuentes(bool(row, 57));
+        dto.setNoAplicaOtro(str(row, 58));
+
+        // Medidas cautelares Art.155 I–XIV
+        dto.setMcI(bool(row, 59));   dto.setMcIi(bool(row, 60));  dto.setMcIii(bool(row, 61));
+        dto.setMcIv(bool(row, 62));  dto.setMcV(bool(row, 63));   dto.setMcVi(bool(row, 64));
+        dto.setMcVii(bool(row, 65)); dto.setMcViii(bool(row, 66));dto.setMcIx(bool(row, 67));
+        dto.setMcX(bool(row, 68));   dto.setMcXi(bool(row, 69));  dto.setMcXii(bool(row, 70));
+        dto.setMcXiii(bool(row, 71));dto.setMcXiv(bool(row, 72));
+
+        // Datos MC
+        dto.setFechaCanalizacion(fecha(row, 73));
+        dto.setADisposicion(str(row, 74));
+        dto.setCoordenadasDomicilio(str(row, 75));
+        dto.setPresentacionPeriodica(str(row, 76));
+        dto.setNoBiometrico(str(row, 77));
+        dto.setNoLibro(str(row, 78));
+        dto.setNoPagina(str(row, 79));
+        dto.setCumpliendoIncumpliendo(str(row, 80));
+        dto.setDistritoJudicial(str(row, 81));
+        dto.setUltimoInformeMc(str(row, 82));
+        dto.setAcuerdoReparatorio(str(row, 83));
+        dto.setFechaAcuerdoReparatorio(fecha(row, 84));
+        dto.setFechaCumplimientoAcuerdo(fecha(row, 85));
+        dto.setEstatusFinal(str(row, 86));
+        dto.setFechaTerminoMc(fecha(row, 99));
+        dto.setEstadoFinal(str(row, 100));
+        dto.setObservaciones(str(row, 101));
+
+        // Seguimientos (hasta MAX_SEGUIMIENTOS)
+        List<String> segs = new ArrayList<>();
+        for (int s = 0; s < MAX_SEGUIMIENTOS; s++) {
+            String seg = str(row, COL_SEGUIMIENTO_INICIO_MC + s);
+            if (seg != null && !seg.isBlank()) segs.add(seg);
+        }
+        if (!segs.isEmpty()) dto.setSeguimientos(segs);
+
+        return dto;
     }
 
     // ── Parser específico SCP ────────────────────────────────

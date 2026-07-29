@@ -1,6 +1,7 @@
 package mx.edu.utez.umeca.modules.entrevista;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -108,4 +109,8 @@ public interface EntrevistaEncuadreRepository extends JpaRepository<EntrevistaEn
 
     @Query("SELECT COUNT(e) FROM EntrevistaEncuadre e WHERE e.tipoSeguimiento IS NULL AND e.createdAt >= :inicio AND e.createdAt < :fin")
     long countByTipoNullYRango(@Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin);
+
+    @Modifying
+    @Query("UPDATE EntrevistaEncuadre e SET e.tipoSeguimiento = :nuevoTipo WHERE e.imputado.id = :imputadoId")
+    int actualizarTipoSeguimientoPorImputado(@Param("imputadoId") Long imputadoId, @Param("nuevoTipo") EntrevistaEncuadre.TipoSeguimiento nuevoTipo);
 }

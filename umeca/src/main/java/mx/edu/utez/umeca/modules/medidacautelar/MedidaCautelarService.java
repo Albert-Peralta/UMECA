@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import mx.edu.utez.umeca.kernel.ApiResponse;
 import mx.edu.utez.umeca.modules.bitacora.Bitacora;
 import mx.edu.utez.umeca.modules.bitacora.BitacoraService;
+import mx.edu.utez.umeca.modules.entrevista.EntrevistaEncuadre;
 import mx.edu.utez.umeca.modules.entrevista.EntrevistaEncuadreRepository;
 import mx.edu.utez.umeca.modules.imputado.ImputadoRepository;
 import mx.edu.utez.umeca.modules.security.user.UserRepository;
@@ -116,14 +117,27 @@ public class MedidaCautelarService {
         mapFields(dto, medida);
         MedidaCautelar saved = repository.save(medida);
 
-        // Si es una SCP derivada de una MC, marcar la MC original como "cambiada a SCP"
+        // Si es una conversión MC↔SCP, marcar origen y actualizar entrevista
         if (dto.getMedidaOrigenId() != null) {
             repository.findById(dto.getMedidaOrigenId()).ifPresent(origen -> {
-                origen.setCambiadoAScp(true);
-                origen.setFechaCambioScp(LocalDate.now());
+                Long imputadoId = saved.getImputado() != null ? saved.getImputado().getId() : null;
+                if (origen.getTipo() == MedidaCautelar.TipoMedida.MEDIDA_CAUTELAR) {
+                    // MC → SCP
+                    origen.setCambiadoAScp(true);
+                    origen.setFechaCambioScp(LocalDate.now());
+                    saved.setVieneDeMC(true);
+                    if (imputadoId != null)
+                        entrevistaRepository.actualizarTipoSeguimientoPorImputado(imputadoId, EntrevistaEncuadre.TipoSeguimiento.SCP);
+                } else {
+                    // SCP → MC
+                    origen.setCambiadoAMc(true);
+                    origen.setFechaCambioMc(LocalDate.now());
+                    saved.setVieneDeScp(true);
+                    if (imputadoId != null)
+                        entrevistaRepository.actualizarTipoSeguimientoPorImputado(imputadoId, EntrevistaEncuadre.TipoSeguimiento.MC);
+                }
                 repository.save(origen);
             });
-            saved.setVieneDeMC(true);
             repository.save(saved);
         }
 

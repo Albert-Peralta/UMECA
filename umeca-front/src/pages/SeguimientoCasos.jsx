@@ -5,6 +5,7 @@ import { getMedidas, getMedidaById } from '../api/medidasApi';
 import { getImputados } from '../api/imputadosApi';
 import { buscarEntrevistasParaMedida } from '../api/entrevistasApi';
 import FormularioMedida from './FormularioMedida';
+import FormularioSCP from './FormularioSCP';
 import DetalleMedida from './DetalleMedida';
 import './Historico.css';
 import './SeguimientoCasos.css';
@@ -23,8 +24,8 @@ const estadoConfig = {
 const SeguimientoCasos = () => {
     const { user } = useAuth();
     const { showToast } = useToast();
-    const puedeRegistrar   = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION';
-    const puedeSeguimiento = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION' || user?.rol === 'EVALUADOR_RIESGO';
+    const puedeRegistrar   = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION';
+    const puedeSeguimiento = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION' || user?.rol === 'EVALUADOR_RIESGO';
 
     // ── Alerta de vencimiento SCP ─────────────────────────────────────────────
     // Prioridad de plazo: nuevo plazo acordado > vencimiento calculado > plazo original
@@ -42,12 +43,12 @@ const SeguimientoCasos = () => {
     /**
      * Devuelve el objeto de alerta de vencimiento para mostrar en la tabla,
      * o null si no aplica. Solo aplica a SCP activas.
-     * Las SCP vencidas hace más de 10 días ya no se destacan para reducir ruido.
+     * Las SCP vencidas hace más de 15 días ya no se destacan para reducir ruido.
      */
     const alertaVencimiento = (item) => {
         const dias = diasParaVencer(item);
         if (dias === null) return null;
-        if (dias < -10) return null; // más de 10 días vencida: ya no se muestra
+        if (dias < -15) return null; // más de 15 días vencida: ya no se muestra
         if (dias < 0)   return { tipo: 'vencido',  label: `Venció hace ${Math.abs(dias)} día(s)`, clase: 'alerta-vencido' };
         if (dias === 0) return { tipo: 'proximo',  label: 'Vence hoy',                            clase: 'alerta-proximo' };
         if (dias <= 30) return { tipo: 'proximo',  label: `Vence en ${dias} día(s)`,              clase: 'alerta-proximo' };
@@ -351,7 +352,14 @@ const SeguimientoCasos = () => {
             }
         };
 
-        return (
+        const esSCP = medidaActiva?.tipo === 'SUSPENSION_CONDICIONAL';
+        return esSCP ? (
+            <FormularioSCP
+                medidaInicial={medidaActiva}
+                onVolver={volverDesdeFormulario}
+                onGuardado={guardadoDesdeFormulario}
+            />
+        ) : (
             <FormularioMedida
                 medidaInicial={medidaActiva}
                 onVolver={volverDesdeFormulario}
@@ -497,6 +505,11 @@ const SeguimientoCasos = () => {
                                         {item.vieneDeMC && (
                                             <span style={{ display: 'block', fontSize: 10, color: '#94a3b8', marginTop: 2 }}>
                                                 M.C. → S.C.P.
+                                            </span>
+                                        )}
+                                        {item.vieneDeScp && (
+                                            <span style={{ display: 'block', fontSize: 10, color: '#94a3b8', marginTop: 2 }}>
+                                                S.C.P. → M.C.
                                             </span>
                                         )}
                                     </td>

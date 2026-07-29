@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import PrintConsulta from './PrintConsulta';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
@@ -6,7 +6,12 @@ import {
     getConsultas, getConsultaById, getAntecedentes,
     crearConsulta, actualizarConsulta, eliminarConsulta, buscarRegistros
 } from '../api/consultasApi';
+import { getImputados } from '../api/imputadosApi';
+import { buscarEntrevistasParaMedida } from '../api/entrevistasApi';
+import { buscarEvaluaciones } from '../api/evaluacionesApi';
+import { getMedidas } from '../api/medidasApi';
 import './ConsultaRegistros.css';
+import './EntrevistaEncuadre.css';
 
 const IMP_BASE = { nombre: '', apPaterno: '', apMaterno: '', fechaNacimiento: '' };
 
@@ -263,7 +268,7 @@ const FormularioConsulta = ({ consulta, onVolver, onGuardado }) => {
                                 const medidas = registros.medidas || [];
                                 if (medidas.length === 0) return (
                                     <tr>
-                                        <td><i className="bi bi-shield-fill-check" style={{ color: '#7c3aed', marginRight: 6 }} />Medidas Cautelares / SCP</td>
+                                        <td><i className="bi bi-shield-check" style={{ color: '#7c3aed', marginRight: 6 }} />Medidas Cautelares / SCP</td>
                                         <td style={{textAlign:'center'}}><span className="cr-reg-count empty">0</span></td>
                                         <td>—</td><td>—</td><td style={{textAlign:'center'}}>—</td><td style={{textAlign:'center'}}>—</td>
                                     </tr>
@@ -272,7 +277,7 @@ const FormularioConsulta = ({ consulta, onVolver, onGuardado }) => {
                                     <tr key={m.id || i}>
                                         <td>
                                             {i === 0
-                                                ? <><i className="bi bi-shield-fill-check" style={{ color: '#7c3aed', marginRight: 6 }} />Medidas Cautelares / SCP</>
+                                                ? <><i className="bi bi-shield-check" style={{ color: '#7c3aed', marginRight: 6 }} />Medidas Cautelares / SCP</>
                                                 : null}
                                             <div style={{ color: '#6b7280', fontSize: 11, paddingLeft: i === 0 ? 22 : 22, marginTop: i === 0 ? 2 : 0 }}>
                                                 Medida #{i + 1}
@@ -433,10 +438,54 @@ const ConsultaRegistros = () => {
     const [consultas, setConsultas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [busqueda, setBusqueda] = useState('');
+    const [filtroResultado, setFiltroResultado] = useState('');
+    const [zonaFiltro, setZonaFiltro] = useState('TODAS');
     const [vista, setVista] = useState('lista'); // lista | form | detalle
     const [seleccionada, setSeleccionada] = useState(null);
     const [pagina, setPagina] = useState(1);
     const POR_PAGINA = 20;
+
+    // Búsqueda global
+    const [busquedaGlobal, setBusquedaGlobal] = useState('');
+    const [resultadosGlobal, setResultadosGlobal] = useState(null); // { imputados, entrevistas, evaluaciones }
+    const [buscandoGlobal, setBuscandoGlobal] = useState(false);
+    const [dropdownVisible, setDropdownVisible] = useState(false);
+    const busquedaGlobalTimer = useRef(null);
+    const dropdownRef = useRef(null);
+
+    useEffect(() => {
+        const handleClick = (e) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target))
+                setDropdownVisible(false);
+        };
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, []);
+
+    useEffect(() => {
+        if (busquedaGlobalTimer.current) clearTimeout(busquedaGlobalTimer.current);
+        if (!busquedaGlobal.trim()) { setResultadosGlobal(null); setDropdownVisible(false); return; }
+        busquedaGlobalTimer.current = setTimeout(async () => {
+            setBuscandoGlobal(true);
+            try {
+                const q = busquedaGlobal.trim();
+                const [impRes, entRes, evalRes, medRes] = await Promise.all([
+                    getImputados(q),
+                    buscarEntrevistasParaMedida(q),
+                    buscarEvaluaciones(q),
+                    getMedidas(q),
+                ]);
+                setResultadosGlobal({
+                    imputados:   impRes.data.data  || [],
+                    entrevistas: entRes.data.data  || [],
+                    evaluaciones: evalRes.data.data || [],
+                    medidas:     medRes.data.data  || [],
+                });
+                setDropdownVisible(true);
+            } catch { /* silencioso */ }
+            finally { setBuscandoGlobal(false); }
+        }, 400);
+    }, [busquedaGlobal]);
 
     const cargar = useCallback(async () => {
         setLoading(true);
@@ -467,12 +516,15 @@ const ConsultaRegistros = () => {
 
     const filtradas = consultas.filter(c => {
         const q = busqueda.toLowerCase();
-        return (
+        const coincideBusqueda = (
             (c.nombreImputado || '').toLowerCase().includes(q) ||
             (c.apPaternoImputado || '').toLowerCase().includes(q) ||
             (c.causaPenal || '').toLowerCase().includes(q) ||
             (c.quienSolicita || '').toLowerCase().includes(q)
         );
+        const coincideResultado = filtroResultado ? c.resultado === filtroResultado : true;
+        const coincideZona = zonaFiltro === 'TODAS' || c.zona === zonaFiltro;
+        return coincideBusqueda && coincideResultado && coincideZona;
     });
 
     const totalPaginas = Math.max(1, Math.ceil(filtradas.length / POR_PAGINA));
@@ -500,65 +552,232 @@ const ConsultaRegistros = () => {
     return (
         <div className="cr-wrapper">
 
-            {/* Paginación — encima del buscador */}
-            {!loading && filtradas.length > 0 && (
-                <div className="cr-paginacion">
-                    <span className="cr-pag-info">
-                        Mostrando <strong>{desde + 1}</strong> a <strong>{Math.min(desde + POR_PAGINA, filtradas.length)}</strong> de <strong>{filtradas.length}</strong> registros
-                    </span>
-                    <div className="cr-pag-controles">
-                        <button className="cr-pag-btn" onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={paginaActual === 1}>
-                            <i className="bi bi-chevron-left" />
-                        </button>
-                        <span className="cr-pag-num">{paginaActual} / {totalPaginas}</span>
-                        <button className="cr-pag-btn" onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))} disabled={paginaActual === totalPaginas}>
-                            <i className="bi bi-chevron-right" />
-                        </button>
-                    </div>
+            {/* Topbar: contador + paginación */}
+            <div className="cr-topbar-lista">
+                <span className="cr-pag-info">
+                    Mostrando <strong>{filtradas.length > 0 ? desde + 1 : 0}</strong> a <strong>{Math.min(desde + POR_PAGINA, filtradas.length)}</strong> de <strong>{filtradas.length}</strong> registros
+                </span>
+                <div className="cr-pag-controles">
+                    <button className="cr-pag-btn" onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={paginaActual === 1}>
+                        <i className="bi bi-chevron-left" />
+                    </button>
+                    <span className="cr-pag-num">{paginaActual} / {totalPaginas}</span>
+                    <button className="cr-pag-btn" onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))} disabled={paginaActual === totalPaginas}>
+                        <i className="bi bi-chevron-right" />
+                    </button>
                 </div>
-            )}
+            </div>
 
+            {/* Buscador global */}
+            <div className="cr-global-wrap" ref={dropdownRef}>
+                <div className="cr-global-box">
+                    <i className={`bi ${buscandoGlobal ? 'bi-arrow-repeat cr-spin' : 'bi-search'}`} />
+                    <input
+                        className="cr-global-input"
+                        placeholder="Buscar en todo el sistema (imputados, entrevistas, evaluaciones)..."
+                        value={busquedaGlobal}
+                        onChange={e => setBusquedaGlobal(e.target.value)}
+                        onFocus={() => resultadosGlobal && setDropdownVisible(true)}
+                    />
+                    {busquedaGlobal && (
+                        <button className="cr-global-clear" onClick={() => { setBusquedaGlobal(''); setResultadosGlobal(null); setDropdownVisible(false); }}>
+                            <i className="bi bi-x" />
+                        </button>
+                    )}
+                </div>
+                {dropdownVisible && resultadosGlobal && (
+                    <div className="cr-global-dropdown">
+                        {resultadosGlobal.imputados.length === 0 && resultadosGlobal.entrevistas.length === 0 && resultadosGlobal.evaluaciones.length === 0 && (resultadosGlobal.medidas?.length ?? 0) === 0 ? (
+                            <div className="cr-dd-nada">
+                                <div className="cr-dd-nada-icon"><i className="bi bi-search" /></div>
+                                <span>Sin resultados para "<strong>{busquedaGlobal}</strong>"</span>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Imputados */}
+                                {resultadosGlobal.imputados.length > 0 && (
+                                    <div className="cr-dd-section">
+                                        <div className="cr-dd-label">
+                                            <span className="cr-dd-label-icon cr-dd-icon-imp"><i className="bi bi-person-fill" /></span>
+                                            Imputados
+                                            <span className="cr-dd-count">{resultadosGlobal.imputados.length}</span>
+                                        </div>
+                                        {resultadosGlobal.imputados.slice(0, 4).map(i => (
+                                            <button key={i.id} className="cr-dd-item" onClick={() => { setDropdownVisible(false); setBusquedaGlobal(''); window.dispatchEvent(new CustomEvent('navigate', { detail: 'imputados' })); }}>
+                                                <span className="cr-dd-avatar cr-dd-avatar-imp">
+                                                    {(i.nombreCompleto || '?')[0].toUpperCase()}
+                                                </span>
+                                                <span className="cr-dd-info">
+                                                    <strong className="cr-dd-nombre">{i.nombreCompleto}</strong>
+                                                    {i.causaPenal && <span className="cr-dd-meta"><i className="bi bi-briefcase" /> {i.causaPenal}</span>}
+                                                </span>
+                                            </button>
+                                        ))}
+                                        {resultadosGlobal.imputados.length > 4 && (
+                                            <div className="cr-dd-ver-mas">
+                                                <i className="bi bi-three-dots" /> {resultadosGlobal.imputados.length - 4} imputados más — refina tu búsqueda
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                {/* Entrevistas */}
+                                {resultadosGlobal.entrevistas.length > 0 && (
+                                    <div className="cr-dd-section">
+                                        <div className="cr-dd-label">
+                                            <span className="cr-dd-label-icon cr-dd-icon-ent"><i className="bi bi-file-text-fill" /></span>
+                                            Entrevistas de Encuadre
+                                            <span className="cr-dd-count">{resultadosGlobal.entrevistas.length}</span>
+                                        </div>
+                                        {resultadosGlobal.entrevistas.slice(0, 4).map(e => (
+                                            <button key={e.id} className="cr-dd-item" onClick={() => { setDropdownVisible(false); setBusquedaGlobal(''); window.dispatchEvent(new CustomEvent('navigate', { detail: 'entrevista' })); }}>
+                                                <span className="cr-dd-avatar cr-dd-avatar-ent">
+                                                    <i className="bi bi-file-earmark-text" />
+                                                </span>
+                                                <span className="cr-dd-info">
+                                                    <span className="cr-dd-row">
+                                                        <strong className="cr-dd-nombre">{e.nombreCompleto}</strong>
+                                                        <span className="cr-dd-folio">{e.folio}</span>
+                                                    </span>
+                                                    {e.causaPenal && <span className="cr-dd-meta"><i className="bi bi-briefcase" /> {e.causaPenal}</span>}
+                                                </span>
+                                            </button>
+                                        ))}
+                                        {resultadosGlobal.entrevistas.length > 4 && (
+                                            <div className="cr-dd-ver-mas">
+                                                <i className="bi bi-three-dots" /> {resultadosGlobal.entrevistas.length - 4} entrevistas más — refina tu búsqueda
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                {/* Medidas y Suspensiones */}
+                                {resultadosGlobal.medidas?.length > 0 && (
+                                    <div className="cr-dd-section">
+                                        <div className="cr-dd-label">
+                                            <span className="cr-dd-label-icon cr-dd-icon-med"><i className="bi bi-shield" /></span>
+                                            Medidas y Suspensiones
+                                            <span className="cr-dd-count">{resultadosGlobal.medidas.length}</span>
+                                        </div>
+                                        {resultadosGlobal.medidas.slice(0, 4).map(m => (
+                                            <button key={m.id} className="cr-dd-item" onClick={() => { setDropdownVisible(false); setBusquedaGlobal(''); window.dispatchEvent(new CustomEvent('navigate', { detail: 'medidas' })); }}>
+                                                <span className="cr-dd-avatar cr-dd-avatar-med">
+                                                    <i className="bi bi-shield" />
+                                                </span>
+                                                <span className="cr-dd-info">
+                                                    <span className="cr-dd-row">
+                                                        <strong className="cr-dd-nombre">{m.nombreImputado}</strong>
+                                                        <span className={`cr-dd-estatus cr-dd-tipo-${(m.tipo || '').toLowerCase().replace(/[^a-z]/g, '_')}`}>
+                                                            {m.tipo === 'SUSPENSION_CONDICIONAL' ? 'S.C.P.' : m.tipo === 'MEDIDA_CAUTELAR' ? 'M.C.' : m.tipo}
+                                                        </span>
+                                                        {m.estado && <span className={`cr-dd-estatus cr-dd-med-estado-${(m.estado || '').toLowerCase()}`}>{m.estado}</span>}
+                                                    </span>
+                                                    {m.causaPenal && <span className="cr-dd-meta"><i className="bi bi-briefcase" /> {m.causaPenal}</span>}
+                                                </span>
+                                            </button>
+                                        ))}
+                                        {resultadosGlobal.medidas.length > 4 && (
+                                            <div className="cr-dd-ver-mas">
+                                                <i className="bi bi-three-dots" /> {resultadosGlobal.medidas.length - 4} medidas más — refina tu búsqueda
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                {/* Evaluaciones */}
+                                {resultadosGlobal.evaluaciones.length > 0 && (
+                                    <div className="cr-dd-section">
+                                        <div className="cr-dd-label">
+                                            <span className="cr-dd-label-icon cr-dd-icon-eval"><i className="bi bi-clipboard2-pulse-fill" /></span>
+                                            Evaluaciones de Riesgo
+                                            <span className="cr-dd-count">{resultadosGlobal.evaluaciones.length}</span>
+                                        </div>
+                                        {resultadosGlobal.evaluaciones.slice(0, 4).map(e => (
+                                            <button key={e.id} className="cr-dd-item" onClick={() => { setDropdownVisible(false); setBusquedaGlobal(''); window.dispatchEvent(new CustomEvent('navigate', { detail: 'evaluacion' })); }}>
+                                                <span className="cr-dd-avatar cr-dd-avatar-eval">
+                                                    <i className="bi bi-clipboard-check" />
+                                                </span>
+                                                <span className="cr-dd-info">
+                                                    <span className="cr-dd-row">
+                                                        <strong className="cr-dd-nombre">{e.nombreCompletoImputado || `${e.nombreImputado || ''} ${e.apPaternoImputado || ''}`.trim()}</strong>
+                                                        {e.resultado
+                                                            ? <span className={`cr-dd-estatus cr-dd-resultado-${(e.resultado || '').toLowerCase().replace(/[^a-z]/g, '_').replace(/_+/g, '_')}`}>{e.resultado}</span>
+                                                            : <span className={`cr-dd-estatus cr-dd-estatus-${(e.estatus || '').toLowerCase()}`}>{e.estatus}</span>
+                                                        }
+                                                    </span>
+                                                    {e.causaPenal && <span className="cr-dd-meta"><i className="bi bi-briefcase" /> {e.causaPenal}</span>}
+                                                </span>
+                                            </button>
+                                        ))}
+                                        {resultadosGlobal.evaluaciones.length > 4 && (
+                                            <div className="cr-dd-ver-mas">
+                                                <i className="bi bi-three-dots" /> {resultadosGlobal.evaluaciones.length - 4} evaluaciones más — refina tu búsqueda
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Toolbar: buscador + filtro resultado + botón */}
             <div className="cr-toolbar">
                 <div className="cr-toolbar-left">
                     <div className="cr-search-box">
                         <i className="bi bi-search" />
                         <input
-                            placeholder="Buscar por nombre, CURP, causa penal..."
+                            placeholder="Buscar por nombre, causa penal..."
                             value={busqueda}
                             onChange={e => { setBusqueda(e.target.value); setPagina(1); }}
                         />
                     </div>
+                    <div className="zona-pills">
+                        {['TODAS','XOCHITEPEC','CUAUTLA','JOJUTLA'].map(z => (
+                            <button key={z}
+                                className={`zona-pill zona-pill-${z.toLowerCase()} ${zonaFiltro === z ? 'zona-pill-active' : ''}`}
+                                onClick={() => { setZonaFiltro(z); setPagina(1); }}>
+                                {z === 'TODAS' ? 'Todas' : z.charAt(0) + z.slice(1).toLowerCase()}
+                            </button>
+                        ))}
+                    </div>
+                    <select className="cr-select-filtro" value={filtroResultado} onChange={e => { setFiltroResultado(e.target.value); setPagina(1); }}>
+                        <option value="">Todos</option>
+                        <option value="POSITIVO">Positivo</option>
+                        <option value="NEGATIVO">Negativo</option>
+                    </select>
                 </div>
-                <button className="cr-btn-nuevo" onClick={() => { setSeleccionada(null); setVista('form'); }}>
-                    <i className="bi bi-plus-lg" /> Nueva Consulta
-                </button>
+                {['ADMINISTRADOR', 'SUPERADMIN', 'EVALUADOR_RIESGO'].includes(user?.rol) && (
+                    <button className="cr-btn-nuevo" onClick={() => { setSeleccionada(null); setVista('form'); }}>
+                        <i className="bi bi-plus-lg" /> Nueva Consulta
+                    </button>
+                )}
             </div>
 
             {loading ? (
                 <div className="cr-loading"><i className="bi bi-arrow-repeat" /> Cargando...</div>
-            ) : filtradas.length === 0 ? (
-                <div className="cr-empty">
-                    <i className="bi bi-folder2-open" />
-                    <p>{busqueda ? 'Sin resultados para la búsqueda' : 'No hay consultas registradas'}</p>
-                    {!busqueda && <small>Registra la primera consulta con el botón "Nueva Consulta"</small>}
-                </div>
             ) : (
-                <>
                 <div className="cr-tabla-wrap">
                     <table className="cr-tabla">
                         <thead>
                             <tr>
+                                <th>NO.</th>
                                 <th>Fecha</th>
                                 <th>Imputado</th>
                                 <th>Carpeta de Investigación</th>
                                 <th>Solicitante</th>
                                 <th>Resultado</th>
-                                <th></th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {paginadas.map(c => (
-                                <tr key={c.id} onClick={() => abrirDetalle(c.id)} className="cr-fila">
+                            {filtradas.length === 0 ? (
+                                <tr>
+                                    <td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: '#aaa' }}>
+                                        {busqueda || filtroResultado ? 'Sin resultados para los filtros aplicados' : 'No hay consultas registradas'}
+                                    </td>
+                                </tr>
+                            ) : paginadas.map((c, idx) => (
+                                <tr key={c.id} className="cr-fila">
+                                    <td className="cr-td-mono">{c.folioConsecutivo ? String(c.folioConsecutivo).padStart(4, '0') : String(desde + idx + 1).padStart(4, '0')}</td>
                                     <td>{c.fechaSolicitud}</td>
                                     <td className="cr-td-nombre">
                                         <strong>{[c.apPaternoImputado, c.apMaternoImputado, c.nombreImputado].filter(Boolean).join(' ')}</strong>
@@ -572,10 +791,18 @@ const ConsultaRegistros = () => {
                                             {c.resultado === 'POSITIVO' ? 'Positivo' : 'Negativo'}
                                         </span>
                                     </td>
-                                    <td onClick={e => e.stopPropagation()}>
-                                        {user?.role === 'ADMINISTRADOR' && (
+                                    <td onClick={e => e.stopPropagation()} className="cr-td-acciones">
+                                        <button className="cr-btn-ver" onClick={() => abrirDetalle(c.id)} title="Ver detalle">
+                                            <i className="bi bi-eye-fill" />
+                                        </button>
+                                        {['ADMINISTRADOR', 'SUPERADMIN', 'EVALUADOR_RIESGO'].includes(user?.rol) && (
+                                            <button className="cr-btn-editar-fila" onClick={() => { abrirDetalle(c.id).then?.(() => {}); getConsultaById(c.id).then(res => { if (res.data.ok) { setSeleccionada(res.data.data); setVista('form'); } }); }} title="Editar">
+                                                <i className="bi bi-pencil-fill" />
+                                            </button>
+                                        )}
+                                        {(user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN') && (
                                             <button className="cr-btn-rm" onClick={e => handleEliminar(c.id, e)} title="Eliminar">
-                                                <i className="bi bi-trash" />
+                                                <i className="bi bi-trash-fill" />
                                             </button>
                                         )}
                                     </td>
@@ -584,7 +811,6 @@ const ConsultaRegistros = () => {
                         </tbody>
                     </table>
                 </div>
-                </>
             )}
         </div>
     );

@@ -337,4 +337,14 @@ public class ExpedienteAnteriorService {
             return new ApiResponse(false, "Error al procesar el archivo: " + e.getMessage());
         }
     }
+
+    // ── Importar Inactivos Xochitepec ────────────────────────
+    public ApiResponse importarInactivosXochi(MultipartFile file) {
+        try {
+            List<ExpedienteAnteriorDTO> dtos = parser.parsearInactivosXochi(file);
+            return importar(dtos, file.getOriginalFilename());
+        } catch (Exception e) {
+            return new ApiResponse(false, "Error al procesar el archivo: " + e.getMessage());
+        }
+    }
 }
