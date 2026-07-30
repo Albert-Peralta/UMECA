@@ -116,7 +116,7 @@ public class CorrespondenciaService {
         Correspondencia saved = repository.save(c);
         bitacoraService.registrar(Bitacora.Entidad.CORRESPONDENCIA, saved.getId(),
                 saved.getNoTurno(), Bitacora.Accion.CREAR,
-                "Correspondencia registrada. Asunto: " + saved.getAsunto());
+                "Correspondencia registrada — asunto: " + saved.getAsunto());
         return new ApiResponse(true, "Correspondencia registrada correctamente", CorrespondenciaResponseDTO.from(saved));
     }
 
@@ -124,7 +124,7 @@ public class CorrespondenciaService {
     @Transactional
     public ApiResponse editar(Long id, CorrespondenciaDTO dto, MultipartFile archivo) {
         return repository.findById(id).map(c -> {
-            String cambios = "Oficio editado. Asunto: " + dto.getAsunto();
+            String cambios = "Oficio editado — asunto: " + dto.getAsunto();
             mapDto(dto, c);
             if (archivo != null && !archivo.isEmpty()) {
                 try { c.setArchivoPdf(guardarPdf(archivo)); }
@@ -144,7 +144,7 @@ public class CorrespondenciaService {
             String turno = c.getNoTurno();
             bitacoraService.registrar(Bitacora.Entidad.CORRESPONDENCIA, id,
                     turno, Bitacora.Accion.ELIMINAR,
-                    "Correspondencia eliminada. Asunto: " + c.getAsunto());
+                    "Correspondencia eliminada — asunto: " + c.getAsunto());
             repository.deleteById(id);
             return new ApiResponse(true, "Correspondencia eliminada correctamente");
         }).orElse(new ApiResponse(false, "Registro no encontrado"));
@@ -178,8 +178,8 @@ public class CorrespondenciaService {
 
             bitacoraService.registrar(Bitacora.Entidad.CORRESPONDENCIA, saved.getId(),
                     saved.getNoTurno(), Bitacora.Accion.ASIGNACION,
-                    "Asignado a: " + personal.getNombre() + " " + personal.getApPaterno() +
-                    " (antes: " + anteriorNombre + ")");
+                    "Asignación — asignado a: " + personal.getNombre() + " " + personal.getApPaterno()
+                    + " | anterior: " + anteriorNombre);
             return new ApiResponse(true, "Asignado correctamente", CorrespondenciaResponseDTO.from(saved));
         }).orElse(new ApiResponse(false, "Registro no encontrado"));
     }
@@ -195,7 +195,7 @@ public class CorrespondenciaService {
             Correspondencia saved = repository.save(c);
             bitacoraService.registrar(Bitacora.Entidad.CORRESPONDENCIA, saved.getId(),
                     saved.getNoTurno(), Bitacora.Accion.ASIGNACION,
-                    "Asignación removida (antes: " + anteriorNombre + ")");
+                    "Asignación removida — anterior: " + anteriorNombre);
             return new ApiResponse(true, "Asignación removida", CorrespondenciaResponseDTO.from(saved));
         }).orElse(new ApiResponse(false, "Registro no encontrado"));
     }
@@ -212,7 +212,7 @@ public class CorrespondenciaService {
                 Correspondencia saved = repository.save(c);
                 bitacoraService.registrar(Bitacora.Entidad.CORRESPONDENCIA, saved.getId(),
                         saved.getNoTurno(), Bitacora.Accion.CAMBIO_ESTADO,
-                        "Estado actualizado a: " + estado);
+                        "Estado actualizado — nuevo: " + estado);
                 return new ApiResponse(true, "Estado actualizado", CorrespondenciaResponseDTO.from(saved));
             } catch (IllegalArgumentException e) {
                 return new ApiResponse(false, "Estado inválido");

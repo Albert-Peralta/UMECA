@@ -240,8 +240,22 @@
     background: linear-gradient(160deg, #f0fdf4 0%, #ffffff 60%);
     border: 1.5px solid #bbf7d0;
     border-radius: 16px; padding: 2rem;
-    max-width: 480px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    max-width: 480px; width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
 }
+.exp-modal-scroll {
+    overflow-y: auto;
+    max-height: 52vh;
+    margin-bottom: 1rem;
+    min-height: 0;
+    padding-right: 6px;
+    scrollbar-width: thin;
+    scrollbar-color: #6ee7b7 #f0fdf4;
+}
+.exp-modal-scroll::-webkit-scrollbar { width: 6px; }
+.exp-modal-scroll::-webkit-scrollbar-track { background: #f0fdf4; border-radius: 4px; }
+.exp-modal-scroll::-webkit-scrollbar-thumb { background: #6ee7b7; border-radius: 4px; }
+.exp-modal-scroll::-webkit-scrollbar-thumb:hover { background: #34d399; }
 .exp-modal-icon {
     width: 56px; height: 56px; border-radius: 14px;
     background: #d1fae5; display: flex; align-items: center; justify-content: center;
@@ -288,7 +302,9 @@
 .exp-dropzone-sub    { font-size: 0.75rem; color: #9ca3af; }
 
 .exp-modal-acciones {
-    display: flex; gap: 10px; justify-content: flex-end; margin-top: 1.4rem;
+    display: flex; gap: 10px; justify-content: flex-end;
+    margin-top: 0; padding-top: 1rem;
+    border-top: 1.5px solid #d1fae5;
 }
 .exp-modal-btn-cancel {
     background: #f3f4f6; color: #374151; border: none; border-radius: 8px;
@@ -523,6 +539,10 @@
 .exp-tipo-pill-inactivos_xochi { border-color: #86efac; color: #14532d; background: #f0fdf4; }
 .exp-tipo-pill-inactivos_xochi:hover { background: #dcfce7; }
 .exp-tipo-pill-inactivos_xochi.exp-tipo-pill-active { background: #14532d; color: #fff; border-color: #14532d; }
+
+.exp-tipo-pill-cierre_carpeta { border-color: #9ca3af; color: #374151; }
+.exp-tipo-pill-cierre_carpeta:hover { background: #f3f4f6; }
+.exp-tipo-pill-cierre_carpeta.exp-tipo-pill-active { background: #374151; color: #fff; border-color: #374151; }
 
 /* ── Barra de subtipos ───────────────────────────────────── */
 .exp-subtipo-bar {

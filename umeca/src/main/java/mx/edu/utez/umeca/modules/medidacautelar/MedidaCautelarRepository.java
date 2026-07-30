@@ -28,8 +28,8 @@ public interface MedidaCautelarRepository extends JpaRepository<MedidaCautelar, 
             @org.springframework.data.repository.query.Param("causaPenal") String causaPenal,
             @org.springframework.data.repository.query.Param("tipo") MedidaCautelar.TipoMedida tipo);
 
-    /** Devuelve [imputadoId, tipo, estado, vieneDeMC, vieneDeScp] de la medida más reciente por imputado (para la lista general) */
-    @Query("SELECT m.imputado.id, m.tipo, m.estado, m.vieneDeMC, m.vieneDeScp FROM MedidaCautelar m WHERE m.imputado.id IN :ids AND m.createdAt = (SELECT MAX(m2.createdAt) FROM MedidaCautelar m2 WHERE m2.imputado.id = m.imputado.id)")
+    /** Devuelve [imputadoId, tipo, estado, vieneDeMC, vieneDeScp, cumpliendoIncumpliendo] de la medida más reciente por imputado (para la lista general) */
+    @Query("SELECT m.imputado.id, m.tipo, m.estado, m.vieneDeMC, m.vieneDeScp, m.cumpliendoIncumpliendo FROM MedidaCautelar m WHERE m.imputado.id IN :ids AND m.createdAt = (SELECT MAX(m2.createdAt) FROM MedidaCautelar m2 WHERE m2.imputado.id = m.imputado.id)")
     List<Object[]> tipoActivoPorImputados(@Param("ids") List<Long> ids);
 
     @Query("SELECT m FROM MedidaCautelar m WHERE " +
@@ -128,6 +128,9 @@ public interface MedidaCautelarRepository extends JpaRepository<MedidaCautelar, 
 
     @Query(value = "SELECT COUNT(*) FROM medidas_cautelares WHERE detalles_fracciones LIKE '%\"esTTA\":true%' AND estado = 'ACTIVO' AND YEAR(created_at) = :anio AND MONTH(created_at) = :mes", nativeQuery = true)
     long countTtaActivosByAnioMes(@Param("anio") int anio, @Param("mes") int mes);
+
+    @Query(value = "SELECT COUNT(*) FROM medidas_cautelares WHERE detalles_fracciones LIKE '%\"esTTA\":true%' AND estado = 'ACTIVO' AND created_at BETWEEN :inicio AND :fin", nativeQuery = true)
+    long countTtaActivosByRango(@Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin);
 
     @Query(value = "SELECT MONTH(created_at), COUNT(*) FROM medidas_cautelares WHERE detalles_fracciones LIKE '%\"esTTA\":true%' AND YEAR(created_at) = :anio GROUP BY MONTH(created_at) ORDER BY MONTH(created_at)", nativeQuery = true)
     List<Object[]> countTtaPorMes(@Param("anio") int anio);

@@ -252,14 +252,14 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
                             <i className="bi bi-printer" /> Imprimir
                         </button>
                     )}
-                    {puedeEditar && !editando && !imputadoInfo?.fallecido && !imputadoInfo?.carpetaCerrada && (
+                    {puedeEditar && !editando && !imputadoInfo?.fallecido && (
                         <button className="de-btn-editar" onClick={() => setEditando(true)}>✎ Editar</button>
                     )}
                     {editando && (
                         <span className="de-editando-badge">Modo edición</span>
                     )}
                     {/* Acciones exclusivas del Administrador */}
-                    {esAdmin && !editando && !imputadoInfo?.fallecido && !imputadoInfo?.carpetaCerrada && (
+                    {esAdmin && !editando && !imputadoInfo?.fallecido && (
                         <>
                             <button className="de-btn-admin-tipo" title="Cambiar tipo de seguimiento" onClick={() => {
                                 setNuevoTipo(entrevista.tipoSeguimiento === 'MC' ? 'SCP' : 'MC');
@@ -286,7 +286,7 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
             {imputadoInfo?.carpetaCerrada && (
                 <div className="dm-banner-alerta dm-banner-cierre" style={{ margin: '0 0 12px 0' }}>
                     <i className="bi bi-folder-x"></i>
-                    <span>La carpeta de <strong>{imputadoInfo.nombreCompleto}</strong> fue cerrada (<strong>{imputadoInfo.numeroCierreCarpeta}</strong>). No es posible realizar modificaciones en esta entrevista.</span>
+                    <span>La carpeta de <strong>{imputadoInfo.nombreCompleto}</strong> fue cerrada (<strong>{imputadoInfo.numeroCierreCarpeta}</strong>).</span>
                 </div>
             )}
 

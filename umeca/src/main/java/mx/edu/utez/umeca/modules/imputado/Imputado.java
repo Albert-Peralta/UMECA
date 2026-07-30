@@ -28,9 +28,8 @@ public class Imputado extends BaseEntity {
     @Column(length = 255)
     private String delito;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "ubicacion_fisica", length = 20)
-    private UbicacionFisica ubicacionFisica;
+    @Column(name = "ubicacion_fisica", length = 100)
+    private String ubicacionFisica;
 
     @Column(name = "foto", columnDefinition = "LONGTEXT")
     private String foto;  // Base64 data-URL
@@ -60,7 +59,7 @@ public class Imputado extends BaseEntity {
     @Column(name = "carpeta_cerrada", nullable = false)
     private boolean carpetaCerrada = false;
 
-    @Column(name = "numero_cierre_carpeta", length = 30)
+    @Column(name = "numero_cierre_carpeta", length = 30, unique = true)
     private String numeroCierreCarpeta;
 
     @Column(name = "fecha_cierre_carpeta")
@@ -81,9 +80,6 @@ public class Imputado extends BaseEntity {
     @Column(name = "notas_cierre", columnDefinition = "TEXT")
     private String notasCierre;
 
-    public enum UbicacionFisica {
-        FGR, FGE, CERESO, DOMICILIO, UMECA
-    }
 
     public String getNombreCompleto() {
         return nombre + " " + apPaterno + (apMaterno != null ? " " + apMaterno : "");

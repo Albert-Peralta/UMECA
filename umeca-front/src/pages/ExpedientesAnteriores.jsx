@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getExpedientes, getExpedienteById, importarExpedientesExcel, importarRegistroHistorico, importarSustraidos, importarBaseJojutla, importarBaseCuautla, importarInactivosXochi, getLotes, eliminarLote } from '../api/expedientesApi';
+import { getExpedientes, getExpedienteById, importarExpedientesExcel, importarRegistroHistorico, importarSustraidos, importarBaseJojutla, importarBaseCuautla, importarInactivosXochi, importarCierreCarpetas, getLotes, eliminarLote } from '../api/expedientesApi';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import './ExpedientesAnteriores.css';
@@ -137,6 +137,8 @@ export default function ExpedientesAnteriores() {
                 res = await importarRegistroHistorico(importArchivo, importZona || undefined);
             } else if (importTipo === 'SUSTRAIDO') {
                 res = await importarSustraidos(importArchivo);
+            } else if (importTipo === 'CIERRE_CARPETA') {
+                res = await importarCierreCarpetas(importArchivo);
             } else if (importTipo === 'BASE_IMPUTADOS') {
                 if (importZona === 'JOJUTLA') res = await importarBaseJojutla(importArchivo);
                 else if (importZona === 'CUAUTLA') res = await importarBaseCuautla(importArchivo);
@@ -161,6 +163,8 @@ export default function ExpedientesAnteriores() {
                     setSubtipoFiltro(null);
                 } else if (importTipo === 'SUSTRAIDO') {
                     setTipoFiltro('SUSTRAIDO'); setSubtipoFiltro(null);
+                } else if (importTipo === 'CIERRE_CARPETA') {
+                    setTipoFiltro('CIERRE_CARPETA'); setSubtipoFiltro(null);
                 } else if (importTipo === 'REGISTRO_HISTORICO') {
                     setTipoFiltro('REGISTRO_HISTORICO'); setSubtipoFiltro(null);
                 }
@@ -255,7 +259,7 @@ export default function ExpedientesAnteriores() {
                         {detalle.zona && <span className={`zona-tag zona-tag-${detalle.zona.toLowerCase()}`}>
                             {({'XOCHITEPEC':'Xochi','CUAUTLA':'Cuat','JOJUTLA':'Jojut'})[detalle.zona] ?? detalle.zona}
                         </span>}
-                        {detalle.estatus && detalle.tipo !== 'SUSTRAIDO' && <span className="exp-estatus-badge">{detalle.estatus}</span>}
+                        {detalle.estatus && detalle.tipo !== 'SUSTRAIDO' && detalle.tipo !== 'CIERRE_CARPETA' && <span className="exp-estatus-badge">{detalle.estatus}</span>}
                     </div>
                 </div>
 
@@ -277,6 +281,29 @@ export default function ExpedientesAnteriores() {
                                 <div className="exp-sustraido-estatus">
                                     <span className="exp-sustraido-estatus-label"><i className="bi bi-card-text" /> Modificación de Estatus</span>
                                     <p>{detalle.estatus}</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ── Sección CIERRE_CARPETA ── */}
+                    {detalle.tipo === 'CIERRE_CARPETA' && (
+                        <div className="exp-seccion exp-seccion-sustraido exp-seccion-full">
+                            <div className="exp-seccion-titulo"><i className="bi bi-folder-check" /> Cierre de Carpeta</div>
+                            <div className="exp-campos">
+                                <Fila label="No."              valor={detalle.numero} />
+                                <Fila label="Causa Penal"      valor={detalle.causaPenal} />
+                                <Fila label="Nombre"           valor={detalle.nombre} />
+                                <Fila label="MC / SCP"         valor={detalle.tipoMcScp} />
+                                <Fila label="Fecha Ingreso"    valor={detalle.fechaRecepcion} />
+                                <Fila label="Supervisor"       valor={detalle.supervisor} />
+                                <Fila label="Motivo de Cierre" valor={detalle.motivoCierre} />
+                                <Fila label="Estatus al Cierre" valor={detalle.estatusFinal} />
+                            </div>
+                            {detalle.observaciones && (
+                                <div className="exp-sustraido-estatus">
+                                    <span className="exp-sustraido-estatus-label"><i className="bi bi-chat-left-text" /> Notas</span>
+                                    <p>{detalle.observaciones}</p>
                                 </div>
                             )}
                         </div>
@@ -331,7 +358,7 @@ export default function ExpedientesAnteriores() {
                     )}
 
                     {/* Datos del imputado */}
-                    {detalle.tipo !== 'SUSTRAIDO' && detalle.tipo !== 'REGISTRO_HISTORICO' && !detalle.tipo?.startsWith('JOJU_') && !detalle.tipo?.startsWith('CUAT_') && (
+                    {detalle.tipo !== 'SUSTRAIDO' && detalle.tipo !== 'REGISTRO_HISTORICO' && detalle.tipo !== 'CIERRE_CARPETA' && !detalle.tipo?.startsWith('JOJU_') && !detalle.tipo?.startsWith('CUAT_') && (
                     <div className="exp-seccion">
                         <div className="exp-seccion-titulo"><i className="bi bi-person-fill" /> Datos del Imputado</div>
                         <div className="exp-campos">
@@ -346,7 +373,7 @@ export default function ExpedientesAnteriores() {
                     )}
 
                     {/* Domicilio */}
-                    {detalle.tipo !== 'SUSTRAIDO' && detalle.tipo !== 'REGISTRO_HISTORICO' && !detalle.tipo?.startsWith('JOJU_') && !detalle.tipo?.startsWith('CUAT_') && <div className="exp-seccion">
+                    {detalle.tipo !== 'SUSTRAIDO' && detalle.tipo !== 'REGISTRO_HISTORICO' && detalle.tipo !== 'CIERRE_CARPETA' && !detalle.tipo?.startsWith('JOJU_') && !detalle.tipo?.startsWith('CUAT_') && <div className="exp-seccion">
                         <div className="exp-seccion-titulo"><i className="bi bi-house-fill" /> Domicilio</div>
                         <div className="exp-campos">
                             <Fila label="Calle" valor={detalle.calle} />
@@ -402,7 +429,7 @@ export default function ExpedientesAnteriores() {
                     )}
 
                     {/* Oficio de imposición */}
-                    {detalle.tipo !== 'SUSTRAIDO' && detalle.tipo !== 'REGISTRO_HISTORICO' && !detalle.tipo?.startsWith('JOJU_') && !detalle.tipo?.startsWith('CUAT_') && <div className="exp-seccion">
+                    {detalle.tipo !== 'SUSTRAIDO' && detalle.tipo !== 'REGISTRO_HISTORICO' && detalle.tipo !== 'CIERRE_CARPETA' && !detalle.tipo?.startsWith('JOJU_') && !detalle.tipo?.startsWith('CUAT_') && <div className="exp-seccion">
                         <div className="exp-seccion-titulo"><i className="bi bi-file-earmark-text-fill" /> Oficio de Imposición</div>
                         <div className="exp-campos">
                             <Fila label="Causa Penal" valor={detalle.causaPenal} />
@@ -559,6 +586,7 @@ export default function ExpedientesAnteriores() {
                             ['INACTIVOS_XOCHI',    'Inactivos Xochi'],
                             ['REGISTRO_HISTORICO', 'Reg. Histórico'],
                             ['SUSTRAIDO',          'Sustraídos'],
+                            ['CIERRE_CARPETA',     'Cierre Carpetas'],
                         ].map(([v, l]) => (
                             <button key={v}
                                 className={`exp-tipo-pill ${tipoFiltro === v ? 'exp-tipo-pill-active' : ''} exp-tipo-pill-${v.toLowerCase()}`}
@@ -623,7 +651,7 @@ export default function ExpedientesAnteriores() {
                         </button>
                     </div>
                 )}
-                {(tipoFiltro === 'REGISTRO_HISTORICO' || tipoFiltro === 'SUSTRAIDO') && (
+                {(tipoFiltro === 'REGISTRO_HISTORICO' || tipoFiltro === 'SUSTRAIDO' || tipoFiltro === 'CIERRE_CARPETA') && (
                     <div className="zona-pills">
                         {[['', 'Todas'], ['XOCHITEPEC', 'Xochi'], ['CUAUTLA', 'Cuautla'], ['JOJUTLA', 'Jojutla']].map(([v, l]) => (
                             <button key={v}
@@ -661,6 +689,13 @@ export default function ExpedientesAnteriores() {
                                     <th>SUSTRACCIÓN</th>
                                     <th>ESTATUS</th>
                                     <th>SUPERVISOR</th>
+                                </>
+                            ) : tipoFiltro === 'CIERRE_CARPETA' ? (
+                                <>
+                                    <th>MC / SCP</th>
+                                    <th>SUPERVISOR</th>
+                                    <th>MOTIVO CIERRE</th>
+                                    <th>ESTATUS AL CIERRE</th>
                                 </>
                             ) : tipoFiltro === 'REGISTRO_HISTORICO' ? (
                                 <>
@@ -716,6 +751,13 @@ export default function ExpedientesAnteriores() {
                                         <td className="exp-delito">{e.sustraccion || '—'}</td>
                                         <td>{e.estatus || '—'}</td>
                                         <td>{e.supervisor || '—'}</td>
+                                    </>
+                                ) : tipoFiltro === 'CIERRE_CARPETA' ? (
+                                    <>
+                                        <td>{e.tipoMcScp || '—'}</td>
+                                        <td>{e.supervisor || '—'}</td>
+                                        <td className="exp-delito">{e.motivoCierre || '—'}</td>
+                                        <td>{e.estatusFinal || '—'}</td>
                                     </>
                                 ) : tipoFiltro === 'REGISTRO_HISTORICO' ? (
                                     <>
@@ -868,6 +910,7 @@ export default function ExpedientesAnteriores() {
                         {/* ── Paso 1: Formulario ── */}
                         {importPaso === 1 && (
                             <>
+                                <div className="exp-modal-scroll">
                                 <div className="exp-modal-form">
                                     <div className="exp-modal-field">
                                         <label>Formato de importación *</label>
@@ -877,6 +920,7 @@ export default function ExpedientesAnteriores() {
                                                 ['INACTIVOS',        'bi-archive-fill',          'Inactivos',                'Expedientes inactivos por sede — hojas: MC INACTIVAS, SCP INACTIVO, HISTORICO.'],
                                                 ['REGISTRO_HISTORICO','bi-clock-history',         'Registro Histórico',       'Formato simple: CAUSA PENAL, NOMBRE, FECHA, SITUACIÓN JURÍDICA.'],
                                                 ['SUSTRAIDO',         'bi-person-dash-fill',      'Sustraídos',               'Archivo con hojas por zona (Cuernavaca / Jojutla / Cuautla).'],
+                                                ['CIERRE_CARPETA',    'bi-folder-check',          'Cierre de Carpetas',        'Bitácora de cierre de carpetas — hojas por zona (Cuernavaca / Cuautla / Jojutla).'],
                                             ].map(([v, icon, titulo, desc]) => (
                                                 <button key={v}
                                                     className={`exp-modal-tipo-card ${importTipo === v ? 'exp-modal-tipo-card-active' : ''}`}
@@ -911,7 +955,7 @@ export default function ExpedientesAnteriores() {
                                         )}
                                     </div>
                                     )}
-                                    {importTipo === 'SUSTRAIDO' && (
+                                    {(importTipo === 'SUSTRAIDO' || importTipo === 'CIERRE_CARPETA') && (
                                         <div className="exp-modal-info">
                                             <i className="bi bi-info-circle-fill" />
                                             La zona se detecta automáticamente del nombre de cada hoja del archivo.
@@ -938,6 +982,7 @@ export default function ExpedientesAnteriores() {
                                         </label>
                                     </div>
                                 </div>
+                                </div>{/* /exp-modal-scroll */}
                                 <div className="exp-modal-acciones">
                                     <button className="exp-modal-btn-cancel" onClick={() => { setShowImport(false); setImportArchivo(null); setImportPaso(1); }}>
                                         Cancelar
@@ -953,12 +998,13 @@ export default function ExpedientesAnteriores() {
                         {/* ── Paso 2: Confirmación ── */}
                         {importPaso === 2 && (
                             <>
+                                <div className="exp-modal-scroll">
                                 <div className="exp-confirm-banner">
                                     <i className="bi bi-exclamation-triangle-fill exp-confirm-icon" />
                                     <div>
                                         <strong>¿Confirmas la importación?</strong>
-                                        {importTipo === 'SUSTRAIDO'
-                                            ? <p>El sistema leerá las 3 hojas del archivo y asignará la zona automáticamente a cada registro. <b>Esta acción no podrá revertirse una vez confirmada.</b></p>
+                                        {(importTipo === 'SUSTRAIDO' || importTipo === 'CIERRE_CARPETA')
+                                            ? <p>El sistema leerá las hojas del archivo y asignará la zona automáticamente a cada registro. <b>Esta acción no podrá revertirse una vez confirmada.</b></p>
                                             : importTipo === 'REGISTRO_HISTORICO'
                                             ? <p>Verifica que el archivo corresponda al formato de Registro Histórico y que la zona sea correcta. <b>Esta acción no podrá revertirse una vez confirmada.</b></p>
                                             : <p>Verifica que la zona y el formato del archivo sean correctos antes de continuar. Esta información será asignada a <b>todos</b> los registros del archivo y <b>no podrá modificarse una vez realizada la importación</b>.</p>
@@ -970,10 +1016,10 @@ export default function ExpedientesAnteriores() {
                                     <div className="exp-confirm-fila">
                                         <span className="exp-confirm-label"><i className="bi bi-layers-fill" /> Formato</span>
                                         <span className="exp-confirm-valor">
-                                            {importTipo === 'BASE_IMPUTADOS' ? 'Base de Imputados' : importTipo === 'REGISTRO_HISTORICO' ? 'Registro Histórico' : 'Sustraídos'}
+                                            {importTipo === 'BASE_IMPUTADOS' ? 'Base de Imputados' : importTipo === 'REGISTRO_HISTORICO' ? 'Registro Histórico' : importTipo === 'SUSTRAIDO' ? 'Sustraídos' : importTipo === 'CIERRE_CARPETA' ? 'Cierre de Carpetas' : importTipo === 'INACTIVOS' ? 'Inactivos' : importTipo}
                                         </span>
                                     </div>
-                                    {importTipo !== 'SUSTRAIDO' && importZona && (
+                                    {importTipo !== 'SUSTRAIDO' && importTipo !== 'CIERRE_CARPETA' && importZona && (
                                     <div className="exp-confirm-fila">
                                         <span className="exp-confirm-label"><i className="bi bi-geo-alt-fill" /> Zona asignada</span>
                                         <span className={`zona-tag zona-tag-${importZona.toLowerCase()}`}>
@@ -981,7 +1027,7 @@ export default function ExpedientesAnteriores() {
                                         </span>
                                     </div>
                                     )}
-                                    {importTipo === 'SUSTRAIDO' && (
+                                    {(importTipo === 'SUSTRAIDO' || importTipo === 'CIERRE_CARPETA') && (
                                     <div className="exp-confirm-fila">
                                         <span className="exp-confirm-label"><i className="bi bi-geo-alt-fill" /> Zona</span>
                                         <span className="exp-confirm-valor">Auto-detectada por hoja</span>
@@ -1011,6 +1057,8 @@ export default function ExpedientesAnteriores() {
                                         </div>
                                     </div>
                                 )}
+
+                                </div>{/* /exp-modal-scroll */}
 
                                 {!importExito && (
                                 <div className="exp-modal-acciones">

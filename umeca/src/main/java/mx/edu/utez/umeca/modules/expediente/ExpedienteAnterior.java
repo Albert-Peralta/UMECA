@@ -56,7 +56,7 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "nombre", columnDefinition = "TEXT")
     private String nombre;
 
-    @Column(name = "genero", length = 20)
+    @Column(name = "genero", columnDefinition = "TEXT")
     private String genero;
 
     @Column(name = "fecha_nacimiento")
@@ -94,7 +94,7 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "numero_ext", columnDefinition = "TEXT")
     private String numeroExt;
 
-    @Column(name = "colonia", length = 150)
+    @Column(name = "colonia", columnDefinition = "TEXT")
     private String colonia;
 
     @Column(name = "municipio", columnDefinition = "TEXT")
@@ -119,7 +119,7 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "victima1_nombre", columnDefinition = "TEXT")
     private String victima1Nombre;
 
-    @Column(name = "victima1_genero", length = 20)
+    @Column(name = "victima1_genero", columnDefinition = "TEXT")
     private String victima1Genero;
 
     @Column(name = "victima1_domicilio", columnDefinition = "TEXT")
@@ -135,7 +135,7 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "victima2_nombre", columnDefinition = "TEXT")
     private String victima2Nombre;
 
-    @Column(name = "victima2_genero", length = 20)
+    @Column(name = "victima2_genero", columnDefinition = "TEXT")
     private String victima2Genero;
 
     @Column(name = "victima2_domicilio", columnDefinition = "TEXT")
@@ -338,7 +338,7 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "archivo", columnDefinition = "TEXT")
     private String archivo;
 
-    @Column(name = "tipo_mc_scp", length = 20)
+    @Column(name = "tipo_mc_scp", columnDefinition = "TEXT")
     private String tipoMcScp;
 
     @Column(name = "sustraccion", columnDefinition = "TEXT")
@@ -404,7 +404,9 @@ public class ExpedienteAnterior extends BaseEntity {
         JOJU_SUSTRAIDO, JOJU_PRISION, JOJU_DEFUNCION, JOJU_SOBRESEIMIENTO, JOJU_ARCHIVO, JOJU_CARPETAS_INACTIVAS,
         CUAT_PRISION, CUAT_ESPERA, CUAT_CARPETAS_CERRAR, CUAT_OFICIOS, CUAT_SUSTRAIDO, CUAT_TTA, CUAT_ARCHIVO,
         // Inactivos Xochitepec
-        XOCHI_MC_INACTIVA, XOCHI_SCP_INACTIVO, XOCHI_HISTORICO_INACTIVO
+        XOCHI_MC_INACTIVA, XOCHI_SCP_INACTIVO, XOCHI_HISTORICO_INACTIVO,
+        // Bitácora Cierre de Carpetas (3 zonas)
+        CIERRE_CARPETA
     }
     public enum Zona { XOCHITEPEC, CUAUTLA, JOJUTLA }
 }

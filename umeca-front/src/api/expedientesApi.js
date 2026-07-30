@@ -64,3 +64,11 @@ export const importarInactivosXochi = (archivo) => {
         headers: { 'Content-Type': 'multipart/form-data' },
     });
 };
+
+export const importarCierreCarpetas = (archivo) => {
+    const form = new FormData();
+    form.append('archivo', archivo);
+    return api.post('/expedientes-anteriores/importar-cierre-carpetas', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+};

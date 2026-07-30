@@ -7,28 +7,98 @@
     padding-bottom: 32px;
 }
 
-/* ── Header + selectores ── */
+/* ── Header ── */
 .est-header {
     display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Fila 1: badge centrado + exportar a la derecha */
+.est-header-top {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    justify-content: space-between;
     gap: 12px;
-    flex-wrap: wrap;
+}
+
+.est-header-top .est-periodo-badge {
+    justify-self: center;
+}
+
+.est-header-top .est-btn-exportar {
+    justify-self: end;
+}
+
+.est-header-titulo-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .est-titulo {
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 800;
     color: #1a3a5c;
-    letter-spacing: 1px;
+    letter-spacing: 1.2px;
     margin: 0;
+    text-transform: uppercase;
 }
 
-.est-filtros {
+.est-subtitulo-sistema {
+    font-size: 11px;
+    color: #9ca3af;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+/* Badge de período activo */
+.est-periodo-badge {
     display: flex;
     align-items: center;
+    gap: 7px;
+    background: linear-gradient(135deg, #1a3a5c 0%, #2d6a4f 100%);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 7px 16px;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+    box-shadow: 0 2px 8px rgba(26,58,92,.2);
+    white-space: nowrap;
+}
+
+.est-periodo-badge i {
+    font-size: 13px;
+    opacity: 0.85;
+}
+
+/* Fila 2: toggle + separador + filtros */
+.est-filtros-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     gap: 10px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 8px 12px;
     flex-wrap: wrap;
+}
+
+.est-filtros-sep {
+    width: 1px;
+    height: 28px;
+    background: #d1d5db;
+    flex-shrink: 0;
+}
+
+.est-filtros-inputs {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    min-width: 320px;
+    flex-shrink: 0;
 }
 
 .est-btn-exportar {
@@ -54,7 +124,7 @@
 .est-filtro-grupo {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
 }
 
 .est-filtro-label {
@@ -69,18 +139,74 @@
 }
 
 .est-mes-sel {
-    background: #f3f4f6;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    padding: 5px 10px;
-    font-size: 12px;
+    background: #fff;
+    border: 1.5px solid #d1d5db;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 13px;
     font-weight: 600;
-    color: #374151;
+    color: #1f2937;
     cursor: pointer;
     outline: none;
-    transition: border-color 0.15s;
+    transition: border-color .2s, box-shadow .2s;
+    min-width: 90px;
 }
-.est-mes-sel:focus { border-color: #1a3a5c; }
+.est-mes-sel:focus {
+    border-color: #1a3a5c;
+    box-shadow: 0 0 0 3px rgba(26,58,92,.1);
+}
+.est-mes-sel:hover { border-color: #9ca3af; }
+
+/* input date mismo estilo */
+input[type="date"].est-mes-sel { min-width: 140px; }
+
+/* ── Toggle modo filtro ── */
+.est-modo-tabs {
+    display: flex;
+    background: #f3f4f6;
+    border: 1.5px solid #d1d5db;
+    border-radius: 8px;
+    overflow: hidden;
+    padding: 2px;
+    gap: 2px;
+}
+
+.est-modo-tab {
+    background: none;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background .15s, color .15s;
+    white-space: nowrap;
+}
+
+.est-modo-tab:hover { background: #e5e7eb; color: #1f2937; }
+.est-modo-activo {
+    background: #1a3a5c !important;
+    color: #fff !important;
+    box-shadow: 0 1px 4px rgba(26,58,92,.25);
+}
+
+.est-rango-nota {
+    font-size: 11px;
+    color: #6b7280;
+    background: #f0f9ff;
+    border-left: 3px solid #38bdf8;
+    padding: 5px 10px;
+    border-radius: 0 4px 4px 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    max-width: 280px;
+}
 
 /* ── Tarjetas resumen ── */
 .est-tarjetas {
@@ -308,6 +434,255 @@
     .est-grid      { grid-template-columns: 1fr; }
     .est-card-wide { grid-column: span 1; }
     .est-filtros   { flex-direction: column; align-items: flex-start; }
+}
+
+/* ── Seguimientos por zona ── */
+.est-seg-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 22px 14px;
+    border-bottom: 1px solid #f0f0f0;
+    background: linear-gradient(to right, #f8fafc, #fff);
+    flex-wrap: wrap;
+}
+
+.est-seg-header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.est-seg-titulo {
+    font-size: 13px;
+    font-weight: 800;
+    color: #111827;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.est-seg-sub {
+    font-size: 11px;
+    color: #9ca3af;
+    font-weight: 500;
+}
+
+.est-seg-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.est-seg-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1.5px solid;
+    font-size: 12px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    transition: box-shadow .15s;
+}
+
+.est-seg-chip:hover { box-shadow: 0 2px 6px rgba(0,0,0,.12); }
+
+.est-seg-chip-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.est-seg-chip-total {
+    border-color: #374151;
+    color: #374151;
+    background: #f9fafb;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+/* Etiqueta contextualizadora antes de los chips */
+.est-seg-chips-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    align-self: center;
+    padding-right: 4px;
+    border-right: 1px solid #e5e7eb;
+    margin-right: 2px;
+}
+
+.est-seg-graficas {
+    display: flex;
+    gap: 0;
+    padding: 20px 28px 28px;
+}
+
+.est-seg-grafica-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 0 20px;
+}
+
+.est-seg-grafica-titulo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #f3f4f6;
+}
+
+.est-seg-grafica-titulo i { font-size: 14px; }
+
+/* Leyenda compacta inline en el título */
+.est-seg-leyenda {
+    display: flex;
+    gap: 12px;
+    margin-left: auto;
+    flex-wrap: wrap;
+}
+
+.est-seg-ley-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #6b7280;
+    letter-spacing: 0.3px;
+}
+
+.est-seg-ley-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.est-seg-divisor {
+    width: 1px;
+    background: #e5e7eb;
+    margin: 12px 0;
+    flex-shrink: 0;
+    align-self: stretch;
+}
+
+/* Dona de seguimientos */
+.est-seg-dona-wrap {
+    height: 230px;
+    position: relative;
+    margin: 8px auto 0;
+    max-width: 240px;
+}
+
+.est-seg-grafica-total {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    background: #f3f4f6;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+/* Leyenda de zonas con valor */
+.est-seg-zona-ley {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+
+.est-seg-zona-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #374151;
+}
+
+.est-seg-zona-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.est-seg-zona-nombre { color: #6b7280; font-weight: 500; }
+.est-seg-zona-val    { font-weight: 700; font-size: 12px; }
+
+/* Mini barras de actividades */
+.est-seg-top {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 8px;
+    padding-top: 10px;
+    border-top: 1px solid #f3f4f6;
+}
+
+.est-seg-top-titulo {
+    font-size: 11px;
+    font-weight: 700;
+    color: #4b5563;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 4px;
+    padding-bottom: 6px;
+    border-bottom: 1.5px solid #e5e7eb;
+}
+
+.est-seg-top-row {
+    display: grid;
+    grid-template-columns: minmax(150px, 1fr) 120px 24px;
+    align-items: center;
+    gap: 8px;
+}
+
+.est-seg-top-label {
+    font-size: 12px;
+    color: #374151;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.est-seg-top-bar-wrap {
+    flex: 1;
+    height: 6px;
+    background: #f3f4f6;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.est-seg-top-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width .3s ease;
+}
+
+.est-seg-top-val {
+    font-size: 11px;
+    font-weight: 700;
+    color: #374151;
+    min-width: 20px;
+    text-align: right;
 }
 
 /* ── Chips de género ── */

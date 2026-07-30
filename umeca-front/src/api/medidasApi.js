@@ -34,3 +34,6 @@ export const registrarAmpliacion = (id, data) =>
     api.post(`/medidas/${id}/ampliacion`, data);
 
 export const eliminarMedida = (id) => api.delete(`/medidas/${id}`);
+
+export const cambiarCumplimiento = (id, valor) =>
+    api.patch(`/medidas/${id}/cumplimiento`, null, { params: { valor } });

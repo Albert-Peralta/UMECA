@@ -636,7 +636,7 @@
 }
 
 /* ── Grouped accordion rows ───────────────────────────────────────────── */
-.scp-tabla-grupo { border-collapse: collapse; }
+.scp-tabla-grupo { border-collapse: collapse; table-layout: auto; min-width: 1100px; }
 
 /* Fila grupo — muestra nombre + medida más reciente */
 .scp-grupo-header {

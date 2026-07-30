@@ -251,11 +251,6 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                             <i className="bi bi-pencil" /> Editar
                         </button>
                     )}
-                    {puedeRegistrar && m.estado === 'ACTIVO' && !m.imputadoFallecido && !m.imputadoCarpetaCerrada && (
-                        <button className="btn-fallecimiento" onClick={() => { setFallForm(FALL_VACIO); setFallError(''); setShowFallecimiento(true); }}>
-                            <i className="bi bi-heartbreak" /> Fallecimiento
-                        </button>
-                    )}
                     {tieneFraccionV && !m.imputadoFallecido && !m.imputadoCarpetaCerrada && (
                         <button className="btn-oficio-migracion" onClick={() => setShowOficioMigracion(true)} title="Generar oficio para el INM">
                             <i className="bi bi-file-earmark-text" /> Oficio Migración

@@ -90,8 +90,8 @@ public class UserService implements UserDetailsService {
         bitacoraService.registrar(Bitacora.Entidad.USUARIO, saved.getId(),
                 saved.getNombre() + " " + saved.getApPaterno(),
                 Bitacora.Accion.CREAR,
-                "Usuario creado. Rol: " + saved.getRol() + ". Zona: " + saved.getZona()
-                        + ". ID: " + saved.getIdentificador() + ". Usuario: " + saved.getUsername());
+                "Usuario creado — rol: " + saved.getRol() + " | zona: " + saved.getZona()
+                        + " | usuario: " + saved.getUsername());
         return new ApiResponse(true, "Usuario registrado correctamente", UserResponseDTO.from(saved));
     }
 
@@ -111,7 +111,7 @@ public class UserService implements UserDetailsService {
                 cambiosU.add("Cargo: " + user.getCargo());
             if (!java.util.Objects.equals(existing.getDependencia(), user.getDependencia()))
                 cambiosU.add("Dependencia: " + user.getDependencia());
-            String descCambiosU = cambiosU.isEmpty() ? "Usuario actualizado" : String.join(". ", cambiosU);
+            String descCambiosU = cambiosU.isEmpty() ? "Usuario actualizado" : "Usuario actualizado — " + String.join(" | ", cambiosU);
 
             existing.setNombre(user.getNombre());
             existing.setApPaterno(user.getApPaterno());

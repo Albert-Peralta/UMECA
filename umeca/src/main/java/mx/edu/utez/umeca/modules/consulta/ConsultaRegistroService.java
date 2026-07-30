@@ -116,8 +116,8 @@ public class ConsultaRegistroService {
                 + saved.getNombreImputado()).trim();
         bitacoraService.registrar(Bitacora.Entidad.CONSULTA, saved.getId(), nombreImp,
                 Bitacora.Accion.CREAR,
-                "Consulta registrada con resultado " + saved.getResultado().name()
-                + (saved.getCausaPenal() != null ? " · Causa: " + saved.getCausaPenal() : ""));
+                "Consulta registrada — resultado: " + saved.getResultado().name()
+                + (saved.getCausaPenal() != null ? " | causa: " + saved.getCausaPenal() : ""));
 
         ConsultaRegistroResponseDTO response = ConsultaRegistroResponseDTO.from(saved);
 
@@ -151,7 +151,7 @@ public class ConsultaRegistroService {
                 + updated.getNombreImputado()).trim();
         bitacoraService.registrar(Bitacora.Entidad.CONSULTA, updated.getId(), nombreImp,
                 Bitacora.Accion.EDITAR,
-                "Consulta actualizada · Resultado: " + updated.getResultado().name());
+                "Consulta actualizada — resultado: " + updated.getResultado().name());
         return new ApiResponse(true, "Consulta actualizada", ConsultaRegistroResponseDTO.from(updated));
     }
 

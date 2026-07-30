@@ -14,6 +14,7 @@ public class SupervisionResponseDTO {
     private String nombreImputado;
     private boolean imputadoFallecido;
     private boolean imputadoCarpetaCerrada;
+    private String imputadoEstatusCierre;
     private String numeroCierreCarpeta;
     private String causaPenal;
     private String tipo;
@@ -36,6 +37,7 @@ public class SupervisionResponseDTO {
         dto.setNombreImputado(s.getImputado().getNombreCompleto());
         dto.setImputadoFallecido(s.getImputado().isFallecido());
         dto.setImputadoCarpetaCerrada(s.getImputado().isCarpetaCerrada());
+        dto.setImputadoEstatusCierre(s.getImputado().getEstatusCumplimientoCierre());
         dto.setNumeroCierreCarpeta(s.getImputado().getNumeroCierreCarpeta());
         dto.setCausaPenal(s.getImputado().getCausaPenal());
         dto.setTipo(s.getTipo().name());

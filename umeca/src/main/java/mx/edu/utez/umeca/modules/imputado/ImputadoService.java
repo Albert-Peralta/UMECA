@@ -87,6 +87,7 @@ public class ImputadoService {
                 dto.setEstadoMedidaActiva(mInfo[2].toString());
                 dto.setVieneDeMC(Boolean.TRUE.equals(mInfo[3]));
                 dto.setVieneDeScp(Boolean.TRUE.equals(mInfo[4]));
+                dto.setCumplimientoMedidaActiva(mInfo.length > 5 && mInfo[5] != null ? mInfo[5].toString() : null);
             }
             dto.setZona(zonas.get(i.getId()));
             return dto;
@@ -185,8 +186,8 @@ public class ImputadoService {
             bitacoraService.registrar(Bitacora.Entidad.IMPUTADO, imp.getId(),
                     imp.getNombre() + " " + imp.getApPaterno(),
                     Bitacora.Accion.FALLECIMIENTO,
-                    "Fallecimiento registrado. Fecha: " + imp.getFechaFallecimiento()
-                            + (quienAviso != null ? ". Informante: " + quienAviso : ""));
+                    "Fallecimiento registrado — fecha: " + imp.getFechaFallecimiento()
+                            + (quienAviso != null ? " | informante: " + quienAviso : ""));
             // Cancelar todas las supervisiones pendientes
             List<mx.edu.utez.umeca.modules.supervision.Supervision> pendientes =
                     supervisionRepository.findPendientesByImputadoId(id);
@@ -201,8 +202,25 @@ public class ImputadoService {
     }
 
     /**
-     * Registra el cierre de carpeta del imputado, auto-finaliza todas sus medidas activas
-     * y cancela supervisiones pendientes. El número se genera automáticamente (CC-YYYY-XXXX).
+     * Estatus que solo finalizan la medida activa sin cerrar la carpeta completa.
+     * MC: Auto de no vinculación, Arraigo domiciliario, Cambio MC→SCP.
+     * SCP: Cumplimiento de condiciones, Cumplimiento de reparación del daño, Incumplimiento, Fallecimiento del imputado.
+     */
+    private static final java.util.Set<String> ESTATUS_SOLO_MEDIDA = java.util.Set.of(
+            // MC — solo finaliza medida
+            "AUTO_NO_VINCULACION",
+            "ARRAIGO_DOMICILIARIO",
+            "CAMBIO_MC_A_SCP",
+            // SCP — solo finaliza medida
+            "NUEVA_CONDENA"
+    );
+
+    /**
+     * Registra el cierre de carpeta o finalización de medida del imputado.
+     * Si el estatus es de cierre total (Sentencia absolutoria/condenatoria, Nueva condena),
+     * cierra la carpeta completa y cancela supervisiones pendientes.
+     * Si el estatus es de "solo medida", únicamente finaliza las medidas activas
+     * sin bloquear el expediente.
      */
     @Transactional
     public ApiResponse registrarCierreCarpeta(Long id, String motivo, String estatusCumplimiento, LocalDate fechaIngreso, String notas) {
@@ -210,10 +228,7 @@ public class ImputadoService {
             if (imp.isCarpetaCerrada())
                 return new ApiResponse(false, "La carpeta de este imputado ya fue cerrada");
 
-            LocalDate hoy = LocalDate.now();
-            int anio = hoy.getYear();
-            long secuencia = imputadoRepository.countCierresPorAnio(anio) + 1;
-            String numero = String.format("CC-%d-%04d", anio, secuencia);
+            boolean soloCierraMedida = estatusCumplimiento != null && ESTATUS_SOLO_MEDIDA.contains(estatusCumplimiento);
 
             // Responsable = usuario autenticado
             String responsable = "sistema";
@@ -221,6 +236,36 @@ public class ImputadoService {
                 Authentication auth = SecurityContextHolder.getContext().getAuthentication();
                 if (auth != null && auth.getName() != null) responsable = auth.getName();
             } catch (Exception ignored) {}
+
+            // Finalizar todas las medidas activas (siempre)
+            List<mx.edu.utez.umeca.modules.medidacautelar.MedidaCautelar> medidasActivas =
+                    medidaRepository.findByImputadoId(id).stream()
+                            .filter(m -> m.getEstado() == MedidaCautelar.Estado.ACTIVO)
+                            .toList();
+            medidasActivas.forEach(m -> {
+                m.setEstado(MedidaCautelar.Estado.FINALIZADO);
+                if (estatusCumplimiento != null) m.setCumpliendoIncumpliendo(estatusCumplimiento);
+                medidaRepository.save(m);
+            });
+
+            if (soloCierraMedida) {
+                // Solo finaliza medidas — el expediente queda abierto
+                bitacoraService.registrar(Bitacora.Entidad.IMPUTADO, imp.getId(),
+                        imp.getNombre() + " " + imp.getApPaterno(),
+                        Bitacora.Accion.CAMBIO_ESTADO,
+                        "Cierre de medida — estatus: " + estatusCumplimiento
+                                + " | medidas finalizadas: " + medidasActivas.size()
+                                + (motivo != null ? " | motivo: " + motivo : ""));
+                return new ApiResponse(true,
+                        "Medida finalizada correctamente. El expediente permanece abierto.",
+                        ImputadoResponseDTO.fromSimple(imp));
+            }
+
+            // Cierre total de carpeta
+            LocalDate hoy = LocalDate.now();
+            int anio = hoy.getYear();
+            long secuencia = imputadoRepository.countCierresPorAnio(anio) + 1;
+            String numero = String.format("CC-%d-%04d", anio, secuencia);
 
             imp.setCarpetaCerrada(true);
             imp.setNumeroCierreCarpeta(numero);
@@ -231,16 +276,6 @@ public class ImputadoService {
             if (fechaIngreso != null) imp.setFechaIngresoCierre(fechaIngreso);
             if (notas != null && !notas.isBlank()) imp.setNotasCierre(notas);
             imputadoRepository.save(imp);
-
-            // Finalizar todas las medidas activas
-            List<mx.edu.utez.umeca.modules.medidacautelar.MedidaCautelar> medidasActivas =
-                    medidaRepository.findByImputadoId(id).stream()
-                            .filter(m -> m.getEstado() == MedidaCautelar.Estado.ACTIVO)
-                            .toList();
-            medidasActivas.forEach(m -> {
-                m.setEstado(MedidaCautelar.Estado.FINALIZADO);
-                medidaRepository.save(m);
-            });
 
             // Cancelar supervisiones pendientes
             List<mx.edu.utez.umeca.modules.supervision.Supervision> pendientes =
@@ -253,9 +288,9 @@ public class ImputadoService {
             bitacoraService.registrar(Bitacora.Entidad.IMPUTADO, imp.getId(),
                     imp.getNombre() + " " + imp.getApPaterno(),
                     Bitacora.Accion.CIERRE_CARPETA,
-                    "Cierre de carpeta registrado. Número: " + numero
-                            + ". Medidas finalizadas: " + medidasActivas.size()
-                            + ". Supervisiones canceladas: " + pendientes.size());
+                    "Cierre de carpeta — número: " + numero
+                            + " | medidas finalizadas: " + medidasActivas.size()
+                            + " | supervisiones canceladas: " + pendientes.size());
 
             return new ApiResponse(true,
                     "Cierre de carpeta registrado exitosamente. Número: " + numero,
@@ -292,7 +327,7 @@ public class ImputadoService {
                 cambios.add("Delito: " + datos.getDelito());
             if (!java.util.Objects.equals(existing.getUbicacionFisica(), datos.getUbicacionFisica()))
                 cambios.add("Ubicación física: " + datos.getUbicacionFisica());
-            String descCambios = cambios.isEmpty() ? "Imputado actualizado" : String.join(". ", cambios);
+            String descCambios = cambios.isEmpty() ? "Imputado actualizado" : "Imputado actualizado — " + String.join(" | ", cambios);
 
             existing.setNombre(datos.getNombre());
             existing.setApPaterno(datos.getApPaterno());

@@ -64,10 +64,19 @@ public class SeguimientoController {
 
     // Reporte consolidado por zona para el admin (rango de fechas)
     @GetMapping("/reporte-consolidado")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> reporteConsolidado(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
         return ResponseEntity.ok(service.getReporteConsolidado(desde, hasta));
+    }
+
+    // Historial detallado de seguimientos agrupado por usuario y zona
+    @GetMapping("/historial-por-usuario")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_CORRESPONDENCIA')")
+    public ResponseEntity<ApiResponse> historialPorUsuario(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
+        return ResponseEntity.ok(service.getHistorialPorUsuario(desde, hasta));
     }
 }

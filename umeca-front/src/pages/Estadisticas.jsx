@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
     Chart as ChartJS,
     CategoryScale, LinearScale, BarElement, ArcElement,
@@ -8,6 +8,7 @@ import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import { getEstadisticas, exportarEstadisticasExcel } from '../api/estadisticasApi';
 import { getConsultas } from '../api/consultasApi';
 import { getEstadisticasCorrespondencia } from '../api/correspondenciaApi';
+import { getReporteConsolidado, TIPOS_ACTIVIDAD } from '../api/seguimientosApi';
 import './Estadisticas.css';
 
 ChartJS.register(
@@ -135,23 +136,42 @@ const scrollTo = (id) => {
 
 const Estadisticas = () => {
     const anioActual = new Date().getFullYear();
-    const [anio,       setAnio]       = useState(anioActual);
-    const [mes,        setMes]        = useState(0);
-    const [semana,     setSemana]     = useState(0);
+    const ANIO_INICIO = 2026;
+    const [anio,      setAnio]      = useState(anioActual);
+    const [mes,       setMes]       = useState(0);
+    const hoyISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+    const [modoFiltro, setModoFiltro] = useState('anio'); // 'anio' | 'rango'
+    const [rangoDesde, setRangoDesde] = useState(hoyISO());
+    const [rangoHasta, setRangoHasta] = useState(hoyISO());
     const [datos,      setDatos]      = useState(null);
     const [cargando,   setCargando]   = useState(true);
     const [exportando, setExportando] = useState(false);
     const [consultas,  setConsultas]  = useState([]);
     const [corrStats,  setCorrStats]  = useState(null);
+    const [segConsolidado, setSegConsolidado] = useState({});
+
+    // ── Calcula desde/hasta según el modo activo ──────────────────────────────
+    const { desde, hasta } = useMemo(() => {
+        const pad = n => String(n).padStart(2, '0');
+        if (modoFiltro === 'rango') return { desde: rangoDesde, hasta: rangoHasta };
+        if (mes > 0) {
+            const diasMes = new Date(anio, mes, 0).getDate();
+            return { desde: `${anio}-${pad(mes)}-01`, hasta: `${anio}-${pad(mes)}-${pad(diasMes)}` };
+        }
+        return { desde: `${anio}-01-01`, hasta: `${anio}-12-31` };
+    }, [modoFiltro, rangoDesde, rangoHasta, anio, mes]);
+
+    const anioFiltro = parseInt(desde.split('-')[0], 10);
+
 
     const handleExportar = async () => {
         setExportando(true);
         try {
-            const res = await exportarEstadisticasExcel(anio, mes);
+            const res = await exportarEstadisticasExcel(desde, hasta);
             const url = window.URL.createObjectURL(new Blob([res.data]));
             const a = document.createElement('a');
             a.href = url;
-            a.download = `estadisticas_${anio}${mes > 0 ? '_mes' + mes : ''}.xlsx`;
+            a.download = `estadisticas_${desde}_${hasta}.xlsx`;
             a.click();
             window.URL.revokeObjectURL(url);
         } catch (err) {
@@ -161,13 +181,20 @@ const Estadisticas = () => {
         }
     };
 
+    // ── Estadísticas principales + seguimientos (mismo rango) ────────────────
     useEffect(() => {
         setCargando(true);
-        getEstadisticas(anio, mes, semana)
-            .then(r => { if (r.data.ok) setDatos(r.data.data); })
+        Promise.all([
+            getEstadisticas(desde, hasta),
+            getReporteConsolidado(desde, hasta),
+        ])
+            .then(([rEst, rSeg]) => {
+                if (rEst.data.ok) setDatos(rEst.data.data);
+                if (rSeg.data.ok) setSegConsolidado(rSeg.data.data || {});
+            })
             .catch(console.error)
             .finally(() => setCargando(false));
-    }, [anio, mes, semana]);
+    }, [desde, hasta]);
 
     useEffect(() => {
         getConsultas()
@@ -176,34 +203,27 @@ const Estadisticas = () => {
     }, []);
 
     useEffect(() => {
-        getEstadisticasCorrespondencia(anio)
+        getEstadisticasCorrespondencia(anioFiltro)
             .then(r => { if (r.data.ok) setCorrStats(r.data.data); })
             .catch(() => {});
-    }, [anio]);
+    }, [anioFiltro]);
 
-    // Filtra consultas según anio/mes/semana seleccionados
+    // Filtra consultas según el rango de fechas activo
     const consultasFiltradas = useMemo(() => {
         return consultas.filter(c => {
             if (!c.fechaSolicitud) return false;
-            const fecha = new Date(c.fechaSolicitud);
-            if (fecha.getFullYear() !== anio) return false;
-            if (mes > 0 && fecha.getMonth() + 1 !== mes) return false;
-            if (semana > 0) {
-                const dia = fecha.getDate();
-                const semanaConsulta = dia <= 7 ? 1 : dia <= 14 ? 2 : dia <= 21 ? 3 : 4;
-                if (semanaConsulta !== semana) return false;
-            }
-            return true;
+            const fecha = c.fechaSolicitud.split('T')[0];
+            return fecha >= desde && fecha <= hasta;
         });
-    }, [consultas, anio, mes, semana]);
+    }, [consultas, desde, hasta]);
 
     const consultasPos = useMemo(() => consultasFiltradas.filter(c => c.resultado === 'POSITIVO').length, [consultasFiltradas]);
     const consultasNeg = useMemo(() => consultasFiltradas.filter(c => c.resultado === 'NEGATIVO').length, [consultasFiltradas]);
 
-    const anios = Array.from({ length: 5 }, (_, i) => anioActual - i);
+    const anios = Array.from({ length: anioActual - ANIO_INICIO + 1 }, (_, i) => ANIO_INICIO + i).reverse();
 
-    if (cargando) return <div className="est-cargando"><i className="bi bi-arrow-repeat" /> Cargando estadísticas...</div>;
-    if (!datos)   return <div className="est-cargando">No se pudieron cargar los datos.</div>;
+    if (!datos && cargando) return <div className="est-cargando"><i className="bi bi-arrow-repeat" /> Cargando estadísticas...</div>;
+    if (!datos)             return <div className="est-cargando">No se pudieron cargar los datos.</div>;
 
     // Series mensuales
     const mesesMC        = porMes(datos.medidas_por_mes);
@@ -222,66 +242,93 @@ const Estadisticas = () => {
     const promedio = arr => { const t = total(arr); return t === 0 ? 0 : Math.round(t / arr.filter(v => v > 0).length); };
     const maximo   = arr => Math.max(...arr);
 
-    const subtituloFiltro = semana > 0
-        ? `Semana ${semana} · ${MESES_FULL[mes]} ${anio}`
-        : mes > 0
-            ? `${MESES_FULL[mes]} ${anio}`
-            : `Año ${anio}`;
+    const formatFechaCorta = (iso) => {
+        if (!iso) return '—';
+        const [y, m, d] = iso.split('-').map(Number);
+        return `${d} ${MESES_FULL[m]?.slice(0, 3) ?? ''} ${y}`;
+    };
+    const subtituloFiltro = modoFiltro === 'rango'
+        ? `${formatFechaCorta(desde)} — ${formatFechaCorta(hasta)}`
+        : mes > 0 ? `${MESES_FULL[mes]} ${anio}` : `Año ${anio}`;
 
     return (
         <div className="est-wrapper">
 
-            {/* ── Filtros año + mes ── */}
+            {/* ── Header ── */}
             <div className="est-header">
-                <h2 className="est-titulo">VISTA GENERAL — ESTADÍSTICAS</h2>
-                <div className="est-filtros">
-                    <div className="est-filtro-grupo">
-                        <label className="est-filtro-label"><i className="bi bi-calendar3" /> Año</label>
-                        <select
-                            className="est-mes-sel"
-                            value={anio}
-                            onChange={e => setAnio(Number(e.target.value))}>
-                            {anios.map(a => (
-                                <option key={a} value={a}>{a}</option>
-                            ))}
-                        </select>
+
+                {/* Fila 1: [spacer] + período activo centrado + exportar */}
+                <div className="est-header-top">
+                    <div />{/* spacer izquierdo */}
+                    <div className="est-periodo-badge">
+                        <i className="bi bi-calendar-check-fill" />
+                        <span>{subtituloFiltro}</span>
                     </div>
-                    <div className="est-filtro-grupo">
-                        <label className="est-filtro-label"><i className="bi bi-calendar-month" /> Mes</label>
-                        <select
-                            className="est-mes-sel"
-                            value={mes}
-                            onChange={e => { setMes(Number(e.target.value)); setSemana(0); }}>
-                            {MESES_FULL.map((m, i) => (
-                                <option key={i} value={i}>{m}</option>
-                            ))}
-                        </select>
-                    </div>
-                    {mes > 0 && (
-                        <div className="est-filtro-grupo">
-                            <label className="est-filtro-label"><i className="bi bi-calendar-week" /> Semana</label>
-                            <select
-                                className="est-mes-sel"
-                                value={semana}
-                                onChange={e => setSemana(Number(e.target.value))}>
-                                <option value={0}>Todas</option>
-                                <option value={1}>Semana 1 (1–7)</option>
-                                <option value={2}>Semana 2 (8–14)</option>
-                                <option value={3}>Semana 3 (15–21)</option>
-                                <option value={4}>Semana 4 (22–fin)</option>
-                            </select>
-                        </div>
-                    )}
-                    <div className="est-filtro-grupo" style={{ alignSelf: 'flex-end' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                         <button className="est-btn-exportar" onClick={handleExportar} disabled={exportando} title="Exportar a Excel">
                             {exportando
                                 ? <><i className="bi bi-arrow-repeat est-spin" /> Exportando...</>
                                 : <><i className="bi bi-file-earmark-excel-fill" /> Exportar Excel</>
                             }
                         </button>
+                        <span style={{ fontSize: 11, color: '#374151', fontWeight: 500, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, padding: '3px 9px', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                            <i className="bi bi-info-circle-fill" style={{ color: '#16a34a' }} />
+                            La exportación se realizará de acuerdo al período seleccionado
+                        </span>
                     </div>
                 </div>
+
+                {/* Fila 2: toggle de modo + filtros */}
+                <div className="est-filtros-bar">
+                    <div className="est-modo-tabs">
+                        <button
+                            className={`est-modo-tab ${modoFiltro === 'anio' ? 'est-modo-activo' : ''}`}
+                            onClick={() => setModoFiltro('anio')}
+                        >
+                            <i className="bi bi-calendar3" /> Por año
+                        </button>
+                        <button
+                            className={`est-modo-tab ${modoFiltro === 'rango' ? 'est-modo-activo' : ''}`}
+                            onClick={() => setModoFiltro('rango')}
+                        >
+                            <i className="bi bi-calendar-range" /> Rango libre
+                        </button>
+                    </div>
+
+                    <div className="est-filtros-sep" />
+
+                    {modoFiltro === 'anio' ? (
+                        <div className="est-filtros-inputs">
+                            <div className="est-filtro-grupo">
+                                <label className="est-filtro-label"><i className="bi bi-calendar3" /> Año</label>
+                                <select className="est-mes-sel" value={anio} onChange={e => setAnio(Number(e.target.value))}>
+                                    {anios.map(a => <option key={a} value={a}>{a}</option>)}
+                                </select>
+                            </div>
+                            <div className="est-filtro-grupo">
+                                <label className="est-filtro-label"><i className="bi bi-calendar-month" /> Mes</label>
+                                <select className="est-mes-sel" value={mes} onChange={e => setMes(Number(e.target.value))}>
+                                    {MESES_FULL.map((m, i) => <option key={i} value={i}>{m}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="est-filtros-inputs">
+                            <div className="est-filtro-grupo">
+                                <label className="est-filtro-label"><i className="bi bi-arrow-right-circle" /> Desde</label>
+                                <input type="date" className="est-mes-sel" value={rangoDesde} onChange={e => setRangoDesde(e.target.value)} />
+                            </div>
+                            <div className="est-filtro-grupo">
+                                <label className="est-filtro-label"><i className="bi bi-arrow-left-circle" /> Hasta</label>
+                                <input type="date" className="est-mes-sel" value={rangoHasta} onChange={e => setRangoHasta(e.target.value)} />
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
+
+            {/* ── Contenido (con transición de opacidad al recargar) ── */}
+            <div style={{ opacity: cargando ? 0.45 : 1, transition: 'opacity .25s', pointerEvents: cargando ? 'none' : 'auto' }}>
 
             {/* ── Tarjetas resumen ── */}
             <div className="est-tarjetas">
@@ -510,6 +557,116 @@ const Estadisticas = () => {
                     </div>
                 </GraficaCard>
 
+                <Seccion icono="bi bi-clipboard-data-fill" label="Actividad de Seguimientos" />
+
+                {/* Seguimientos por tipo de actividad agrupados por zona */}
+                {(() => {
+                    const ZONAS       = ['XOCHITEPEC', 'CUAUTLA', 'JOJUTLA'];
+                    const ZONA_COLORES = [COLORES.verde, COLORES.azulClaro, COLORES.naranja];
+
+                    const tiposSuper = TIPOS_ACTIVIDAD.filter(t => t.grupo === 'SUPERVISIÓN');
+                    const tiposEval  = TIPOS_ACTIVIDAD.filter(t => t.grupo === 'EVALUACIÓN');
+
+                    const totSuper = ZONAS.map(z =>
+                        tiposSuper.reduce((s, t) => s + Number(segConsolidado[z]?.[t.value] ?? 0), 0)
+                    );
+                    const totEval = ZONAS.map(z =>
+                        tiposEval.reduce((s, t) => s + Number(segConsolidado[z]?.[t.value] ?? 0), 0)
+                    );
+
+                    const donaSegOpts = {
+                        ...doughnutOpts,
+                        plugins: {
+                            ...doughnutOpts.plugins,
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: ctx => `  ${ctx.label}: ${ctx.parsed}` } },
+                        },
+                    };
+
+                    const buildDona = (totales) => ({
+                        labels: ZONAS,
+                        datasets: [{ data: totales, backgroundColor: ZONA_COLORES.map(c => c + 'dd'), borderWidth: 0, spacing: 3, borderRadius: 5, hoverOffset: 10 }],
+                    });
+
+                    const totalPorZona = ZONAS.map(z =>
+                        TIPOS_ACTIVIDAD.reduce((s, t) => s + (segConsolidado[z]?.[t.value] ?? 0), 0)
+                    );
+                    const totalSeg = totalPorZona.reduce((a, b) => a + b, 0);
+
+                    return (<>
+                        <div className="est-card est-card-wide">
+                            <div className="est-seg-header">
+                                <div className="est-seg-header-info">
+                                    <span className="est-seg-titulo">Actividad de Seguimientos por Zona</span>
+                                    <span className="est-seg-sub">{subtituloFiltro} · Todas las actividades (supervisión + evaluación)</span>
+                                </div>
+                                <div className="est-seg-chips">
+                                    <span className="est-seg-chips-label">Actividades totales por zona</span>
+                                    {ZONAS.map((z, i) => (
+                                        <div key={z} className="est-seg-chip" style={{ borderColor: ZONA_COLORES[i], color: ZONA_COLORES[i] }}>
+                                            <span className="est-seg-chip-dot" style={{ background: ZONA_COLORES[i] }} />
+                                            <strong>{totalPorZona[i]}</strong>
+                                            <span>{z}</span>
+                                        </div>
+                                    ))}
+                                    <div className="est-seg-chip est-seg-chip-total">
+                                        <i className="bi bi-stack" />
+                                        <strong>{totalSeg}</strong>
+                                        <span>TOTAL</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="est-seg-graficas">
+                                {[
+                                    { titulo: 'Supervisión', icono: 'bi bi-telephone-fill', color: COLORES.morado, totales: totSuper, tipos: tiposSuper },
+                                    { titulo: 'Evaluación',  icono: 'bi bi-clipboard2-pulse-fill', color: COLORES.verde, totales: totEval, tipos: tiposEval },
+                                ].map(({ titulo, icono, color, totales, tipos }) => {
+                                    const totalSeccion = totales.reduce((a, b) => a + b, 0);
+                                    return (
+                                        <div key={titulo} className="est-seg-grafica-col">
+                                            <div className="est-seg-grafica-titulo">
+                                                <i className={icono} style={{ color }} />
+                                                {titulo}
+                                                <span className="est-seg-grafica-total">{totalSeccion} actividades</span>
+                                            </div>
+                                            <div className="est-seg-dona-wrap">
+                                                <Doughnut options={donaSegOpts} data={buildDona(totales)} />
+                                            </div>
+                                            <div className="est-seg-zona-ley">
+                                                {ZONAS.map((z, i) => (
+                                                    <div key={z} className="est-seg-zona-item">
+                                                        <span className="est-seg-zona-dot" style={{ background: ZONA_COLORES[i] }} />
+                                                        <span className="est-seg-zona-nombre">{z}</span>
+                                                        <span className="est-seg-zona-val" style={{ color: ZONA_COLORES[i] }}>{totales[i]}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="est-seg-top">
+                                                <span className="est-seg-top-titulo">Actividades registradas</span>
+                                                {tipos.map(t => {
+                                                    const tot = ZONAS.reduce((s, z) => s + Number(segConsolidado[z]?.[t.value] ?? 0), 0);
+                                                    if (tot === 0) return null;
+                                                    const pct = totalSeccion > 0 ? Math.round(tot / totalSeccion * 100) : 0;
+                                                    return (
+                                                        <div key={t.value} className="est-seg-top-row">
+                                                            <span className="est-seg-top-label">{t.label}</span>
+                                                            <div className="est-seg-top-bar-wrap">
+                                                                <div className="est-seg-top-bar" style={{ width: `${pct}%`, background: color + 'bb' }} />
+                                                            </div>
+                                                            <span className="est-seg-top-val">{tot}</span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </>);
+                })()}
+
                 {/* ── SECCIÓN CORRESPONDENCIA ── */}
                 <Seccion label="Correspondencia" icono="bi bi-envelope-paper" />
 
@@ -520,7 +677,7 @@ const Estadisticas = () => {
                     const byEst   = (k) => Number(corrStats.porEstado?.find(([e]) => e === k)?.[1] ?? 0);
                     return (<>
                     {/* Por tipo — siempre 3 segmentos */}
-                    <GraficaCard titulo="Oficios por tipo" subtitulo={`Distribución por tipo · ${anio}`}>
+                    <GraficaCard titulo="Oficios por tipo" subtitulo={`Distribución por tipo · ${anioFiltro}`}>
                         <div className="est-dona-wrap">
                             <Doughnut options={doughnutOpts} data={{
                                 labels: ['Oficio', 'Correo', 'WhatsApp'],
@@ -538,7 +695,7 @@ const Estadisticas = () => {
                     </GraficaCard>
 
                     {/* Por prioridad — siempre 3 segmentos */}
-                    <GraficaCard titulo="Oficios por prioridad" subtitulo={`Distribución por prioridad · ${anio}`}>
+                    <GraficaCard titulo="Oficios por prioridad" subtitulo={`Distribución por prioridad · ${anioFiltro}`}>
                         <div className="est-dona-wrap">
                             <Doughnut options={doughnutOpts} data={{
                                 labels: ['Normal', 'Urgente', 'De Conocimiento'],
@@ -556,7 +713,7 @@ const Estadisticas = () => {
                     </GraficaCard>
 
                     {/* Por estado — siempre 5 segmentos */}
-                    <GraficaCard titulo="Oficios por estado" subtitulo={`Estado actual de todos los oficios · ${anio}`}>
+                    <GraficaCard titulo="Oficios por estado" subtitulo={`Estado actual de todos los oficios · ${anioFiltro}`}>
                         <div className="est-dona-wrap">
                             <Doughnut options={{ ...doughnutOpts, plugins: { ...doughnutOpts.plugins, legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 12 } } } }} data={{
                                 labels: ['Pendiente', 'Asignado', 'Leído', 'En Espera', 'Finalizado'],
@@ -576,7 +733,7 @@ const Estadisticas = () => {
                     </GraficaCard>
 
                     {/* Por mes — línea */}
-                    <GraficaCard titulo="Oficios registrados por mes" subtitulo={`Evolución mensual · ${anio}`} span2>
+                    <GraficaCard titulo="Oficios registrados por mes" subtitulo={`Evolución mensual · ${anioFiltro}`} span2>
                         <div className="est-bar-stats">
                             <span><strong>{corrStats.total ?? 0}</strong> Total</span>
                             <span><strong>{corrStats.conTermino ?? 0}</strong> Con término</span>
@@ -618,7 +775,7 @@ const Estadisticas = () => {
                 </GraficaCard>
 
                 {/* 12. Fallecidos por mes — barra wide, gris oscuro */}
-                <GraficaCard id="chart-fallecidos-mes" titulo="Fallecidos por Mes" subtitulo={`Registro de fallecimientos por mes · ${anio}`} span2>
+                <GraficaCard id="chart-fallecidos-mes" titulo="Fallecidos por Mes" subtitulo={`Registro de fallecimientos por mes · ${anioFiltro}`} span2>
                     <div className="est-bar-stats">
                         <span><strong>{total(mesesFallecidos)}</strong> Total en el año</span>
                         <span><strong>{maximo(mesesFallecidos)}</strong> Mes más alto</span>
@@ -634,7 +791,7 @@ const Estadisticas = () => {
                 <Seccion icono="bi bi-hospital-fill" label="Programa TTA" />
 
                 {/* TTA por mes — barra wide, morado */}
-                <GraficaCard id="chart-tta" titulo="Programa TTA por Mes" subtitulo={`Personas en Tratamiento y Terapias Ambulatorias · ${anio}`} span2>
+                <GraficaCard id="chart-tta" titulo="Programa TTA por Mes" subtitulo={`Personas en Tratamiento y Terapias Ambulatorias · ${anioFiltro}`} span2>
                     <div className="est-bar-stats">
                         <span><strong>{total(mesesTta)}</strong> Total en el año</span>
                         <span><strong>{maximo(mesesTta)}</strong> Mes más alto</span>
@@ -650,7 +807,7 @@ const Estadisticas = () => {
                 <Seccion icono="bi bi-bar-chart-fill" label="Tendencias Mensuales" />
 
                 {/* Medidas por mes — azul */}
-                <GraficaCard id="chart-medidas-mes" titulo="Registros de Medidas / S.C.P." subtitulo={`Nuevos registros por mes · ${anio}`} span2>
+                <GraficaCard id="chart-medidas-mes" titulo="Registros de Medidas / S.C.P." subtitulo={`Nuevos registros por mes · ${anioFiltro}`} span2>
                     <div className="est-bar-stats">
                         <span><strong>{total(mesesMC)}</strong> Total</span>
                         <span><strong>{promedio(mesesMC)}</strong> Promedio mensual</span>
@@ -665,7 +822,7 @@ const Estadisticas = () => {
                 </GraficaCard>
 
                 {/* 12. Resoluciones por mes — azulClaro · naranja · verde · rojo */}
-                <GraficaCard id="chart-resoluciones-mes" titulo="Resoluciones por Mes" subtitulo={`MC→SCP · SCP→MC · Levantamientos · Revocados · ${anio}`} span2>
+                <GraficaCard id="chart-resoluciones-mes" titulo="Resoluciones por Mes" subtitulo={`MC→SCP · SCP→MC · Levantamientos · Revocados · ${anioFiltro}`} span2>
                     <div className="est-bar-stats">
                         <span><strong>{total(mesesScpCambio)}</strong> MC→SCP</span>
                         <span><strong>{total(mesesMcCambio)}</strong> SCP→MC</span>
@@ -686,7 +843,7 @@ const Estadisticas = () => {
                 </GraficaCard>
 
                 {/* 13. Supervisiones por mes — morado · naranja */}
-                <GraficaCard id="chart-supervisiones-mes" titulo="Supervisión en Libertad" subtitulo={`Llamadas y visitas por mes · ${anio}`} span2>
+                <GraficaCard id="chart-supervisiones-mes" titulo="Supervisión en Libertad" subtitulo={`Llamadas y visitas por mes · ${anioFiltro}`} span2>
                     <div className="est-bar-stats">
                         <span><strong>{total(mesesLlam)}</strong> Llamadas</span>
                         <span><strong>{total(mesesVis)}</strong> Visitas</span>
@@ -704,7 +861,7 @@ const Estadisticas = () => {
                 </GraficaCard>
 
                 {/* 14. Evaluaciones por mes — verde (línea) */}
-                <GraficaCard id="chart-evaluaciones" titulo="Evaluaciones de Riesgo" subtitulo={`Evaluaciones realizadas por mes · ${anio}`} span2>
+                <GraficaCard id="chart-evaluaciones" titulo="Evaluaciones de Riesgo" subtitulo={`Evaluaciones realizadas por mes · ${anioFiltro}`} span2>
                     <div className="est-bar-stats">
                         <span><strong>{total(mesesEval)}</strong> Total</span>
                         <span><strong>{promedio(mesesEval)}</strong> Promedio mensual</span>
@@ -721,12 +878,12 @@ const Estadisticas = () => {
                 {/* 15. Fracciones MC — azul */}
                 {datos.fraccionesMasUsadasMC?.length > 0 && (
                     <GraficaCard titulo="Fracciones más impuestas — M.C." subtitulo="Art. 155 CNPP" span2>
-                        <div className="est-bar-wrap" style={{ height: 240 }}>
+                        <div className="est-bar-wrap" style={{ height: Math.max(160, datos.fraccionesMasUsadasMC.slice(0,8).length * 44 + 40) }}>
                             <Bar
                                 options={barHorizOpts()}
                                 data={{
                                     labels: datos.fraccionesMasUsadasMC.slice(0,8).map(([f]) => `Fracc. ${f}`),
-                                    datasets: [{ label: 'Veces impuesta', data: datos.fraccionesMasUsadasMC.slice(0,8).map(([,c]) => parseInt(c)), backgroundColor: COLORES.azul + 'cc', hoverBackgroundColor: COLORES.azul, borderRadius: 4 }],
+                                    datasets: [{ label: 'Veces impuesta', data: datos.fraccionesMasUsadasMC.slice(0,8).map(([,c]) => parseInt(c)), backgroundColor: COLORES.azul + 'cc', hoverBackgroundColor: COLORES.azul, borderRadius: 4, barThickness: 28 }],
                                 }}
                             />
                         </div>
@@ -736,20 +893,21 @@ const Estadisticas = () => {
                 {/* 16. Fracciones SCP — azulClaro */}
                 {datos.fraccionesMasUsadasSCP?.length > 0 && (
                     <GraficaCard titulo="Condiciones más impuestas — S.C.P." subtitulo="Art. 192 CNPP" span2>
-                        <div className="est-bar-wrap" style={{ height: 240 }}>
+                        <div className="est-bar-wrap" style={{ height: Math.max(160, datos.fraccionesMasUsadasSCP.slice(0,8).length * 44 + 40) }}>
                             <Bar
                                 options={barHorizOpts()}
                                 data={{
                                     labels: datos.fraccionesMasUsadasSCP.slice(0,8).map(([f]) => `Cond. ${f}`),
-                                    datasets: [{ label: 'Veces impuesta', data: datos.fraccionesMasUsadasSCP.slice(0,8).map(([,c]) => parseInt(c)), backgroundColor: COLORES.azulClaro + 'cc', hoverBackgroundColor: COLORES.azulClaro, borderRadius: 4 }],
+                                    datasets: [{ label: 'Veces impuesta', data: datos.fraccionesMasUsadasSCP.slice(0,8).map(([,c]) => parseInt(c)), backgroundColor: COLORES.azulClaro + 'cc', hoverBackgroundColor: COLORES.azulClaro, borderRadius: 4, barThickness: 28 }],
                                 }}
                             />
                         </div>
                     </GraficaCard>
                 )}
 
-
             </div>
+
+            </div>{/* fin opacity wrapper */}
         </div>
     );
 };

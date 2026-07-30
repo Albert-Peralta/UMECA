@@ -347,4 +347,13 @@ public class ExpedienteAnteriorService {
             return new ApiResponse(false, "Error al procesar el archivo: " + e.getMessage());
         }
     }
+
+    public ApiResponse importarCierreCarpetas(MultipartFile file) {
+        try {
+            List<ExpedienteAnteriorDTO> dtos = parser.parsearCierreCarpetas(file);
+            return importarTransaccional(dtos, file.getOriginalFilename());
+        } catch (Exception e) {
+            return new ApiResponse(false, "Error al procesar el archivo: " + e.getMessage());
+        }
+    }
 }

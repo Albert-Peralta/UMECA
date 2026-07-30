@@ -68,7 +68,8 @@ public class EntrevistaEncuadreService {
                 java.util.Map<String, Object> imp = new java.util.LinkedHashMap<>();
                 imp.put("id",             e.getImputado().getId());
                 imp.put("fallecido",      e.getImputado().isFallecido());
-                imp.put("carpetaCerrada", e.getImputado().isCarpetaCerrada());
+                imp.put("carpetaCerrada",      e.getImputado().isCarpetaCerrada());
+                imp.put("estatusCierre",       e.getImputado().getEstatusCumplimientoCierre());
                 m.put("imputado", imp);
 
                 // Conversión MC↔SCP — buscar medida activa del imputado
@@ -182,7 +183,7 @@ public class EntrevistaEncuadreService {
         bitacoraService.registrar(Bitacora.Entidad.ENTREVISTA, savedEnt.getId(),
                 savedEnt.getNombre() + " " + savedEnt.getApPaterno(),
                 Bitacora.Accion.CREAR,
-                "Entrevista registrada. Folio: " + savedEnt.getFolio());
+                "Entrevista registrada — folio: " + savedEnt.getFolio());
         return new ApiResponse(true, "Entrevista registrada", savedEnt);
     }
 
@@ -231,7 +232,7 @@ public class EntrevistaEncuadreService {
             if (Boolean.TRUE.equals(entrevista.getTieneTatuajes())
                     && !java.util.Objects.equals(existing.getTatuajesJson(), entrevista.getTatuajesJson()))
                 cambios.add("Tatuajes/cicatrices: detalle actualizado");
-            String descCambios = cambios.isEmpty() ? "Entrevista actualizada" : String.join(". ", cambios);
+            String descCambios = cambios.isEmpty() ? "Entrevista actualizada" : "Entrevista actualizada — " + String.join(" | ", cambios);
 
             existing.setNombre(entrevista.getNombre());
             existing.setApPaterno(entrevista.getApPaterno());
@@ -348,7 +349,7 @@ public class EntrevistaEncuadreService {
         return repository.findById(id).map(e -> {
             String nombreDel = e.getNombre() + " " + e.getApPaterno();
             bitacoraService.registrar(Bitacora.Entidad.ENTREVISTA, id, nombreDel,
-                    Bitacora.Accion.ELIMINAR, "Entrevista eliminada. Folio: " + e.getFolio());
+                    Bitacora.Accion.ELIMINAR, "Entrevista eliminada — folio: " + e.getFolio());
             repository.delete(e);
             return new ApiResponse(true, "Entrevista eliminada");
         }).orElse(new ApiResponse(false, "Entrevista no encontrada"));

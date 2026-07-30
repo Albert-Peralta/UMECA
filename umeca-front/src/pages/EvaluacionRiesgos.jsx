@@ -9,6 +9,7 @@ import PrintNegacion from './PrintNegacion';
 import './Historico.css';
 import './Imputados.css';
 import './EvaluacionRiesgos.css';
+import { ESTATUS_CIERRE_LABEL } from '../constants/estatusCierre';
 
 const ITEMS_POR_PAGINA = 50;
 
@@ -35,8 +36,8 @@ const RESULTADOS = [
 const EvaluacionRiesgos = () => {
     const { user } = useAuth();
     const { showToast } = useToast();
-    const puedeEvaluar = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN'  || user?.rol === 'EVALUADOR_RIESGO';
-    const puedeRegistrar = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN'  || user?.rol === 'SUPERVISION' || user?.rol === 'EVALUADOR_RIESGO';
+    const puedeEvaluar   = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || user?.rol === 'EVALUADOR_RIESGO';
+    const puedeRegistrar = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || user?.rol === 'EVALUADOR_RIESGO';
 
     const [datos, setDatos] = useState([]);
     const [busqueda, setBusqueda] = useState('');
@@ -321,7 +322,7 @@ const EvaluacionRiesgos = () => {
                                 <th>CAUSA PENAL</th>
                                 <th>NOMBRE IMPUTADO</th>
                                 <th>DELITO</th>
-                                <th className="eval-col-centro">FECHA SOL. / AUDIENCIA</th>
+                                <th className="eval-col-centro">FECHA SOL./AUDIENCIA</th>
                                 <th>EVALUADOR</th>
                                 <th>ESTATUS</th>
                                 <th>ACCIONES</th>
@@ -334,7 +335,7 @@ const EvaluacionRiesgos = () => {
                                 <tr><td colSpan={9} className="tabla-vacia">No hay registros</td></tr>
                             ) : (
                                 paginados.map((item, index) => (
-                                    <tr key={item.id} className={!item.nombreEvaluador ? 'eval-fila-sin-asignar' : ''}>
+                                    <tr key={item.id}>
                                         <td>{inicio + index + 1}</td>
                                         <td className="eval-col-centro">{item.nombreSolicitante}</td>
                                         <td>{item.causaPenal}</td>
@@ -349,10 +350,10 @@ const EvaluacionRiesgos = () => {
                                             </div>
                                         </td>
                                         <td>{item.delito}</td>
-                                        <td className="eval-fechas eval-col-centro">
-                                            <span>{item.fechaSolicitud || '—'}</span>
-                                            <span className="eval-fecha-sep eval-fecha-audiencia">
-                                                {item.fechaAudiencia || <span className="eval-fecha-vacia">—</span>}
+                                        <td className="eval-col-centro" style={{verticalAlign:'middle', textAlign:'center', fontSize:'0.82rem'}}>
+                                            <span style={{display:'block'}}>{item.fechaSolicitud || '—'}</span>
+                                            <span style={{display:'block', fontSize:'0.78rem', color:'#9ca3af'}}>
+                                                {item.fechaAudiencia || <span style={{color:'#ccc'}}>—</span>}
                                             </span>
                                         </td>
                                         <td>{item.nombreEvaluador ?? <span className="sin-asignar eval-sin-eval">Sin asignar</span>}</td>
@@ -363,7 +364,17 @@ const EvaluacionRiesgos = () => {
                                             ) : item.imputadoFallecido ? (
                                                 <span className="imp-badge-fallecido"><i className="bi bi-heartbreak-fill" /> Fallecido</span>
                                             ) : item.imputadoCarpetaCerrada ? (
-                                                <span className="exp-badge-cierre"><i className="bi bi-folder-x" /> Carpeta Cerrada</span>
+                                                <span
+                                                    className="exp-badge-cierre eval-badge-cierre-tabla"
+                                                    title={item.imputadoEstatusCierre ? (ESTATUS_CIERRE_LABEL[item.imputadoEstatusCierre] ?? item.imputadoEstatusCierre) : 'Carpeta Cerrada'}
+                                                >
+                                                    <i className="bi bi-folder-x" /> Carpeta Cerrada
+                                                    {item.imputadoEstatusCierre && (
+                                                        <span className="eval-cierre-sub">
+                                                            {ESTATUS_CIERRE_LABEL[item.imputadoEstatusCierre] ?? item.imputadoEstatusCierre}
+                                                        </span>
+                                                    )}
+                                                </span>
                                             ) : item.resultado ? (
                                                 <span className={`riesgo-badge ${resultadoConfig[item.resultado]?.clase}`}>
                                                     {resultadoConfig[item.resultado]?.label}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { getReporteAutomatico, getReporteConsolidado } from '../api/seguimientosApi';
+import { getReporteAutomatico, getReporteConsolidado, getHistorialPorUsuario } from '../api/seguimientosApi';
 import './ReporteDiario.css';
 
 // ── Definición de campos por sección ─────────────────────────────────────────
@@ -58,7 +58,7 @@ export default function ReporteDiario() {
     const { showToast } = useToast();
     const rol = user?.rol;
 
-    const esAdmin = rol === 'ADMINISTRADOR' || rol === 'SUPERADMIN';
+    const esAdmin = rol === 'ADMINISTRADOR' || rol === 'SUPERADMIN' || rol === 'CORRESPONDENCIA';
     const esSuper = rol === 'SUPERVISION';
     const esEval  = rol === 'EVALUADOR_RIESGO';
 
@@ -79,12 +79,24 @@ export default function ReporteDiario() {
             .finally(() => setCargandoAuto(false));
     }, [esAdmin, fechaPropia, user?.zona]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // ── Estado: pestaña admin ─────────────────────────────────────────────────
+    const [pestanaAdmin, setPestanaAdmin] = useState('resumen'); // 'resumen' | 'historial'
+    const [expandidos, setExpandidos] = useState({}); // { 'zona-usuario': true }
+    const toggleExpandido = (key) => setExpandidos(prev => ({ ...prev, [key]: !prev[key] }));
+    const LIMITE_SEGS = 3;
+
     // ── Estado: vista admin (tabla consolidada por zona) ──────────────────────
     const [vistaAdmin,    setVistaAdmin]    = useState('hoy');   // 'hoy' | 'semana' | 'mes' | 'rango'
     const [rangoDesde,    setRangoDesde]    = useState(hoyISO());
     const [rangoHasta,    setRangoHasta]    = useState(hoyISO());
+    const mesActual = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; };
+    const [mesSel, setMesSel] = useState(mesActual());
     const [consolidado,   setConsolidado]   = useState({});
     const [cargandoTabla, setCargandoTabla] = useState(false);
+
+    // ── Estado: historial por usuario ─────────────────────────────────────────
+    const [historial,        setHistorial]        = useState({});
+    const [cargandoHistorial, setCargandoHistorial] = useState(false);
 
     // Calcula el rango de fechas según el filtro activo
     const cargarTabla = useCallback(async () => {
@@ -103,8 +115,9 @@ export default function ReporteDiario() {
                 const domingo = new Date(lunes); domingo.setDate(lunes.getDate() + 6);
                 desde = fmtDate(lunes); hasta = fmtDate(domingo);
             } else if (vistaAdmin === 'mes') {
-                const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-                const fin    = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+                const [y, m] = mesSel.split('-').map(Number);
+                const inicio = new Date(y, m - 1, 1);
+                const fin    = new Date(y, m, 0);
                 desde = fmtDate(inicio); hasta = fmtDate(fin);
             } else {
                 desde = rangoDesde; hasta = rangoHasta;
@@ -127,17 +140,63 @@ export default function ReporteDiario() {
             }
         } catch { showToast('Error al cargar el reporte consolidado.', 'error'); }
         finally { setCargandoTabla(false); }
-    }, [vistaAdmin, rangoDesde, rangoHasta]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [vistaAdmin, rangoDesde, rangoHasta, mesSel]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Carga inicial y cuando cambia el filtro (excepto rango — espera el botón refrescar)
     useEffect(() => {
         if (esAdmin && vistaAdmin !== 'rango') cargarTabla();
     }, [esAdmin, vistaAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Para rango: carga cuando cambian las fechas (tras pulsar refrescar lo hace useCallback)
+    // Para rango: carga cuando cambian las fechas
     useEffect(() => {
         if (esAdmin && vistaAdmin === 'rango') cargarTabla();
     }, [esAdmin, rangoDesde, rangoHasta]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Para mes: recarga cuando cambia el mes seleccionado
+    useEffect(() => {
+        if (esAdmin && vistaAdmin === 'mes') cargarTabla();
+    }, [esAdmin, mesSel, cargarTabla]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // ── Cargar historial por usuario ──────────────────────────────────────────
+    const cargarHistorial = useCallback(async () => {
+        setCargandoHistorial(true);
+        try {
+            const fmtDate = (d) =>
+                `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            const hoy = new Date();
+            let desde, hasta;
+            if (vistaAdmin === 'hoy') {
+                desde = hasta = hoyISO();
+            } else if (vistaAdmin === 'semana') {
+                const dia = hoy.getDay();
+                const lunes = new Date(hoy); lunes.setDate(hoy.getDate() - (dia === 0 ? 6 : dia - 1));
+                const domingo = new Date(lunes); domingo.setDate(lunes.getDate() + 6);
+                desde = fmtDate(lunes); hasta = fmtDate(domingo);
+            } else if (vistaAdmin === 'mes') {
+                const [y, m] = mesSel.split('-').map(Number);
+                const inicio = new Date(y, m - 1, 1);
+                const fin    = new Date(y, m, 0);
+                desde = fmtDate(inicio); hasta = fmtDate(fin);
+            } else {
+                desde = rangoDesde; hasta = rangoHasta;
+            }
+            const res = await getHistorialPorUsuario(desde, hasta);
+            if (res.data.ok) setHistorial(res.data.data || {});
+        } catch { showToast('Error al cargar el historial por usuario.', 'error'); }
+        finally { setCargandoHistorial(false); }
+    }, [vistaAdmin, rangoDesde, rangoHasta, mesSel]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    useEffect(() => {
+        if (esAdmin && pestanaAdmin === 'historial' && vistaAdmin !== 'rango') cargarHistorial();
+    }, [esAdmin, pestanaAdmin, vistaAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    useEffect(() => {
+        if (esAdmin && pestanaAdmin === 'historial' && vistaAdmin === 'rango') cargarHistorial();
+    }, [esAdmin, pestanaAdmin, rangoDesde, rangoHasta]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    useEffect(() => {
+        if (esAdmin && pestanaAdmin === 'historial' && vistaAdmin === 'mes') cargarHistorial();
+    }, [esAdmin, pestanaAdmin, mesSel, cargarHistorial]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ── Render sección (modo solo lectura) ────────────────────────────────────
     const renderSeccion = (titulo, campos, color) => {
@@ -239,52 +298,145 @@ export default function ReporteDiario() {
                 </div>
             )}
 
-            {/* ── Vista admin: tabla consolidada por zona ───────────────────── */}
+            {/* ── Vista admin: pestañas ─────────────────────────────────────── */}
             {esAdmin && (
                 <div className="rd-card">
-                    <div className="rd-card-titulo">
-                        <i className="bi bi-table" /> Resumen consolidado por zona
-                        <span className="rd-badge-auto">
-                            <i className="bi bi-lightning-charge-fill" /> Automático desde seguimientos
-                        </span>
-                    </div>
-
-                    <div className="rd-filtros">
-                        <div className="rd-filtros-tabs">
-                            {[
-                                { id: 'hoy',    label: 'Hoy',    icon: 'bi-calendar-check' },
-                                { id: 'semana', label: 'Semana', icon: 'bi-calendar-week' },
-                                { id: 'mes',    label: 'Mes',    icon: 'bi-calendar-month' },
-                                { id: 'rango',  label: 'Rango',  icon: 'bi-calendar-range' },
-                            ].map(t => (
-                                <button key={t.id}
-                                    className={`rd-tab ${vistaAdmin === t.id ? 'rd-tab-activo' : ''}`}
-                                    onClick={() => setVistaAdmin(t.id)}
-                                >
-                                    <i className={`bi ${t.icon}`} /> {t.label}
-                                </button>
-                            ))}
+                    {/* Pestañas + filtros en la misma fila */}
+                    <div className="rd-pestanas-bar">
+                        <div className="rd-pestanas">
+                            <button
+                                className={`rd-pestana ${pestanaAdmin === 'resumen' ? 'rd-pestana-activa' : ''}`}
+                                onClick={() => setPestanaAdmin('resumen')}
+                            >
+                                <i className="bi bi-table" /> Resumen por zona
+                            </button>
+                            <button
+                                className={`rd-pestana ${pestanaAdmin === 'historial' ? 'rd-pestana-activa' : ''}`}
+                                onClick={() => setPestanaAdmin('historial')}
+                            >
+                                <i className="bi bi-person-lines-fill" /> Historial por usuario
+                            </button>
                         </div>
 
-                        {vistaAdmin === 'rango' && (
-                            <div className="rd-rango">
-                                <input type="date" value={rangoDesde}
-                                    onChange={e => setRangoDesde(e.target.value)}
-                                    className="rd-fecha-input" />
-                                <span className="rd-rango-sep">–</span>
-                                <input type="date" value={rangoHasta}
-                                    onChange={e => setRangoHasta(e.target.value)}
-                                    className="rd-fecha-input" />
+                        <div className="rd-filtros">
+                            <div className="rd-filtros-tabs">
+                                {[
+                                    { id: 'hoy',    label: 'Hoy',    icon: 'bi-calendar-check' },
+                                    { id: 'semana', label: 'Semana', icon: 'bi-calendar-week' },
+                                    { id: 'mes',    label: 'Mes',    icon: 'bi-calendar-month' },
+                                    { id: 'rango',  label: 'Rango',  icon: 'bi-calendar-range' },
+                                ].map(t => (
+                                    <button key={t.id}
+                                        className={`rd-tab ${vistaAdmin === t.id ? 'rd-tab-activo' : ''}`}
+                                        onClick={() => setVistaAdmin(t.id)}
+                                    >
+                                        <i className={`bi ${t.icon}`} /> {t.label}
+                                    </button>
+                                ))}
                             </div>
-                        )}
 
-                        <button className="rd-btn-refrescar" onClick={cargarTabla} title="Refrescar">
-                            <i className={`bi bi-arrow-clockwise ${cargandoTabla ? 'rd-spin' : ''}`} />
-                        </button>
+                            <button className="rd-btn-refrescar" onClick={pestanaAdmin === 'historial' ? cargarHistorial : cargarTabla} title="Refrescar">
+                                <i className={`bi bi-arrow-clockwise ${(cargandoTabla || cargandoHistorial) ? 'rd-spin' : ''}`} />
+                            </button>
+                        </div>
                     </div>
 
+                    {(vistaAdmin === 'mes' || vistaAdmin === 'rango') && (
+                        <div className="rd-rango-bar">
+                            {vistaAdmin === 'mes' && (
+                                <input
+                                    type="month"
+                                    value={mesSel}
+                                    onChange={e => setMesSel(e.target.value)}
+                                    className="rd-fecha-input rd-mes-input"
+                                />
+                            )}
+                            {vistaAdmin === 'rango' && (
+                                <div className="rd-rango">
+                                    <input type="date" value={rangoDesde}
+                                        onChange={e => setRangoDesde(e.target.value)}
+                                        className="rd-fecha-input" />
+                                    <span className="rd-rango-sep">–</span>
+                                    <input type="date" value={rangoHasta}
+                                        onChange={e => setRangoHasta(e.target.value)}
+                                        className="rd-fecha-input" />
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ── Pestaña: Historial por usuario ── */}
+                    {pestanaAdmin === 'historial' && (
+                        <div className="rd-pestana-contenido">
+                        <div className="rd-historial-wrap" style={{ opacity: cargandoHistorial ? 0.45 : 1, transition: 'opacity .25s', pointerEvents: cargandoHistorial ? 'none' : 'auto' }}>
+                            {Object.keys(historial).length === 0 && !cargandoHistorial ? (
+                                <div className="rd-sin-datos"><i className="bi bi-inbox" /> Sin seguimientos en el periodo seleccionado</div>
+                            ) : (
+                                Object.entries(historial).map(([zona, usuarios]) => (
+                                    <div key={zona} className="rd-hist-zona">
+                                        <div className="rd-hist-zona-titulo">
+                                            <i className="bi bi-geo-alt-fill" /> {zona}
+                                            <span className="rd-hist-zona-count">
+                                                {Object.values(usuarios).reduce((s, v) => s + v.length, 0)} registros
+                                            </span>
+                                        </div>
+                                        {Object.entries(usuarios).map(([nombreUsuario, seguimientos]) => {
+                                            const initials = nombreUsuario.split(' ').slice(0,2).map(p => p[0]).join('').toUpperCase();
+                                            return (
+                                            <div key={nombreUsuario} className="rd-hist-usuario">
+                                                <div className="rd-hist-usuario-header">
+                                                    <div className="rd-hist-usuario-avatar">{initials}</div>
+                                                    <div className="rd-hist-usuario-info">
+                                                        <div className="rd-hist-usuario-nombre">{nombreUsuario}</div>
+                                                        <div className="rd-hist-usuario-meta">{zona}</div>
+                                                    </div>
+                                                    <span className="rd-hist-usuario-count">{seguimientos.length} seguimiento{seguimientos.length !== 1 ? 's' : ''}</span>
+                                                </div>
+                                                <div className="rd-hist-segs">
+                                                    {(expandidos[`${zona}-${nombreUsuario}`] ? seguimientos : seguimientos.slice(0, LIMITE_SEGS)).map(seg => (
+                                                        <div key={seg.id} className="rd-hist-seg-item">
+                                                            <span className="rd-hist-seg-dot" />
+                                                            <div className="rd-hist-seg-body">
+                                                                <div className="rd-hist-seg-tipo">{seg.tipoActividadLabel}</div>
+                                                                <div className="rd-hist-seg-info">
+                                                                    <span className="rd-hist-seg-imputado">
+                                                                        <i className="bi bi-person-fill" /> {seg.imputadoNombre || '—'}
+                                                                    </span>
+                                                                    <span className="rd-hist-seg-fecha">
+                                                                        <i className="bi bi-clock" />
+                                                                        {seg.fechaRegistro ? new Date(seg.fechaRegistro).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}
+                                                                    </span>
+                                                                </div>
+                                                                {seg.detalles && <div className="rd-hist-seg-detalles">{seg.detalles}</div>}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {seguimientos.length > LIMITE_SEGS && (
+                                                        <button
+                                                            className="rd-hist-ver-mas"
+                                                            onClick={() => toggleExpandido(`${zona}-${nombreUsuario}`)}
+                                                        >
+                                                            {expandidos[`${zona}-${nombreUsuario}`]
+                                                                ? <><i className="bi bi-chevron-up" /> Ver menos</>
+                                                                : <><i className="bi bi-chevron-down" /> Ver {seguimientos.length - LIMITE_SEGS} más</>
+                                                            }
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            );
+                                        })}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                        </div>
+                    )}
+
+                    {/* ── Pestaña: Resumen por zona ── */}
+                    {pestanaAdmin === 'resumen' && <div className="rd-pestana-contenido"><div style={{ opacity: cargandoTabla ? 0.45 : 1, transition: 'opacity .25s', pointerEvents: cargandoTabla ? 'none' : 'auto' }}>
                     {/* Chips resumen global */}
-                    {!cargandoTabla && (() => {
+                    {(() => {
                         const todasZonas = [...ZONAS, ...(consolidado['SIN_ZONA'] ? ['SIN_ZONA'] : [])];
                         const suma = {};
                         TODOS_CAMPOS.forEach(c => {
@@ -304,9 +456,7 @@ export default function ReporteDiario() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {cargandoTabla ? (
-                                    <tr><td colSpan={6} className="rd-cargando"><i className="bi bi-hourglass-split rd-spin" /> Cargando...</td></tr>
-                                ) : (
+                                {false ? null : (
                                     <>
                                         {[
                                             { titulo: 'Supervisión',           campos: CAMPOS_SUPERVISION, cls: 'rd-sec-super' },
@@ -354,6 +504,8 @@ export default function ReporteDiario() {
                             </tbody>
                         </table>
                     </div>
+                    </div>
+                    </div>}
                 </div>
             )}
         </div>

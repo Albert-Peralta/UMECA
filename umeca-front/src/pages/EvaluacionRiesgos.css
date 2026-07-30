@@ -1,10 +1,30 @@
 .eval-tabla {
     min-width: 1040px;
 }
+
+/* Badge Carpeta Cerrada en tabla evaluaciones — una sola línea de altura */
+.eval-badge-cierre-tabla {
+    display: inline-flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding: 3px 8px !important;
+    font-size: 11px !important;
+    gap: 0 !important;
+}
+.eval-cierre-sub {
+    font-size: 9px;
+    font-weight: 400;
+    opacity: 0.8;
+    line-height: 1.1;
+    display: block;
+    max-width: 120px;
+    white-space: normal;
+}
 .eval-tabla th,
 .eval-tabla td {
     text-align: left;
     padding: 10px 10px;
+    vertical-align: middle;
 }
 .eval-col-centro {
     text-align: center;
@@ -15,6 +35,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 2px;
     font-size: 0.82rem;
 }
@@ -24,8 +45,9 @@
 }
 
 .eval-fecha-audiencia {
-    min-height: 1.1em;   /* siempre ocupa la misma altura, con o sin fecha */
     display: block;
+    font-size: 0.78rem;
+    color: #9ca3af;
 }
 
 .eval-fecha-vacia {
@@ -259,12 +281,6 @@
 .zona-tag-jojutla { background: #fee2e2; color: #991b1b; }
 
 /* ── Fila sin evaluador asignado ─────────────────────────────────────────── */
-.eval-fila-sin-asignar {
-    background: #fffbeb !important;
-}
-.eval-fila-sin-asignar:hover {
-    background: #fef3c7 !important;
-}
 .eval-sin-eval {
     color: #b45309 !important;
     font-weight: 600;

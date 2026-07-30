@@ -55,7 +55,7 @@ public class ReporteDiarioService {
         mapDtoToEntity(dto, r);
         repo.save(r);
 
-        String desc = (esNuevo ? "Creación" : "Actualización") + " de reporte diario — " + fecha + " — " + user.getZona();
+        String desc = (esNuevo ? "Reporte creado" : "Reporte actualizado") + " — fecha: " + fecha + " | zona: " + user.getZona();
         bitacoraService.registrar(
             Bitacora.Entidad.REPORTE_DIARIO, r.getId(),
             "Reporte " + fecha + " (" + user.getZona() + ")",

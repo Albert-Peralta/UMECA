@@ -10,6 +10,7 @@ import DetalleMedida from './DetalleMedida';
 import './Historico.css';
 import './SeguimientoCasos.css';
 import './Imputados.css';
+import { ESTATUS_CIERRE_LABEL } from '../constants/estatusCierre';
 
 const ITEMS_POR_PAGINA = 50;
 
@@ -470,15 +471,16 @@ const SeguimientoCasos = () => {
                             <th>DELITO</th>
                             <th>FRACC.</th>
                             <th>VIGENCIA</th>
-                            <th>ESTADO</th>
-                            <th>VER</th>
+                            <th style={{ minWidth: 130 }}>CUMPLIMIENTO</th>
+                            <th style={{ minWidth: 190 }}>ESTADO</th>
+                            <th style={{ minWidth: 70, width: 70, textAlign: 'center', paddingRight: 16 }}>VER</th>
                         </tr>
                     </thead>
                     <tbody>
                         {cargando ? (
-                            <tr><td colSpan="9" className="tabla-vacia">Cargando...</td></tr>
+                            <tr><td colSpan="10" className="tabla-vacia">Cargando...</td></tr>
                         ) : gruposPaginados.length === 0 ? (
-                            <tr><td colSpan="9" className="tabla-vacia">No hay registros</td></tr>
+                            <tr><td colSpan="10" className="tabla-vacia">No hay registros</td></tr>
                         ) : gruposPaginados.map((grupo, gi) => {
                             const expanded = expandedIds.has(grupo.key);
                             const tieneVarias = grupo.medidas.length > 1;
@@ -528,10 +530,22 @@ const SeguimientoCasos = () => {
                                             : '—'}
                                     </td>
                                     <td>
+                                        {item.cumpliendoIncumpliendo
+                                            ? <span className={`cumpl-badge-tabla ${item.cumpliendoIncumpliendo === 'CUMPLIMIENTO' ? 'cumpl-cumplimiento' : 'cumpl-incumplimiento'}`}>
+                                                <i className={`bi ${item.cumpliendoIncumpliendo === 'CUMPLIMIENTO' ? 'bi-check-circle-fill' : 'bi-x-circle-fill'}`} />
+                                                {item.cumpliendoIncumpliendo === 'CUMPLIMIENTO' ? 'Cumplimiento' : 'Incumplimiento'}
+                                              </span>
+                                            : <span className="cumpl-badge-tabla cumpl-sin-asignar">Sin estatus</span>
+                                        }
+                                    </td>
+                                    <td>
                                         {item.imputadoFallecido
                                             ? <span className="imp-badge-fallecido"><i className="bi bi-heartbreak-fill" /> Fallecido</span>
                                             : item.imputadoCarpetaCerrada
-                                            ? <span className="exp-badge-cierre"><i className="bi bi-folder-x" /> Carpeta Cerrada</span>
+                                            ? <span className="exp-badge-cierre" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}>
+                                                <span><i className="bi bi-folder-x" /> Carpeta Cerrada</span>
+                                                {item.imputadoEstatusCierre && <span style={{ fontSize: 10, opacity: 0.85, fontWeight: 400 }}>{ESTATUS_CIERRE_LABEL[item.imputadoEstatusCierre] ?? item.imputadoEstatusCierre}</span>}
+                                              </span>
                                             : <span className={`estatus-badge ${estadoConfig[item.estado]?.clase}`}>{estadoConfig[item.estado]?.label ?? item.estado}</span>
                                         }
                                     </td>
@@ -574,7 +588,7 @@ const SeguimientoCasos = () => {
                                         </div>
                                     </td>
                                     {renderMedidaCols(reciente)}
-                                    <td style={{ textAlign: 'center' }}>
+                                    <td style={{ textAlign: 'center', paddingRight: 16 }}>
                                         <button className="btn-ver" onClick={(e) => { e.stopPropagation(); handleVerDetalle(reciente); }} title="Ver detalle" disabled={cargandoDetalle}>
                                             <i className="bi bi-eye"></i>
                                         </button>
@@ -590,7 +604,7 @@ const SeguimientoCasos = () => {
                                                 <span className="scp-child-anterior-label">anterior</span>
                                             </td>
                                             {renderMedidaCols(item)}
-                                            <td>
+                                            <td style={{ textAlign: 'center', paddingRight: 16 }}>
                                                 <button className="btn-ver" onClick={(e) => { e.stopPropagation(); handleVerDetalle(item); }} title="Ver detalle" disabled={cargandoDetalle}>
                                                     <i className="bi bi-eye"></i>
                                                 </button>

@@ -16,6 +16,7 @@ public class EvaluacionRiesgoResponseDTO {
     private String nombreSolicitante;
     private boolean imputadoFallecido;
     private boolean imputadoCarpetaCerrada;
+    private String imputadoEstatusCierre;
     private String numeroCierreCarpeta;
     private String nombreImputado;      // solo el nombre (para el formulario)
     private String apPaternoImputado;   // solo el apellido paterno (para el formulario)
@@ -166,6 +167,7 @@ public class EvaluacionRiesgoResponseDTO {
         dto.setImputadoId(e.getImputado().getId());
         dto.setImputadoFallecido(e.getImputado().isFallecido());
         dto.setImputadoCarpetaCerrada(e.getImputado().isCarpetaCerrada());
+        dto.setImputadoEstatusCierre(e.getImputado().getEstatusCumplimientoCierre());
         dto.setNumeroCierreCarpeta(e.getImputado().getNumeroCierreCarpeta());
         dto.setNombreImputado(e.getImputado().getNombre());
         dto.setApPaternoImputado(e.getImputado().getApPaterno());
@@ -173,7 +175,7 @@ public class EvaluacionRiesgoResponseDTO {
         dto.setNombreCompletoImputado(e.getImputado().getNombreCompleto());
         dto.setCausaPenal(e.getImputado().getCausaPenal());
         dto.setDelito(e.getImputado().getDelito());
-        dto.setUbicacionFisica(e.getImputado().getUbicacionFisica() != null ? e.getImputado().getUbicacionFisica().name() : null);
+        dto.setUbicacionFisica(e.getImputado().getUbicacionFisica());
         dto.setPuestaDisposicion(e.getPuestaDisposicion());
         dto.setFechaAudiencia(e.getFechaAudiencia());
         dto.setEstatus(e.getEstatus().name());

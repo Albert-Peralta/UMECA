@@ -101,7 +101,7 @@ public class SupervisionService {
         String nombreS = imputado.getNombre() + " " + imputado.getApPaterno();
         bitacoraService.registrar(Bitacora.Entidad.SUPERVISION, s.getId(), nombreS,
                 Bitacora.Accion.CREAR,
-                "Supervisión tipo " + dto.getTipo() + " programada para " + dto.getFechaProgramada());
+                "Supervisión registrada — tipo: " + dto.getTipo() + " | fecha: " + dto.getFechaProgramada());
         return new ApiResponse(true, "Supervisión registrada", toDto(s));
     }
 
@@ -131,7 +131,7 @@ public class SupervisionService {
         bitacoraService.registrar(Bitacora.Entidad.SUPERVISION, s.getId(), nombreSUpd,
                 cambioEstado ? Bitacora.Accion.CAMBIO_ESTADO : Bitacora.Accion.EDITAR,
                 cambioEstado
-                        ? "Estado cambiado de " + estadoAnt + " → " + dto.getEstado()
+                        ? "Estado actualizado — anterior: " + estadoAnt + " | nuevo: " + dto.getEstado()
                         : "Supervisión actualizada");
         return new ApiResponse(true, "Supervisión actualizada", toDto(s));
     }

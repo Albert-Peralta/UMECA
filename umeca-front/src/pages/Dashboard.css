@@ -59,6 +59,11 @@
     gap: 1px;
     overflow-y: auto;
     min-height: 0;
+    justify-content: flex-start;
+}
+
+/* Roles con muchos items: distribuir verticalmente para aprovechar el espacio */
+.sidebar-nav.sidebar-nav-lleno {
     justify-content: space-evenly;
 }
 

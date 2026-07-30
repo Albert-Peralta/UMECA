@@ -145,8 +145,8 @@ public class MedidaCautelarService {
                 ? saved.getImputado().getNombre() + " " + saved.getImputado().getApPaterno() : "—";
         bitacoraService.registrar(Bitacora.Entidad.MEDIDA_CAUTELAR, saved.getId(), nombre,
                 Bitacora.Accion.CREAR,
-                "Nueva " + (saved.getTipo() != null ? saved.getTipo().name() : "medida")
-                        + " registrada. Causa: " + saved.getCausaPenal());
+                "Nueva medida registrada — tipo: " + (saved.getTipo() != null ? saved.getTipo().name() : "—")
+                        + " | causa: " + saved.getCausaPenal());
         return new ApiResponse(true, "Registro guardado", MedidaCautelarResponseDTO.from(saved));
     }
 
@@ -178,7 +178,7 @@ public class MedidaCautelarService {
             cambiosMC.add("Fecha término actualizada");
         if (dto.getObservaciones() != null && !java.util.Objects.equals(medida.getObservaciones(), dto.getObservaciones()))
             cambiosMC.add("Observaciones actualizadas");
-        String descCambiosMC = cambiosMC.isEmpty() ? "Medida cautelar actualizada" : String.join(". ", cambiosMC);
+        String descCambiosMC = cambiosMC.isEmpty() ? "Medida actualizada" : "Medida actualizada — " + String.join(" | ", cambiosMC);
 
         mapFields(dto, medida);
         MedidaCautelar updated = repository.save(medida);
@@ -194,15 +194,32 @@ public class MedidaCautelarService {
         return repository.findById(id).map(m -> {
             String estadoAnterior = m.getEstado() != null ? m.getEstado().name() : "—";
             try { m.setEstado(MedidaCautelar.Estado.valueOf(estado)); }
-            catch (IllegalArgumentException e) { throw new RuntimeException("Estado inválido: " + estado); }
+            catch (IllegalArgumentException e) { return new ApiResponse(false, "Estado inválido: " + estado); }
             MedidaCautelar savedM = repository.save(m);
             String nombreM = savedM.getImputado() != null
                     ? savedM.getImputado().getNombre() + " " + savedM.getImputado().getApPaterno() : "—";
             bitacoraService.registrar(Bitacora.Entidad.MEDIDA_CAUTELAR, savedM.getId(), nombreM,
                     Bitacora.Accion.CAMBIO_ESTADO,
-                    "Estado cambiado de " + estadoAnterior + " → " + estado);
+                    "Estado actualizado — anterior: " + estadoAnterior + " | nuevo: " + estado);
             return new ApiResponse(true, "Estado actualizado",
                     MedidaCautelarResponseDTO.from(savedM));
+        }).orElse(new ApiResponse(false, "Registro no encontrado"));
+    }
+
+    @Transactional
+    public ApiResponse cambiarCumplimiento(Long id, String valor) {
+        if (!valor.equals("CUMPLIMIENTO") && !valor.equals("INCUMPLIMIENTO"))
+            return new ApiResponse(false, "Valor inválido. Use CUMPLIMIENTO o INCUMPLIMIENTO");
+        return repository.findById(id).map(m -> {
+            String anterior = m.getCumpliendoIncumpliendo() != null ? m.getCumpliendoIncumpliendo() : "Sin asignar";
+            m.setCumpliendoIncumpliendo(valor);
+            MedidaCautelar saved = repository.save(m);
+            String nombre = saved.getImputado() != null
+                    ? saved.getImputado().getNombre() + " " + saved.getImputado().getApPaterno() : "—";
+            bitacoraService.registrar(Bitacora.Entidad.MEDIDA_CAUTELAR, saved.getId(), nombre,
+                    Bitacora.Accion.EDITAR,
+                    "Cumplimiento actualizado — anterior: " + anterior + " | nuevo: " + valor);
+            return new ApiResponse(true, "Cumplimiento actualizado", MedidaCautelarResponseDTO.from(saved));
         }).orElse(new ApiResponse(false, "Registro no encontrado"));
     }
 
@@ -222,10 +239,10 @@ public class MedidaCautelarService {
                     ? medida.getImputado().getNombre() + " " + medida.getImputado().getApPaterno() : "—";
             bitacoraService.registrar(Bitacora.Entidad.MEDIDA_CAUTELAR, medidaId, nombreSeg,
                     Bitacora.Accion.EDITAR,
-                    "Seguimiento agregado. Fecha: " + dto.getFechaSeguimiento()
-                            + (dto.getDetalles() != null ? ". " + dto.getDetalles() : ""));
+                    "Seguimiento registrado — fecha: " + dto.getFechaSeguimiento()
+                            + (dto.getDetalles() != null ? " | detalles: " + dto.getDetalles() : ""));
             return new ApiResponse(true, "Seguimiento agregado",
-                    MedidaCautelarResponseDTO.from(repository.findById(medidaId).get()));
+                    MedidaCautelarResponseDTO.from(medida));
         }).orElse(new ApiResponse(false, "Registro no encontrado"));
     }
 
@@ -242,8 +259,8 @@ public class MedidaCautelarService {
                     ? saved.getImputado().getNombre() + " " + saved.getImputado().getApPaterno() : "—";
             bitacoraService.registrar(Bitacora.Entidad.MEDIDA_CAUTELAR, saved.getId(), nombreRev,
                     Bitacora.Accion.CAMBIO_ESTADO,
-                    "S.C.P. revocada. Oficio: " + dto.getOficioRevocacion()
-                            + (dto.getMotivoRevocacion() != null ? ". Motivo: " + dto.getMotivoRevocacion() : ""));
+                    "S.C.P. revocada — oficio: " + dto.getOficioRevocacion()
+                            + (dto.getMotivoRevocacion() != null ? " | motivo: " + dto.getMotivoRevocacion() : ""));
             return new ApiResponse(true, "S.C.P. revocada", MedidaCautelarResponseDTO.from(saved));
         }).orElse(new ApiResponse(false, "Registro no encontrado"));
     }
@@ -261,8 +278,8 @@ public class MedidaCautelarService {
                     ? saved.getImputado().getNombre() + " " + saved.getImputado().getApPaterno() : "—";
             bitacoraService.registrar(Bitacora.Entidad.MEDIDA_CAUTELAR, saved.getId(), nombreAmp,
                     Bitacora.Accion.EDITAR,
-                    "Plazo ampliado. Nuevo plazo: " + dto.getNuevoPlazoScp()
-                            + (dto.getMotivoAmpliacion() != null ? ". Motivo: " + dto.getMotivoAmpliacion() : ""));
+                    "Plazo ampliado — nuevo plazo: " + dto.getNuevoPlazoScp()
+                            + (dto.getMotivoAmpliacion() != null ? " | motivo: " + dto.getMotivoAmpliacion() : ""));
             return new ApiResponse(true, "Plazo ampliado", MedidaCautelarResponseDTO.from(saved));
         }).orElse(new ApiResponse(false, "Registro no encontrado"));
     }
@@ -282,8 +299,8 @@ public class MedidaCautelarService {
                     ? saved.getImputado().getNombre() + " " + saved.getImputado().getApPaterno() : "—";
             bitacoraService.registrar(Bitacora.Entidad.MEDIDA_CAUTELAR, saved.getId(), nombreLev,
                     Bitacora.Accion.CAMBIO_ESTADO,
-                    "Medida levantada. Oficio: " + dto.getOficioLevantamiento()
-                            + (dto.getMotivoLevantamiento() != null ? ". Motivo: " + dto.getMotivoLevantamiento() : ""));
+                    "Medida levantada — oficio: " + dto.getOficioLevantamiento()
+                            + (dto.getMotivoLevantamiento() != null ? " | motivo: " + dto.getMotivoLevantamiento() : ""));
             return new ApiResponse(true, "Medida levantada", MedidaCautelarResponseDTO.from(saved));
         }).orElse(new ApiResponse(false, "Registro no encontrado"));
     }
@@ -360,7 +377,7 @@ public class MedidaCautelarService {
             bitacoraService.registrar(Bitacora.Entidad.IMPUTADO,
                     m.getImputado() != null ? m.getImputado().getId() : id,
                     nombre, Bitacora.Accion.ELIMINAR,
-                    "Medida cautelar eliminada: " + m.getTipo() + " | Causa: " + m.getCausaPenal());
+                    "Medida eliminada — tipo: " + m.getTipo() + " | causa: " + m.getCausaPenal());
             repository.delete(m);
             return new ApiResponse(true, "Medida eliminada correctamente");
         }).orElse(new ApiResponse(false, "Medida no encontrada"));

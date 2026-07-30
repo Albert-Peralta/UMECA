@@ -7,6 +7,20 @@ import './Imputados.css';
 import FormularioEntrevista from './FormularioEntrevista';
 import DetalleEntrevista from './DetalleEntrevista';
 
+const ESTATUS_CIERRE_LABEL = {
+    CUMPLIMIENTO_DE_CONDICIONES:     'Cumplimiento de las condiciones',
+    CUMPLIMIENTO_DE_REPARACION_DANO: 'Cumplimiento de la reparación del daño',
+    INCUMPLIMIENTO:                  'Incumplimiento',
+    NUEVA_CONDENA:                   'Nueva condena',
+    FALLECIMIENTO_IMPUTADO:          'Fallecimiento del imputado',
+    AUTO_NO_VINCULACION:             'Auto de no vinculación a proceso',
+    SENTENCIA_ABSOLUTORIA:           'Sentencia absolutoria',
+    SENTENCIA_CONDENATORIA:          'Sentencia condenatoria',
+    ARRAIGO_DOMICILIARIO:            'Arraigo domiciliario',
+    CAMBIO_MC_A_SCP:                 'Cambio de MC a SCP',
+    SUSTITUCION_O_MODIFICACION:      'Sustitución o modificación',
+};
+
 const EntrevistaEncuadre = () => {
     const { showToast } = useToast();
     const { user } = useAuth();
@@ -213,7 +227,10 @@ const EntrevistaEncuadre = () => {
                                         {e.imputado?.fallecido
                                             ? <span className="imp-badge-fallecido"><i className="bi bi-heartbreak-fill" /> Fallecido</span>
                                             : e.imputado?.carpetaCerrada
-                                            ? <span className="exp-badge-cierre" style={{ fontSize: 11, padding: '2px 8px' }}><i className="bi bi-folder-x" /> Carpeta Cerrada</span>
+                                            ? <span className="exp-badge-cierre" style={{ fontSize: 11, padding: '2px 6px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}>
+                                                <span><i className="bi bi-folder-x" /> Carpeta Cerrada</span>
+                                                {e.imputado?.estatusCierre && <span style={{ fontSize: 10, opacity: 0.85, fontWeight: 400 }}>{ESTATUS_CIERRE_LABEL[e.imputado.estatusCierre] ?? e.imputado.estatusCierre}</span>}
+                                              </span>
                                             : <span className={`ee-badge ${getBadgeClass(e.estado)}`}>{getEstadoLabel(e.estado)}</span>
                                         }
                                     </td>

@@ -101,7 +101,11 @@ const menuPorRol = {
         { key: 'expedientes',     label: 'Expedientes Anteriores', icon: 'bi bi-archive' },
     ],
     CORRESPONDENCIA: [
-        { key: 'correspondencia', label: 'Correspondencia',    icon: 'bi bi-envelope-paper' },
+        { separator: true,        label: 'General' },
+        { key: 'graficas',        label: 'Estadísticas',        icon: 'bi bi-bar-chart' },
+        { key: 'reporte',         label: 'Reporte Diario',      icon: 'bi bi-clipboard-data' },
+        { separator: true,        label: 'Oficios' },
+        { key: 'correspondencia', label: 'Correspondencia',     icon: 'bi bi-envelope-paper' },
     ],
 };
 
@@ -249,8 +253,9 @@ const Dashboard = () => {
         case 'expedientes':      return <ExpedientesAnteriores />;
         case 'perfil':           return <Perfil />;
         default: {
+            // Redirigir a la primera sección disponible fuera del render
             const primerKey = (menuPorRol[user?.rol] || []).find(i => !i.separator)?.key || 'imputados';
-            navegarA(primerKey);
+            setTimeout(() => navegarA(primerKey), 0);
             return null;
         }
     }
@@ -274,7 +279,7 @@ const Dashboard = () => {
                     <img src={logoMorelos} alt="Morelos" />
                 </div>
 
-                <nav className={`sidebar-nav${!menuItems.some(i => i.separator) ? ' sidebar-nav-pocos' : ''}`}>
+                <nav className={`sidebar-nav${!menuItems.some(i => i.separator) ? ' sidebar-nav-pocos' : menuItems.filter(i => !i.separator).length >= 7 ? ' sidebar-nav-lleno' : ''}`}>
                     {menuItems.map((item, idx) =>
                         item.separator ? (
                             <div key={`sep-${idx}`} className="sidebar-separator">

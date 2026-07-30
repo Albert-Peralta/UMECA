@@ -41,6 +41,7 @@ public class ImputadoResponseDTO {
     private String estadoMedidaActiva; // "ACTIVO" | "LEVANTADO" | "FINALIZADO" | etc.
     private Boolean vieneDeMC;         // la medida activa viene de conversión MC→SCP
     private Boolean vieneDeScp;        // la medida activa viene de conversión SCP→MC
+    private String cumplimientoMedidaActiva; // "CUMPLIMIENTO" | "INCUMPLIMIENTO" | null
     private String zona;               // zona de la última entrevista del imputado
 
     // Resúmenes relacionados
@@ -104,6 +105,7 @@ public class ImputadoResponseDTO {
         private String estado;
         private LocalDate fechaRecepcion;
         private LocalDate fechaTermino;
+        private String cumpliendoIncumpliendo;
 
         public static MedidaResumen from(MedidaCautelar m) {
             MedidaResumen r = new MedidaResumen();
@@ -112,6 +114,7 @@ public class ImputadoResponseDTO {
             r.setEstado(m.getEstado() != null ? m.getEstado().name() : null);
             r.setFechaRecepcion(m.getFechaRecepcion());
             r.setFechaTermino(m.getFechaTermino());
+            r.setCumpliendoIncumpliendo(m.getCumpliendoIncumpliendo());
             return r;
         }
     }
@@ -128,7 +131,7 @@ public class ImputadoResponseDTO {
         dto.setNombreCompleto(i.getNombreCompleto());
         dto.setCausaPenal(i.getCausaPenal());
         dto.setDelito(i.getDelito());
-        dto.setUbicacionFisica(i.getUbicacionFisica() != null ? i.getUbicacionFisica().name() : null);
+        dto.setUbicacionFisica(i.getUbicacionFisica());
         dto.setFoto(i.getFoto());
         dto.setCreatedAt(i.getCreatedAt());
         dto.setFallecido(i.isFallecido());
@@ -157,7 +160,7 @@ public class ImputadoResponseDTO {
         dto.setNombreCompleto(i.getNombreCompleto());
         dto.setCausaPenal(i.getCausaPenal());
         dto.setDelito(i.getDelito());
-        dto.setUbicacionFisica(i.getUbicacionFisica() != null ? i.getUbicacionFisica().name() : null);
+        dto.setUbicacionFisica(i.getUbicacionFisica());
         dto.setFoto(i.getFoto());
         dto.setCreatedAt(i.getCreatedAt());
         dto.setFallecido(i.isFallecido());

@@ -124,7 +124,7 @@ public class ExpedienteExcelParser {
             for (int s = 0; s < wb.getNumberOfSheets(); s++) {
                 Sheet sheet = wb.getSheetAt(s);
                 String nombreHoja = sheet.getSheetName().trim().toUpperCase()
-                    .replace("Ó", "O").replace("Ó", "O").replace("Ú", "U");
+                    .replace("Á","A").replace("É","E").replace("Í","I").replace("Ó","O").replace("Ú","U");
 
                 String tipo;
                 if (nombreHoja.equals("MC INACTIVAS"))       tipo = "XOCHI_MC_INACTIVA";
@@ -240,8 +240,11 @@ public class ExpedienteExcelParser {
         // 83 = FECHA CANALIZACION SCP → skip
         // 84 = PRESENTACION PERIODICA SCP → skip
         // 85 = CUMPLIENDO SCP → skip
-        dto.setNoLibro(str(row, 86));              // LIBRO SCP
-        dto.setNoPagina(str(row, 87));             // PAGINA SCP
+        // LIBRO/PAGINA SCP — solo sobreescribe si tiene valor (para no perder datos MC de cols 46/47)
+        String noLibroScp = str(row, 86);
+        String noPaginaScp = str(row, 87);
+        if (noLibroScp  != null) dto.setNoLibro(noLibroScp);
+        if (noPaginaScp != null) dto.setNoPagina(noPaginaScp);
         String ultInfScp = str(row, 88);
         if (ultInfScp != null) dto.setUltimoInformeMc(ultInfScp); // ULTIMO INFORME SCP
         dto.setVencimientoPlazoScp(fecha(row, 89));
@@ -280,7 +283,7 @@ public class ExpedienteExcelParser {
             for (int s = 0; s < wb.getNumberOfSheets(); s++) {
                 Sheet sheet = wb.getSheetAt(s);
                 String nombreHoja = sheet.getSheetName().trim().toUpperCase()
-                    .replace("Ó", "O").replace("Ó", "O");
+                    .replace("Á","A").replace("É","E").replace("Í","I").replace("Ó","O").replace("Ú","U");
 
                 // Solo procesar hojas conocidas
                 String tipo;
@@ -797,7 +800,7 @@ public class ExpedienteExcelParser {
             for (int s = 0; s < wb.getNumberOfSheets(); s++) {
                 Sheet sheet = wb.getSheetAt(s);
                 String nombreHoja = sheet.getSheetName().trim().toUpperCase()
-                        .replace("Ó","O").replace("Ó","O");
+                        .replace("Á","A").replace("É","E").replace("Í","I").replace("Ó","O").replace("Ú","U");
                 if (!nombreHoja.startsWith("HIST")) continue; // solo hoja HISTORICO
                 Row header = sheet.getRow(0);
                 if (header == null) continue;
@@ -892,6 +895,82 @@ public class ExpedienteExcelParser {
                     // Columna I (índice 8) — observaciones, sin encabezado en el Excel
                     String obsCol = str(row, 8);
                     if (obsCol != null && !obsCol.isBlank()) dto.setObservaciones(obsCol);
+                    lista.add(dto);
+                }
+            }
+        }
+        return lista;
+    }
+
+    // ── CIERRE DE CARPETAS — 3 hojas: Cuernavaca→XOCHITEPEC, Cuautla→CUAUTLA, Jojutla→JOJUTLA ──
+    public List<ExpedienteAnteriorDTO> parsearCierreCarpetas(MultipartFile file) throws Exception {
+        List<ExpedienteAnteriorDTO> lista = new ArrayList<>();
+        try (InputStream is = file.getInputStream();
+             Workbook wb = new XSSFWorkbook(is)) {
+            for (int s = 0; s < wb.getNumberOfSheets(); s++) {
+                Sheet sheet = wb.getSheetAt(s);
+                String nombreHoja = sheet.getSheetName().trim().toUpperCase()
+                        .replace("Á","A").replace("É","E").replace("Í","I")
+                        .replace("Ó","O").replace("Ú","U");
+                String zona;
+                if      (nombreHoja.contains("CUERNAVACA")) zona = "XOCHITEPEC";
+                else if (nombreHoja.contains("CUAUTLA"))    zona = "CUAUTLA";
+                else if (nombreHoja.contains("JOJUTLA"))    zona = "JOJUTLA";
+                else continue;
+                Row header = sheet.getRow(0);
+                if (header == null) continue;
+                Map<String, Integer> cols = mapearHeaders(header);
+
+                // Supervisor: puede llamarse "SUPERVISOR" o ser cualquier nombre propio en col C (índice 2)
+                // Detectamos si la col C tiene un header que no es ninguno de los conocidos → es el nombre del supervisor
+                String supervisorHeader = null;
+                org.apache.poi.ss.usermodel.DataFormatter fmtH = new org.apache.poi.ss.usermodel.DataFormatter();
+                Cell headerC = header.getCell(2, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
+                if (headerC != null) {
+                    String hc = norm(fmtH.formatCellValue(headerC));
+                    // Si la col C no es "CAUSA PENAL", "INGRESO" u otro campo conocido, asumir que es supervisor
+                    if (!hc.isBlank() && !hc.contains("CAUSA") && !hc.contains("INGRESO") && !hc.contains("FECHA"))
+                        supervisorHeader = hc;
+                }
+
+                for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                    Row row = sheet.getRow(i);
+                    if (row == null) continue;
+                    String causaPenal = strH(row, cols, "CAUSA PENAL", "PENAL");
+                    // Nombre: puede llamarse "IMPUTADO", "NOMBRE DEL SUPERVISADO", "SUPERVISADO", "NOMBRE"
+                    String nombre = strH(row, cols, "IMPUTADO", "NOMBRE DEL SUPERVISADO", "SUPERVISADO", "NOMBRE");
+                    if ((causaPenal == null || causaPenal.isBlank()) &&
+                        (nombre == null || nombre.isBlank())) continue;
+                    ExpedienteAnteriorDTO dto = new ExpedienteAnteriorDTO();
+                    dto.setTipo("CIERRE_CARPETA");
+                    dto.setZona(zona);
+                    // Columna A → número
+                    Cell celdaNum = row.getCell(0);
+                    if (celdaNum != null) {
+                        if (celdaNum.getCellType() == CellType.NUMERIC)
+                            dto.setNumero(String.valueOf((int) celdaNum.getNumericCellValue()));
+                        else if (celdaNum.getCellType() == CellType.STRING && !celdaNum.getStringCellValue().isBlank())
+                            dto.setNumero(celdaNum.getStringCellValue().trim());
+                    }
+                    dto.setFechaRecepcion(fechaH(row, cols, "INGRESO", "FECHA INGRESO", "FECHA DE INGRESO"));
+                    // Supervisor: primero por header "SUPERVISOR", luego por el nombre detectado en col C
+                    String supervisor = strH(row, cols, "SUPERVISOR");
+                    if ((supervisor == null || supervisor.isBlank()) && supervisorHeader != null)
+                        supervisor = strH(row, cols, supervisorHeader);
+                    if (supervisor == null || supervisor.isBlank()) supervisor = str(row, 2); // fallback posicional col C
+                    dto.setSupervisor(supervisor);
+                    dto.setCausaPenal(causaPenal);
+                    dto.setNombre(nombre);
+                    dto.setTipoMcScp(strH(row, cols, "SJ", "TIPO"));
+                    dto.setMotivoCierre(strH(row, cols, "MOTIVO DEL CIERRE", "MOTIVO CIERRE", "MOTIVO"));
+                    dto.setEstatusFinal(strH(row, cols,
+                        "ESTATUS DE CUMPLIMIENTO AL CIERRE",
+                        "ESTATUS CUMPLIMIENTO AL CIERRE",
+                        "ESTATUS DE CUMPLIMIENTO",
+                        "ESTATUS CUMPLIMIENTO",
+                        "ESTATUS AL CIERRE",
+                        "ESTATUS"));
+                    dto.setObservaciones(strH(row, cols, "NOTAS", "OBSERVACIONES"));
                     lista.add(dto);
                 }
             }

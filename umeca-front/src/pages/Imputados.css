@@ -288,6 +288,55 @@
     border: 1px solid rgba(99,102,241,0.35);
 }
 
+/* Badge cumplimiento editable */
+.exp-badge-cumplimiento {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 5px 13px;
+    border-radius: 20px;
+    cursor: pointer;
+    border: none;
+    transition: all .2s;
+    letter-spacing: 0.3px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+.exp-badge-cumplimiento:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.35); }
+.exp-badge-cumplimiento:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.badge-cumplimiento   { background: rgba(22,163,74,0.35);  color: #4ade80; border: 1.5px solid rgba(22,163,74,0.6); }
+.badge-incumplimiento { background: rgba(220,38,38,0.35);  color: #f87171; border: 1.5px solid rgba(220,38,38,0.6); }
+.badge-sin-asignar    { background: rgba(156,163,175,0.15); color: #cbd5e1; border: 1.5px dashed rgba(156,163,175,0.5); }
+
+.cumplimiento-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    z-index: 200;
+    min-width: 170px;
+    overflow: hidden;
+}
+.cumplimiento-menu button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 9px 14px;
+    background: none;
+    border: none;
+    color: #e2e8f0;
+    font-size: 13px;
+    cursor: pointer;
+    text-align: left;
+}
+.cumplimiento-menu button:hover { background: #334155; }
+
 /* ── Indicadores de color en filas ── */
 .exp-fila-pendiente   td:first-child { border-left: 3px solid #f59e0b; }
 .exp-fila-en_revision td:first-child { border-left: 3px solid #3b82f6; }
@@ -1078,15 +1127,49 @@
 /* ── Badge cierre en hero ───────────────────────────────────────────────── */
 .exp-badge-cierre {
     display: inline-flex;
-    align-items: center;
-    gap: 5px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
     background: #dbeafe;
     color: #1e3a5f;
     border: 1px solid #93c5fd;
-    border-radius: 20px;
+    border-radius: 10px;
     font-size: 12px;
     font-weight: 600;
-    padding: 3px 12px;
+    padding: 4px 10px;
+    max-width: 185px;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    line-height: 1.3;
+}
+
+/* ── Badge cumplimiento en tabla ─────────────────────────────────────────── */
+.cumpl-badge-tabla {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+.cumpl-cumplimiento {
+    background: rgba(22, 163, 74, 0.15);
+    color: #16a34a;
+    border: 1px solid rgba(22, 163, 74, 0.4);
+}
+.cumpl-incumplimiento {
+    background: rgba(220, 38, 38, 0.12);
+    color: #dc2626;
+    border: 1px solid rgba(220, 38, 38, 0.35);
+}
+.cumpl-sin-asignar {
+    background: rgba(156, 163, 175, 0.1);
+    color: #9ca3af;
+    border: 1px dashed rgba(156, 163, 175, 0.4);
+    font-weight: 500;
 }
 
 /* ── Banner cierre en expediente ─────────────────────────────────────────── */

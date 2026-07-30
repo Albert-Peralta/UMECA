@@ -8,10 +8,10 @@ import {
 import { getImputados } from '../api/imputadosApi';
 import './Supervision.css';
 import './Imputados.css';
+import { ESTATUS_CIERRE_LABEL } from '../constants/estatusCierre';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-/** Devuelve la fecha de hoy en formato ISO (YYYY-MM-DD). */
 const hoy = () => new Date().toISOString().split('T')[0];
 
 /** Devuelve el lunes y el domingo de la semana en curso (inicio de semana = lunes). */
@@ -674,7 +674,10 @@ const SupervisionCard = ({ item, puedeEditar, puedeEliminar, onEditar, onElimina
                     {item.imputadoFallecido
                         ? <span className="imp-badge-fallecido"><i className="bi bi-heartbreak-fill" /> Fallecido</span>
                         : item.imputadoCarpetaCerrada
-                        ? <span className="exp-badge-cierre" style={{ fontSize: 11, padding: '2px 8px' }}><i className="bi bi-folder-x" /> Carpeta Cerrada</span>
+                        ? <span className="exp-badge-cierre" style={{ fontSize: 11, padding: '2px 6px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}>
+                            <span><i className="bi bi-folder-x" /> Carpeta Cerrada</span>
+                            {item.imputadoEstatusCierre && <span style={{ fontSize: 10, opacity: 0.85, fontWeight: 400 }}>{ESTATUS_CIERRE_LABEL[item.imputadoEstatusCierre] ?? item.imputadoEstatusCierre}</span>}
+                          </span>
                         : <span className={`sv-badge ${cfg.clase}`}>{cfg.label}</span>
                     }
                 </div>

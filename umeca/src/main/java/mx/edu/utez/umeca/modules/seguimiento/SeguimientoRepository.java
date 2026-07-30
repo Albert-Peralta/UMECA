@@ -36,6 +36,20 @@ public interface SeguimientoRepository extends JpaRepository<Seguimiento, Long> 
         @Param("fin") LocalDateTime fin
     );
 
+    // Historial por usuario en un rango (para la pestaña historial por usuario)
+    @Query("""
+        SELECT s FROM Seguimiento s
+        LEFT JOIN FETCH s.registradoPor u
+        LEFT JOIN FETCH s.imputado i
+        WHERE s.fechaRegistro >= :inicio
+          AND s.fechaRegistro < :fin
+        ORDER BY u.zona, u.apPaterno, s.fechaRegistro DESC
+    """)
+    List<Seguimiento> findHistorialPorUsuario(
+        @Param("inicio") LocalDateTime inicio,
+        @Param("fin") LocalDateTime fin
+    );
+
     // Seguimientos por medida
     List<Seguimiento> findByMedidaIdOrderByFechaRegistroDesc(Long medidaId);
 

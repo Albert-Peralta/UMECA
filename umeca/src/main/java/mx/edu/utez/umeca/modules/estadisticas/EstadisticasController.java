@@ -16,21 +16,20 @@ public class EstadisticasController {
     private final EstadisticasService service;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO','CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> getEstadisticas(
-            @RequestParam(defaultValue = "0") int anio,
-            @RequestParam(defaultValue = "0") int mes,
-            @RequestParam(defaultValue = "0") int semana) {
-        return ResponseEntity.ok(service.getEstadisticas(anio, mes, semana));
+            @RequestParam(defaultValue = "") String desde,
+            @RequestParam(defaultValue = "") String hasta) {
+        return ResponseEntity.ok(service.getEstadisticas(desde, hasta));
     }
 
     @GetMapping("/exportar")
-    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO','CORRESPONDENCIA')")
     public ResponseEntity<byte[]> exportarExcel(
-            @RequestParam(defaultValue = "0") int anio,
-            @RequestParam(defaultValue = "0") int mes) throws Exception {
-        byte[] excel = service.exportarExcel(anio, mes);
-        String nombre = "estadisticas_" + (anio > 0 ? anio : "todos") + (mes > 0 ? "_mes" + mes : "") + ".xlsx";
+            @RequestParam(defaultValue = "") String desde,
+            @RequestParam(defaultValue = "") String hasta) throws Exception {
+        byte[] excel = service.exportarExcel(desde, hasta);
+        String nombre = "estadisticas_" + (desde.isBlank() ? "completo" : desde + "_" + hasta) + ".xlsx";
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + nombre + "\"")
                 .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))

@@ -353,6 +353,9 @@
 /* ── Tabla ──────────────────────────────────────────────────────────────────── */
 .rd-tabla-wrap {
     overflow-x: auto;
+    border-radius: 10px;
+    border: 1.5px solid #e5e7eb;
+    overflow: hidden;
 }
 
 .rd-tabla {
@@ -361,55 +364,95 @@
     font-size: 12.5px;
 }
 
+/* Encabezado */
+.rd-tabla thead tr {
+    background: linear-gradient(90deg, #1a3a1a 0%, #2d5a3a 100%);
+}
+
 .rd-tabla th {
-    background: #2d4a2d;
     color: #fff;
-    padding: 9px 12px;
+    padding: 11px 14px;
     text-align: center;
     font-size: 11px;
     font-weight: 700;
-    letter-spacing: .4px;
+    letter-spacing: .5px;
     white-space: nowrap;
+    border-right: 1px solid rgba(255,255,255,.1);
 }
 
-.rd-th-actividad { text-align: left !important; min-width: 220px; }
+.rd-tabla th:last-child { border-right: none; }
 
+.rd-th-actividad {
+    text-align: left !important;
+    min-width: 240px;
+    padding-left: 16px !important;
+}
+
+/* Celdas */
 .rd-tabla td {
-    padding: 7px 12px;
-    border-bottom: 1px solid #f0f0f0;
+    padding: 8px 14px;
+    border-bottom: 1px solid #f0f4f0;
     color: #374151;
+    border-right: 1px solid #f0f4f0;
 }
 
-.rd-td-actividad { font-weight: 500; }
+.rd-tabla td:last-child { border-right: none; }
+
+.rd-td-actividad {
+    font-weight: 500;
+    color: #1f2937;
+    padding-left: 16px !important;
+}
+
 .rd-td-num, .rd-td-total { text-align: center; }
-.rd-td-total { font-weight: 700; }
 
-.rd-tabla tbody tr:hover { background: #f9fafb; }
+.rd-td-total {
+    font-weight: 700;
+    color: #1a2e1a;
+    background: #f0f9f0;
+}
 
-/* Filas de sección en la tabla */
+/* Zebra striping */
+.rd-tabla tbody tr:nth-child(even):not(.rd-seccion-row):not(.rd-fila-gran-total) {
+    background: #fafcfa;
+}
+
+.rd-tabla tbody tr:hover:not(.rd-seccion-row):not(.rd-fila-gran-total) {
+    background: #f0f7f0;
+}
+
+/* Filas de sección */
 .rd-seccion-row td {
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: .5px;
-    padding: 6px 12px;
-    color: #fff;
+    letter-spacing: .6px;
+    padding: 7px 16px;
+    border-right: 1px solid rgba(255,255,255,.15);
 }
 
-.rd-sec-general td { background: #376842; }
-.rd-sec-super   td { background: #1565c0; }
-.rd-sec-eval    td { background: #b45309; }
-.rd-sec-adic    td { background: #6b21a8; }
+.rd-seccion-row td:last-child { border-right: none; }
 
-.rd-fila-cero { opacity: .45; }
+.rd-sec-general td { background: #376842; color: #fff; }
+.rd-sec-super   td { background: #1e50a0; color: #fff; }
+.rd-sec-eval    td { background: #b45309; color: #fff; }
+.rd-sec-adic    td { background: #6b21a8; color: #fff; }
 
+.rd-fila-cero td { color: #c4c9d0 !important; font-weight: 400; }
+.rd-fila-cero .rd-td-total { background: transparent; color: #d1d5db !important; }
+
+/* Fila total general */
 .rd-fila-gran-total td {
-    background: #1a2e1a;
+    background: linear-gradient(90deg, #1a2e1a 0%, #2d4a2d 100%);
     color: #fff;
     font-weight: 700;
     font-size: 13px;
-    padding: 9px 12px;
+    padding: 10px 14px;
+    border-right: 1px solid rgba(255,255,255,.1);
 }
+
+.rd-fila-gran-total td:first-child { padding-left: 16px; }
+.rd-fila-gran-total td:last-child { border-right: none; }
 
 /* ── Estados vacío / cargando ───────────────────────────────────────────────── */
 .rd-vacio, .rd-cargando {
@@ -602,4 +645,299 @@
 @keyframes rd-pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.3; }
+}
+
+/* ── Pestañas admin ──────────────────────────────────────────────────────────── */
+.rd-pestanas-bar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    border-bottom: 2px solid #e5e7eb;
+    padding: 16px 20px 0;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.rd-pestanas-bar .rd-filtros {
+    margin-bottom: 6px;
+    flex-wrap: nowrap;
+}
+
+/* ── Barra de selector mes / rango (fila compacta, alineada a la derecha) ──── */
+.rd-rango-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 6px 20px 8px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fafafa;
+}
+
+.rd-mes-input {
+    font-size: 12.5px !important;
+    padding: 5px 10px !important;
+    color: #374151;
+    font-weight: 500;
+    min-width: 0;
+    width: auto;
+    margin-right: 90px; /* alinea bajo el botón Mes */
+}
+
+.rd-pestanas {
+    display: flex;
+    gap: 6px;
+    padding: 0;
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.rd-pestana {
+    position: relative;
+    background: #f3f4f6;
+    border: 1.5px solid #e5e7eb;
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    margin-bottom: -2px;
+    padding: 10px 22px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background .15s, color .15s, border-color .15s;
+}
+
+.rd-pestana i { font-size: 15px; }
+
+.rd-pestana:hover {
+    background: #e9ecef;
+    color: #1a2e1a;
+}
+
+.rd-pestana-activa {
+    background: #fff;
+    color: #1a6e2e;
+    border-color: #d1d5db;
+    border-bottom-color: #fff;
+    z-index: 1;
+}
+
+.rd-pestana-activa::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #fff;
+}
+
+/* ── Contenido debajo de las pestañas ───────────────────────────────────────── */
+.rd-pestana-contenido {
+    padding: 20px;
+}
+
+/* ── Historial por usuario ───────────────────────────────────────────────────── */
+.rd-historial-wrap {
+    padding: 0;
+}
+
+.rd-sin-datos {
+    text-align: center;
+    padding: 50px 40px;
+    color: #9ca3af;
+    font-size: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.rd-sin-datos i { font-size: 32px; opacity: .5; }
+
+/* Zona */
+.rd-hist-zona {
+    margin-bottom: 28px;
+}
+
+.rd-hist-zona-titulo {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #fff;
+    background: linear-gradient(90deg, #1a3a1a 0%, #2d6a4f 100%);
+    padding: 9px 16px;
+    border-radius: 8px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 6px rgba(26,46,26,.18);
+}
+
+.rd-hist-zona-count {
+    margin-left: auto;
+    background: rgba(255,255,255,.2);
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 11px;
+    letter-spacing: .02em;
+}
+
+/* Usuario card */
+.rd-hist-usuario {
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    margin-bottom: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+
+.rd-hist-usuario-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(90deg, #f0fdf4 0%, #f8fafc 100%);
+    padding: 11px 16px;
+    border-bottom: 1.5px solid #e5e7eb;
+}
+
+.rd-hist-usuario-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #1a6e2e;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    letter-spacing: .5px;
+}
+
+.rd-hist-usuario-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.rd-hist-usuario-nombre {
+    font-weight: 700;
+    font-size: 14px;
+    color: #111827;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rd-hist-usuario-meta {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 1px;
+}
+
+.rd-hist-usuario-count {
+    font-size: 11.5px;
+    background: #1a6e2e;
+    color: #fff;
+    padding: 3px 11px;
+    border-radius: 20px;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Seguimientos lista */
+.rd-hist-segs {
+    display: flex;
+    flex-direction: column;
+}
+
+.rd-hist-seg-item {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background .1s;
+    align-items: start;
+}
+
+.rd-hist-seg-item:last-child { border-bottom: none; }
+.rd-hist-seg-item:hover { background: #fafafa; }
+
+.rd-hist-seg-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #2d6a4f;
+    margin-top: 5px;
+    flex-shrink: 0;
+}
+
+.rd-hist-seg-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.rd-hist-seg-tipo {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a2e1a;
+}
+
+.rd-hist-seg-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 20px;
+    font-size: 11.5px;
+    color: #6b7280;
+}
+
+.rd-hist-seg-imputado,
+.rd-hist-seg-fecha {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.rd-hist-seg-imputado i { color: #2d6a4f; }
+.rd-hist-seg-fecha    i { color: #9ca3af; }
+
+.rd-hist-ver-mas {
+    width: 100%;
+    background: none;
+    border: none;
+    border-top: 1px solid #f0f0f0;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #2d6a4f;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background .15s;
+}
+
+.rd-hist-ver-mas:hover { background: #f0fdf4; }
+
+.rd-hist-seg-detalles {
+    font-size: 12px;
+    color: #374151;
+    background: #f3f4f6;
+    border-left: 3px solid #2d6a4f;
+    padding: 5px 10px;
+    border-radius: 0 4px 4px 0;
+    margin-top: 2px;
+    line-height: 1.5;
 }

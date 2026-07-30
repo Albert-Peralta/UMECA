@@ -1,13 +1,26 @@
 import { useState, useEffect, useRef } from 'react';
 import { getImputados, getImputadoById, actualizarFotoImputado, registrarFallecimiento, registrarCierreCarpeta } from '../api/imputadosApi';
 import { getSeguimientosPorImputado } from '../api/seguimientosApi';
+import { cambiarCumplimiento } from '../api/medidasApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import SeguimientosPanel from '../components/SeguimientosPanel';
 import './Historico.css';
 import './Imputados.css';
+import { ESTATUS_CIERRE_LABEL } from '../constants/estatusCierre';
 
 const ITEMS_POR_PAGINA = 50;
+
+// Estatus que solo finalizan la medida activa sin cerrar la carpeta completa
+// Estatus que solo finalizan la medida activa sin cerrar la carpeta completa
+// MC: Auto no vinculación, Arraigo, Cambio MC→SCP
+// SCP: Nueva condena
+const ESTATUS_SOLO_MEDIDA = new Set([
+    'AUTO_NO_VINCULACION',
+    'ARRAIGO_DOMICILIARIO',
+    'CAMBIO_MC_A_SCP',
+    'NUEVA_CONDENA',
+]);
 
 const estatusEntrevistaConfig = {
     PENDIENTE:   { label: 'Pendiente',   clase: 'estatus-pendiente' },
@@ -68,6 +81,27 @@ const Imputados = ({ onNavigarEntrevista }) => {
     const [formFall, setFormFall] = useState(FALLECIMIENTO_INIT);
     const [guardandoFall, setGuardandoFall] = useState(false);
     const [fallMsg, setFallMsg] = useState(null);
+
+    // Cumplimiento
+    const [showCumplimientoMenu, setShowCumplimientoMenu] = useState(false);
+    const [guardandoCumplimiento, setGuardandoCumplimiento] = useState(false);
+
+    const handleCambiarCumplimiento = async (medidaId, valor) => {
+        setGuardandoCumplimiento(true);
+        setShowCumplimientoMenu(false);
+        try {
+            const res = await cambiarCumplimiento(medidaId, valor);
+            if (res.data.ok) {
+                const [resPerfil] = await Promise.all([
+                    getImputadoById(perfil.id),
+                    cargarDatos(),
+                ]);
+                if (resPerfil.data.ok) setPerfil(resPerfil.data.data);
+                showToast(`Estatus actualizado: ${valor === 'CUMPLIMIENTO' ? 'Cumplimiento' : 'Incumplimiento'}`);
+            }
+        } catch { showToast('No se pudo actualizar el estatus', 'error'); }
+        finally { setGuardandoCumplimiento(false); }
+    };
 
     // Cierre de carpeta
     const [showCierre, setShowCierre] = useState(false);
@@ -441,17 +475,18 @@ const Imputados = ({ onNavigarEntrevista }) => {
                             <th>DELITO</th>
                             <th>FECHA REGISTRO</th>
                             {tabVista === 'cerrados' && <th>TIPO / NO. CIERRE</th>}
-                            <th>ENTREVISTAS</th>
-                            <th>EVALUACIONES</th>
-                            <th style={{ textAlign: 'center' }}>MEDIDA</th>
-                            <th>EXPEDIENTE</th>
+                            <th style={{ textAlign: 'center' }}>ENTREVISTAS</th>
+                            <th style={{ textAlign: 'center', paddingRight: 20 }}>EVALUACIONES</th>
+                            <th style={{ textAlign: 'center', paddingLeft: 20 }}>MEDIDA</th>
+                            <th style={{ textAlign: 'center', minWidth: 140, whiteSpace: 'nowrap' }}>CUMPLIMIENTO</th>
+                            <th style={{ textAlign: 'center', width: 80 }}>EXPEDIENTE</th>
                         </tr>
                     </thead>
                     <tbody>
                         {cargando ? (
-                            <tr><td colSpan={tabVista === 'cerrados' ? 9 : 8} className="tabla-vacia">Cargando...</td></tr>
+                            <tr><td colSpan={tabVista === 'cerrados' ? 10 : 9} className="tabla-vacia">Cargando...</td></tr>
                         ) : paginados.length === 0 ? (
-                            <tr><td colSpan={tabVista === 'cerrados' ? 9 : 8} className="tabla-vacia">No hay registros</td></tr>
+                            <tr><td colSpan={tabVista === 'cerrados' ? 10 : 9} className="tabla-vacia">No hay registros</td></tr>
                         ) : (
                             paginados.map((item, index) => (
                                 <tr key={item.id}>
@@ -487,17 +522,17 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                             )}
                                         </td>
                                     )}
-                                    <td>
+                                    <td style={{ textAlign: 'center' }}>
                                         <span className={`count-badge ${(item.totalEntrevistas ?? 0) === 0 ? 'count-badge-cero' : ''}`}>
                                             {item.totalEntrevistas ?? 0}
                                         </span>
                                     </td>
-                                    <td>
+                                    <td style={{ textAlign: 'center', paddingRight: 20 }}>
                                         <span className={`count-badge ${(item.totalEvaluaciones ?? 0) === 0 ? 'count-badge-cero' : ''}`}>
                                             {item.totalEvaluaciones ?? 0}
                                         </span>
                                     </td>
-                                    <td style={{ textAlign: 'center' }}>
+                                    <td style={{ textAlign: 'center', paddingLeft: 20 }}>
                                         {item.tipoMedidaActiva ? (
                                             <div style={{ display: 'inline-block', textAlign: 'center' }}>
                                                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
@@ -518,7 +553,18 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                             <span style={{ color: '#d1d5db', fontSize: 13 }}>—</span>
                                         )}
                                     </td>
-                                    <td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        {item.tipoMedidaActiva && item.cumplimientoMedidaActiva
+                                            ? <span className={`cumpl-badge-tabla ${item.cumplimientoMedidaActiva === 'CUMPLIMIENTO' ? 'cumpl-cumplimiento' : 'cumpl-incumplimiento'}`}>
+                                                <i className={`bi ${item.cumplimientoMedidaActiva === 'CUMPLIMIENTO' ? 'bi-check-circle-fill' : 'bi-x-circle-fill'}`} />
+                                                {item.cumplimientoMedidaActiva === 'CUMPLIMIENTO' ? 'Cumplimiento' : 'Incumplimiento'}
+                                              </span>
+                                            : item.tipoMedidaActiva
+                                                ? <span className="cumpl-badge-tabla cumpl-sin-asignar">Sin estatus</span>
+                                                : <span style={{ color: '#d1d5db', fontSize: 13 }}>—</span>
+                                        }
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>
                                         <div className="imp-tooltip-wrap">
                                             <button className="btn-ver" onClick={() => handleVerPerfil(item)}>
                                                 <i className="bi bi-folder2-open"></i>
@@ -602,6 +648,30 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                                                 <i className="bi bi-card-checklist"></i>
                                                                 {medidaActiva.tipo === 'MEDIDA_CAUTELAR' ? 'MC Activa' : 'SCP Activa'}
                                                             </span>
+                                                        )}
+                                                        {medidaActiva && !perfil.carpetaCerrada && !perfil.fallecido && (
+                                                            <div style={{ position: 'relative', display: 'inline-block' }}>
+                                                                <button
+                                                                    className={`exp-badge-cumplimiento ${medidaActiva.cumpliendoIncumpliendo === 'CUMPLIMIENTO' ? 'badge-cumplimiento' : medidaActiva.cumpliendoIncumpliendo === 'INCUMPLIMIENTO' ? 'badge-incumplimiento' : 'badge-sin-asignar'}`}
+                                                                    onClick={() => setShowCumplimientoMenu(v => !v)}
+                                                                    disabled={guardandoCumplimiento}
+                                                                    title="Cambiar estatus de cumplimiento"
+                                                                >
+                                                                    <i className={`bi ${medidaActiva.cumpliendoIncumpliendo === 'CUMPLIMIENTO' ? 'bi-check-circle-fill' : medidaActiva.cumpliendoIncumpliendo === 'INCUMPLIMIENTO' ? 'bi-x-circle-fill' : 'bi-dash-circle'}`} />
+                                                                    {medidaActiva.cumpliendoIncumpliendo === 'CUMPLIMIENTO' ? 'Cumplimiento' : medidaActiva.cumpliendoIncumpliendo === 'INCUMPLIMIENTO' ? 'Incumplimiento' : 'Sin estatus'}
+                                                                    <i className="bi bi-chevron-down" style={{ fontSize: 10 }} />
+                                                                </button>
+                                                                {showCumplimientoMenu && (
+                                                                    <div className="cumplimiento-menu">
+                                                                        <button onClick={() => handleCambiarCumplimiento(medidaActiva.id, 'CUMPLIMIENTO')}>
+                                                                            <i className="bi bi-check-circle-fill" style={{ color: '#16a34a' }} /> Cumplimiento
+                                                                        </button>
+                                                                        <button onClick={() => handleCambiarCumplimiento(medidaActiva.id, 'INCUMPLIMIENTO')}>
+                                                                            <i className="bi bi-x-circle-fill" style={{ color: '#dc2626' }} /> Incumplimiento
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         )}
                                                         {perfil.fallecido && (
                                                             <span className="exp-badge-fallecido">
@@ -729,7 +799,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                                 <span className="cierre-banner-num">{perfil.numeroCierreCarpeta}</span>
                                                 {perfil.estatusCumplimientoCierre && (
                                                     <span className="cierre-banner-estatus">
-                                                        {({ CUMPLIENDO: 'Cumpliendo', CUMPLIENDO_PARCIALMENTE: 'Cumpliendo Parcialmente', CUMPLIDO_TOTALMENTE: 'Cumplido Totalmente', CUMPLIMIENTO_DE_CONDICIONES: 'Cumplimiento de Condiciones', CUMPLIMIENTO_DE_ACUERDO_REPARATORIO: 'Cumplimiento de Acuerdo Reparatorio', NO_VINCULACION_A_PROCESO: 'No Vinculación a Proceso', REVOCACION_POR_INCUMPLIMIENTO: 'Revocación por Incumplimiento', CESE_POR_SENTENCIA: 'Cese por Sentencia', SUSTITUCION_O_MODIFICACION: 'Sustitución o Modificación', SOBRESEIMIENTO: 'Sobreseimiento', SUSTRACCION_DE_ACCION_DE_LA_JUSTICIA: 'Sustracción de Acción de la Justicia' })[perfil.estatusCumplimientoCierre] ?? perfil.estatusCumplimientoCierre}
+                                                        {ESTATUS_CIERRE_LABEL[perfil.estatusCumplimientoCierre] ?? perfil.estatusCumplimientoCierre}
                                                     </span>
                                                 )}
                                             </div>
@@ -1043,7 +1113,10 @@ const Imputados = ({ onNavigarEntrevista }) => {
                             <>
                                 <div className="fall-aviso fall-aviso-cierre">
                                     <i className="bi bi-info-circle-fill"></i>
-                                    Esta acción cierra la carpeta del imputado y finaliza automáticamente todas sus medidas activas. El número de cierre se genera automáticamente.
+                                    {formCierre.estatusCumplimientoCierre && ESTATUS_SOLO_MEDIDA.has(formCierre.estatusCumplimientoCierre)
+                                        ? 'Este estatus finalizará las medidas activas del imputado. El expediente permanecerá abierto para seguir operando.'
+                                        : 'Esta acción cierra la carpeta del imputado y finaliza automáticamente todas sus medidas activas. El número de cierre se genera automáticamente.'
+                                    }
                                 </div>
 
                                 <div className="fall-body">
@@ -1054,33 +1127,43 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                             onChange={e => setFormCierre(p => ({ ...p, motivoCierreCarpeta: e.target.value }))} />
                                     </div>
                                     <div className="fall-field fall-field-full" style={{ maxWidth: 260 }}>
-                                        <label>Fecha de ingreso</label>
+                                        <label>Fecha de cierre</label>
                                         <input type="date"
                                             value={formCierre.fechaIngresoCierre}
                                             onChange={e => setFormCierre(p => ({ ...p, fechaIngresoCierre: e.target.value }))} />
                                     </div>
                                     <div className="fall-field fall-field-full">
                                         <label>Estatus al cierre <span className="fall-req">*</span></label>
-                                        <select
-                                            className="cierre-estatus-select"
-                                            value={formCierre.estatusCumplimientoCierre}
-                                            onChange={e => setFormCierre(p => ({ ...p, estatusCumplimientoCierre: e.target.value }))}
-                                        >
-                                            <option value="">— Seleccionar estatus —</option>
-                                            <option value="CUMPLIENDO">Cumpliendo</option>
-                                            <option value="CUMPLIENDO_PARCIALMENTE">Cumpliendo Parcialmente</option>
-                                            <option value="CUMPLIDO_TOTALMENTE">Cumplido Totalmente</option>
-                                            <option value="CUMPLIMIENTO_DE_CONDICIONES">Cumplimiento de Condiciones</option>
-                                            <option value="CUMPLIMIENTO_DE_ACUERDO_REPARATORIO">Cumplimiento de Acuerdo Reparatorio</option>
-                                            <option value="NO_VINCULACION_A_PROCESO">No Vinculación a Proceso</option>
-                                            {perfil?.medidas?.some(m => m.tipo === 'SUSPENSION_CONDICIONAL') && (
-                                                <option value="REVOCACION_POR_INCUMPLIMIENTO">Revocación por Incumplimiento</option>
-                                            )}
-                                            <option value="CESE_POR_SENTENCIA">Cese por Sentencia</option>
-                                            <option value="SUSTITUCION_O_MODIFICACION">Sustitución o Modificación</option>
-                                            <option value="SOBRESEIMIENTO">Sobreseimiento</option>
-                                            <option value="SUSTRACCION_DE_ACCION_DE_LA_JUSTICIA">Sustracción de Acción de la Justicia</option>
-                                        </select>
+                                        {(() => {
+                                            // Determinar tipo por la medida más reciente
+                                            const medidasOrdenadas = [...(perfil?.medidas || [])].sort((a, b) =>
+                                                new Date(b.fechaInicio || b.createdAt || 0) - new Date(a.fechaInicio || a.createdAt || 0)
+                                            );
+                                            const tipoReciente = medidasOrdenadas[0]?.tipo;
+                                            const esSCP = tipoReciente === 'SUSPENSION_CONDICIONAL';
+                                            return (
+                                                <select
+                                                    className="cierre-estatus-select"
+                                                    value={formCierre.estatusCumplimientoCierre}
+                                                    onChange={e => setFormCierre(p => ({ ...p, estatusCumplimientoCierre: e.target.value }))}
+                                                >
+                                                    <option value="">— Seleccionar estatus —</option>
+                                                    {esSCP ? (<>
+                                                        <option value="CUMPLIMIENTO_DE_CONDICIONES">Cumplimiento de las condiciones</option>
+                                                        <option value="CUMPLIMIENTO_DE_REPARACION_DANO">Cumplimiento de la reparación del daño</option>
+                                                        <option value="INCUMPLIMIENTO">Incumplimiento</option>
+                                                        <option value="NUEVA_CONDENA">Nueva condena</option>
+                                                        <option value="FALLECIMIENTO_IMPUTADO">Fallecimiento del imputado</option>
+                                                    </>) : (<>
+                                                        <option value="AUTO_NO_VINCULACION">Auto de no vinculación a proceso</option>
+                                                        <option value="SENTENCIA_ABSOLUTORIA">Sentencia absolutoria</option>
+                                                        <option value="SENTENCIA_CONDENATORIA">Sentencia condenatoria</option>
+                                                        <option value="ARRAIGO_DOMICILIARIO">Arraigo domiciliario</option>
+                                                        <option value="CAMBIO_MC_A_SCP">Cambio de MC a SCP</option>
+                                                    </>)}
+                                                </select>
+                                            );
+                                        })()}
                                     </div>
                                     <div className="fall-field fall-field-full">
                                         <label>Notas adicionales</label>
@@ -1123,7 +1206,10 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                     <div className="cierre-resumen">
                                         <div className="cierre-resumen-titulo">
                                             <i className="bi bi-exclamation-triangle-fill"></i>
-                                            Esta acción no se puede deshacer. Revisa los datos antes de confirmar.
+                                            {ESTATUS_SOLO_MEDIDA.has(formCierre.estatusCumplimientoCierre)
+                                                ? 'Se finalizarán las medidas activas. El expediente seguirá abierto.'
+                                                : 'Esta acción no se puede deshacer. La carpeta quedará cerrada permanentemente.'
+                                            }
                                         </div>
                                         <div className="cierre-resumen-fila">
                                             <span className="cierre-resumen-label">Imputado</span>
@@ -1136,19 +1222,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                         <div className="cierre-resumen-fila">
                                             <span className="cierre-resumen-label">Estatus al cierre</span>
                                             <span className="cierre-resumen-valor">
-                                                {({
-                                                    CUMPLIENDO: 'Cumpliendo',
-                                                    CUMPLIENDO_PARCIALMENTE: 'Cumpliendo Parcialmente',
-                                                    CUMPLIDO_TOTALMENTE: 'Cumplido Totalmente',
-                                                    CUMPLIMIENTO_DE_CONDICIONES: 'Cumplimiento de Condiciones',
-                                                    CUMPLIMIENTO_DE_ACUERDO_REPARATORIO: 'Cumplimiento de Acuerdo Reparatorio',
-                                                    NO_VINCULACION_A_PROCESO: 'No Vinculación a Proceso',
-                                                    REVOCACION_POR_INCUMPLIMIENTO: 'Revocación por Incumplimiento',
-                                                    CESE_POR_SENTENCIA: 'Cese por Sentencia',
-                                                    SUSTITUCION_O_MODIFICACION: 'Sustitución o Modificación',
-                                                    SOBRESEIMIENTO: 'Sobreseimiento',
-                                                    SUSTRACCION_DE_ACCION_DE_LA_JUSTICIA: 'Sustracción de Acción de la Justicia',
-                                                })[formCierre.estatusCumplimientoCierre] || formCierre.estatusCumplimientoCierre}
+                                                {ESTATUS_CIERRE_LABEL[formCierre.estatusCumplimientoCierre] || formCierre.estatusCumplimientoCierre}
                                             </span>
                                         </div>
                                         <div className="cierre-resumen-fila">
@@ -1172,9 +1246,12 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                             <span className="cierre-resumen-valor">
                                                 {(() => {
                                                     const activas = perfil.medidas?.filter(m => !['FINALIZADO','LEVANTADO','REVOCADO'].includes(m.estado)) ?? [];
-                                                    return activas.length > 0
-                                                        ? `${activas.length} medida(s) en curso serán finalizadas automáticamente`
-                                                        : `${perfil.medidas?.length ?? 0} medida(s) registrada(s) — ninguna activa al momento del cierre`;
+                                                    const soloMedida = ESTATUS_SOLO_MEDIDA.has(formCierre.estatusCumplimientoCierre);
+                                                    if (activas.length > 0)
+                                                        return soloMedida
+                                                            ? `${activas.length} medida(s) serán finalizadas. El expediente permanece abierto.`
+                                                            : `${activas.length} medida(s) en curso serán finalizadas y la carpeta quedará cerrada.`;
+                                                    return `${perfil.medidas?.length ?? 0} medida(s) registrada(s) — ninguna activa al momento del cierre`;
                                                 })()}
                                             </span>
                                         </div>

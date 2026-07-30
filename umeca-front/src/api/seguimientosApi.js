@@ -22,6 +22,10 @@ export const getReporteAutomatico = (fecha, zona) =>
 export const getReporteConsolidado = (desde, hasta) =>
     api.get('/seguimientos/reporte-consolidado', { params: { desde, hasta } });
 
+// Historial detallado por usuario: { XOCHITEPEC: { 'Juan Pérez': [...seguimientos] }, ... }
+export const getHistorialPorUsuario = (desde, hasta) =>
+    api.get('/seguimientos/historial-por-usuario', { params: { desde, hasta } });
+
 // Catálogo de tipos de actividad para el desplegable
 export const TIPOS_ACTIVIDAD = [
     // Supervisión

@@ -476,14 +476,14 @@ const FormularioSCP = ({ medidaInicial, onVolver, onGuardado }) => {
                 <Field label="Responsable de cierre de carpeta">
                     <input type="text" value={form.responsableCierre} onChange={e => set('responsableCierre', e.target.value)} />
                 </Field>
-                {/* Estatus final solo editable si ya se ha impuesto la S.C.P. -------------------------------------*/}
+                {/* Estatus final solo editable si ya se ha impuesto la S.C.P. -------------------------------------
                 <Field label="Estatus final">
                     <select value={form.estatusFinal} onChange={e => set('estatusFinal', e.target.value)}>
                         <option value="">Seleccionar...</option>
                         <option value="TOTAL">Total</option>
                         <option value="PARCIAL">Parcial</option>
                     </select>
-                </Field>
+                </Field>*/}
             </div>
 
             {/* ── SECCIÓN 3: CONDICIONES DE SUSPENSIÓN ── */}

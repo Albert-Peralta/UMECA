@@ -94,11 +94,7 @@ public class EvaluacionRiesgoService {
             imputado.setCausaPenal(dto.getCausaPenal());
             imputado.setDelito(dto.getDelito());
             if (dto.getUbicacionFisica() != null && !dto.getUbicacionFisica().isBlank()) {
-                try {
-                    imputado.setUbicacionFisica(Imputado.UbicacionFisica.valueOf(dto.getUbicacionFisica()));
-                } catch (IllegalArgumentException ex) {
-                    return new ApiResponse(false, "Ubicación física inválida: " + dto.getUbicacionFisica());
-                }
+                imputado.setUbicacionFisica(dto.getUbicacionFisica().trim());
             }
             imputadoRepository.save(imputado);
         }
@@ -136,8 +132,8 @@ public class EvaluacionRiesgoService {
         String nombreEv = imputado.getNombre() + " " + imputado.getApPaterno();
         bitacoraService.registrar(Bitacora.Entidad.IMPUTADO, imputado.getId(), nombreEv,
                 Bitacora.Accion.CREAR,
-                "Evaluación de riesgo registrada. Causa: " + dto.getCausaPenal()
-                        + ". Delito: " + dto.getDelito());
+                "Evaluación de riesgo registrada — causa: " + dto.getCausaPenal()
+                        + " | delito: " + dto.getDelito());
         return new ApiResponse(true, "Evaluación registrada", EvaluacionRiesgoResponseDTO.from(savedEv));
     }
 
@@ -153,13 +149,15 @@ public class EvaluacionRiesgoService {
             if (dto.getEntrevistaId() != null)
                 entrevistaRepository.findById(dto.getEntrevistaId()).ifPresent(ev::setEntrevista);
 
-            // Auto-asignar evaluador al usuario que edita el formulario
+            // Auto-asignar evaluador al usuario que edita el formulario (si aún no tiene)
             if (ev.getEvaluador() == null) {
                 userRepository.findByUsername(usernameOrEmailUpdate)
                         .or(() -> userRepository.findByEmail(usernameOrEmailUpdate))
-                        .ifPresent(ev::setEvaluador);
-                if (ev.getEstatus() == EvaluacionRiesgo.Estatus.PENDIENTE)
-                    ev.setEstatus(EvaluacionRiesgo.Estatus.TRABAJANDO);
+                        .ifPresent(u -> {
+                            ev.setEvaluador(u);
+                            if (ev.getEstatus() == EvaluacionRiesgo.Estatus.PENDIENTE)
+                                ev.setEstatus(EvaluacionRiesgo.Estatus.TRABAJANDO);
+                        });
             }
 
             mapDtoToEntity(dto, ev);
@@ -176,8 +174,8 @@ public class EvaluacionRiesgoService {
             EvaluacionRiesgo updatedEv = evaluacionRepository.save(ev);
             String nombreUpdEv = updatedEv.getImputado() != null
                     ? updatedEv.getImputado().getNombre() + " " + updatedEv.getImputado().getApPaterno() : "—";
-            String descUpd = "Evaluación actualizada. Estatus: " + updatedEv.getEstatus();
-            if (updatedEv.getResultado() != null) descUpd += ". Resultado: " + updatedEv.getResultado();
+            String descUpd = "Evaluación actualizada — estatus: " + updatedEv.getEstatus();
+            if (updatedEv.getResultado() != null) descUpd += " | resultado: " + updatedEv.getResultado();
             bitacoraService.registrar(Bitacora.Entidad.IMPUTADO,
                     updatedEv.getImputado() != null ? updatedEv.getImputado().getId() : id,
                     nombreUpdEv, Bitacora.Accion.EDITAR, descUpd);
@@ -342,8 +340,8 @@ public class EvaluacionRiesgoService {
         String nombreEv = imputado.getNombre() + " " + imputado.getApPaterno();
         bitacoraService.registrar(Bitacora.Entidad.IMPUTADO, imputado.getId(), nombreEv,
                 Bitacora.Accion.CREAR,
-                "Negación de evaluación registrada. Causa: " + dto.getCausaPenal()
-                        + ". El imputado se negó a proporcionar información.");
+                "Negación de evaluación — causa: " + dto.getCausaPenal()
+                        + " | motivo: Imputado se negó a proporcionar información");
         return new ApiResponse(true, "Negación registrada", EvaluacionRiesgoResponseDTO.from(savedEv));
     }
 
@@ -365,7 +363,7 @@ public class EvaluacionRiesgoService {
             bitacoraService.registrar(Bitacora.Entidad.IMPUTADO,
                     saved.getImputado() != null ? saved.getImputado().getId() : id,
                     nombreCE, Bitacora.Accion.CAMBIO_ESTADO,
-                    "Estatus evaluación: " + estatusAnt + " → " + estatus);
+                    "Estatus evaluación — anterior: " + estatusAnt + " | nuevo: " + estatus);
             return new ApiResponse(true, "Estatus actualizado", EvaluacionRiesgoResponseDTO.from(saved));
         }).orElse(new ApiResponse(false, "Evaluación no encontrada"));
     }
@@ -398,7 +396,7 @@ public class EvaluacionRiesgoService {
             bitacoraService.registrar(Bitacora.Entidad.IMPUTADO,
                     saved.getImputado() != null ? saved.getImputado().getId() : id,
                     nombreAsig, Bitacora.Accion.EDITAR,
-                    "Evaluador asignado: " + evaluador.getNombre() + " " + evaluador.getApPaterno());
+                    "Evaluador asignado — evaluador: " + evaluador.getNombre() + " " + evaluador.getApPaterno());
             return new ApiResponse(true, "Evaluador asignado", EvaluacionRiesgoResponseDTO.from(saved));
         }).orElse(new ApiResponse(false, "Evaluación no encontrada"));
     }
@@ -419,7 +417,7 @@ public class EvaluacionRiesgoService {
             bitacoraService.registrar(Bitacora.Entidad.IMPUTADO,
                     saved.getImputado() != null ? saved.getImputado().getId() : id,
                     nombreRes, Bitacora.Accion.CAMBIO_ESTADO,
-                    "Resultado de evaluación registrado: " + resultado + ". Estatus: FINALIZADO");
+                    "Resultado registrado — resultado: " + resultado + " | estatus: FINALIZADO");
             return new ApiResponse(true, "Resultado registrado", EvaluacionRiesgoResponseDTO.from(saved));
         }).orElse(new ApiResponse(false, "Evaluación no encontrada"));
     }
@@ -432,7 +430,7 @@ public class EvaluacionRiesgoService {
             bitacoraService.registrar(Bitacora.Entidad.IMPUTADO,
                     e.getImputado() != null ? e.getImputado().getId() : id,
                     nombre, Bitacora.Accion.ELIMINAR,
-                    "Evaluación de riesgo eliminada. Oficio: " + e.getNumOficio());
+                    "Evaluación eliminada — oficio: " + e.getNumOficio());
             evaluacionRepository.delete(e);
             return new ApiResponse(true, "Evaluación eliminada correctamente");
         }).orElse(new ApiResponse(false, "Evaluación no encontrada"));

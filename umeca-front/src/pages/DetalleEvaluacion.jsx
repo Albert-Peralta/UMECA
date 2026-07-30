@@ -87,12 +87,12 @@ const DetalleEvaluacion = ({ evaluacion: d, onVolver, onEditar, puedeEditar }) =
                         <i className="bi bi-file-earmark-text"></i> Informe
                     </button>
 
-                    {puedeEditar && onEditar && !d.imputadoFallecido && !d.imputadoCarpetaCerrada && (
+                    {puedeEditar && onEditar && !d.imputadoFallecido && (
                         <button className="de-btn-editar" onClick={onEditar}>
                             <i className="bi bi-pencil"></i> Editar
                         </button>
                     )}
-                    {esAdmin && !d.imputadoFallecido && !d.imputadoCarpetaCerrada && (
+                    {esAdmin && !d.imputadoFallecido && (
                         <button className="de-btn-admin-eliminar" onClick={() => setShowConfirmEliminar(true)}>
                             <i className="bi bi-trash3"></i> Eliminar
                         </button>
@@ -111,7 +111,7 @@ const DetalleEvaluacion = ({ evaluacion: d, onVolver, onEditar, puedeEditar }) =
             {d.imputadoCarpetaCerrada && (
                 <div className="dm-banner-alerta dm-banner-cierre" style={{ margin: '0 0 12px' }}>
                     <i className="bi bi-folder-x" />
-                    <span>La carpeta de <strong>{d.nombreCompletoImputado}</strong> fue cerrada (<strong>{d.numeroCierreCarpeta}</strong>). Este expediente es de solo lectura.</span>
+                    <span>La carpeta de <strong>{d.nombreCompletoImputado}</strong> fue cerrada (<strong>{d.numeroCierreCarpeta}</strong>).</span>
                 </div>
             )}
 

@@ -88,6 +88,13 @@ public class ExpedienteAnteriorController {
         return ResponseEntity.ok(service.importarInactivosXochi(archivo));
     }
 
+    @PostMapping("/importar-cierre-carpetas")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR')")
+    public ResponseEntity<ApiResponse> importarCierreCarpetas(
+            @RequestParam("archivo") MultipartFile archivo) {
+        return ResponseEntity.ok(service.importarCierreCarpetas(archivo));
+    }
+
     /**
      * Importación masiva por JSON — solo ADMINISTRADOR.
      */

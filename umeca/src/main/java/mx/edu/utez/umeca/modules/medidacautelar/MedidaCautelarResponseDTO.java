@@ -16,6 +16,7 @@ public class MedidaCautelarResponseDTO {
     private String nombreImputado;
     private boolean imputadoFallecido;
     private boolean imputadoCarpetaCerrada;
+    private String imputadoEstatusCierre;
     private String numeroCierreCarpeta;
     private String causaPenal;
     private String causaPenalImputado;
@@ -135,6 +136,7 @@ public class MedidaCautelarResponseDTO {
         dto.setNombreImputado(m.getImputado().getNombreCompleto());
         dto.setImputadoFallecido(m.getImputado().isFallecido());
         dto.setImputadoCarpetaCerrada(m.getImputado().isCarpetaCerrada());
+        dto.setImputadoEstatusCierre(m.getImputado().getEstatusCumplimientoCierre());
         dto.setNumeroCierreCarpeta(m.getImputado().getNumeroCierreCarpeta());
         dto.setCausaPenal(m.getCausaPenal());
         dto.setCausaPenalImputado(m.getImputado().getCausaPenal());

@@ -77,7 +77,7 @@ public class SeguimientoService {
         bitacoraService.registrar(
             Bitacora.Entidad.IMPUTADO, imputado.getId(), nombreImputado,
             Bitacora.Accion.EDITAR,
-            "Seguimiento registrado [" + seccion.name() + "]: " + SeguimientoResponseDTO.from(seg).getTipoActividadLabel()
+            "Seguimiento registrado — sección: " + seccion.name() + " | tipo: " + SeguimientoResponseDTO.from(seg).getTipoActividadLabel()
         );
 
         return new ApiResponse(true, "Seguimiento registrado", SeguimientoResponseDTO.from(seg));
@@ -159,6 +159,34 @@ public class SeguimientoService {
             String tipo = s.getTipoActividad().name();
             resultado.computeIfAbsent(zona, k -> new java.util.HashMap<>())
                      .merge(tipo, 1L, Long::sum);
+        }
+
+        return new ApiResponse(true, "ok", resultado);
+    }
+
+    // ── Historial detallado por usuario agrupado por zona ────────────────────
+    // Devuelve Map<zona, Map<nombreUsuario, List<SeguimientoResponseDTO>>>
+    @Transactional(readOnly = true)
+    public ApiResponse getHistorialPorUsuario(LocalDate desde, LocalDate hasta) {
+        LocalDateTime inicio = desde.atStartOfDay();
+        LocalDateTime fin    = hasta.plusDays(1).atStartOfDay();
+
+        List<Seguimiento> segs = repository.findHistorialPorUsuario(inicio, fin);
+
+        // Agrupar: zona → usuario → lista de seguimientos
+        Map<String, Map<String, List<SeguimientoResponseDTO>>> resultado = new java.util.LinkedHashMap<>();
+
+        for (Seguimiento s : segs) {
+            String zona = (s.getRegistradoPor() != null && s.getRegistradoPor().getZona() != null)
+                    ? s.getRegistradoPor().getZona().name()
+                    : "SIN_ZONA";
+            String usuario = s.getRegistradoPor() != null
+                    ? s.getRegistradoPor().getNombre() + " " + s.getRegistradoPor().getApPaterno()
+                    : "Sin usuario";
+            resultado
+                .computeIfAbsent(zona, k -> new java.util.LinkedHashMap<>())
+                .computeIfAbsent(usuario, k -> new java.util.ArrayList<>())
+                .add(SeguimientoResponseDTO.from(s));
         }
 
         return new ApiResponse(true, "ok", resultado);
