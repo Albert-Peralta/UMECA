@@ -24,7 +24,7 @@ const ESTATUS_CIERRE_LABEL = {
 const EntrevistaEncuadre = () => {
     const { showToast } = useToast();
     const { user } = useAuth();
-    const puedeCrear = ['ADMINISTRADOR', 'SUPERADMIN', 'SUPERVISION'].includes(user?.rol);
+    const puedeCrear = ['ADMINISTRADOR', 'SUPERADMIN', 'SUPERVISION', 'EVALUADOR_RIESGO', 'CORRESPONDENCIA'].includes(user?.rol);
     const [mostrarFormulario, setMostrarFormulario] = useState(false);
     const [entrevistaSeleccionada, setEntrevistaSeleccionada] = useState(null);
     const [entrevistas, setEntrevistas] = useState([]);

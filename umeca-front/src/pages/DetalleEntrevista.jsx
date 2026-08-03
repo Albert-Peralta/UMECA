@@ -65,7 +65,7 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const puedeEditar  = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN'  || user?.rol === 'SUPERVISION';
+    const puedeEditar  = ['ADMINISTRADOR', 'SUPERADMIN', 'SUPERVISION', 'EVALUADOR_RIESGO', 'CORRESPONDENCIA'].includes(user?.rol);
     const esAdmin      = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' ;
     const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
 

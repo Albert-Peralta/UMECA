@@ -104,6 +104,8 @@ const menuPorRol = {
         { separator: true,        label: 'General' },
         { key: 'graficas',        label: 'Estadísticas',        icon: 'bi bi-bar-chart' },
         { key: 'reporte',         label: 'Reporte Diario',      icon: 'bi bi-clipboard-data' },
+        { separator: true,        label: 'Supervisión' },
+        { key: 'entrevista',      label: 'Entrevista de encuadre', icon: 'bi bi-journal-text' },
         { separator: true,        label: 'Oficios' },
         { key: 'correspondencia', label: 'Correspondencia',     icon: 'bi bi-envelope-paper' },
     ],
