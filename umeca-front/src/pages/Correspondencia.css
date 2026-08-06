@@ -312,6 +312,7 @@
     text-align: center; min-height: 130px;
 }
 .corr-dropzone:hover { border-color: #2d6a4f; background: #f0faf4; }
+.corr-dropzone-dragging { border-color: #2d6a4f !important; background: #e6f4ec !important; transform: scale(1.01); transition: transform 0.1s; }
 .corr-dropzone input[type="file"] { display: none; }
 .corr-dropzone-icon {
     font-size: 2.2rem; color: #9ca3af; line-height: 1;

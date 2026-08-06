@@ -55,7 +55,7 @@ public class SeguimientoController {
 
     // Reporte automático por fecha y zona (vista propia del usuario)
     @GetMapping("/reporte-automatico")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO','ROLE_CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> reporteAutomatico(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
             @RequestParam User.Zona zona) {

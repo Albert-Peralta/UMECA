@@ -38,6 +38,7 @@ export default function Correspondencia() {
     // Form nuevo registro
     const [form,     setForm]     = useState(FORM_VACIO);
     const [archivo,  setArchivo]  = useState(null);
+    const [dragging, setDragging] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const [loadingGuardar, setLoadingGuardar] = useState(false);
     const [erroresCampo, setErroresCampo] = useState({});
@@ -418,7 +419,21 @@ export default function Correspondencia() {
                     </div>
                     <div id="corr-field-archivo" className={`corr-field corr-field-full ${erroresCampo.archivo ? 'corr-field-error' : ''}`}>
                         <label><i className="bi bi-file-earmark-pdf" /> Archivo PDF {!modoEditar && '*'}</label>
-                        <label className={`corr-dropzone ${erroresCampo.archivo ? 'corr-dropzone-error' : ''}`}>
+                        <label
+                            className={`corr-dropzone ${erroresCampo.archivo ? 'corr-dropzone-error' : ''} ${dragging ? 'corr-dropzone-dragging' : ''}`}
+                            onDragOver={e => { e.preventDefault(); setDragging(true); }}
+                            onDragEnter={e => { e.preventDefault(); setDragging(true); }}
+                            onDragLeave={e => { e.preventDefault(); setDragging(false); }}
+                            onDrop={e => {
+                                e.preventDefault();
+                                setDragging(false);
+                                const file = e.dataTransfer.files[0];
+                                if (file && file.type === 'application/pdf') {
+                                    setArchivo(file);
+                                    setErroresCampo(er => ({ ...er, archivo: '' }));
+                                }
+                            }}
+                        >
                             <input type="file" accept="application/pdf"
                                 onChange={e => { setArchivo(e.target.files[0] || null); setErroresCampo(er => ({ ...er, archivo: '' })); }} />
                             {archivo ? (
@@ -449,8 +464,8 @@ export default function Correspondencia() {
                                 </>
                             ) : (
                                 <>
-                                    <i className="bi bi-cloud-upload corr-dropzone-icon" />
-                                    <span className="corr-dropzone-titulo">Arrastra o haz clic para subir</span>
+                                    <i className={`bi ${dragging ? 'bi-box-arrow-in-down' : 'bi-cloud-upload'} corr-dropzone-icon`} />
+                                    <span className="corr-dropzone-titulo">{dragging ? 'Suelta el archivo aquí' : 'Arrastra o haz clic para subir'}</span>
                                     <span className="corr-dropzone-sub">Solo archivos PDF · {modoEditar ? 'Sin PDF adjunto actualmente' : 'Obligatorio'}</span>
                                 </>
                             )}
