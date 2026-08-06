@@ -16,7 +16,7 @@ public class ConsultaRegistroController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO','CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> listar() {
         return ResponseEntity.ok(service.listar());
     }
