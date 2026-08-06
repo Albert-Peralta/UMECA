@@ -213,6 +213,47 @@
     letter-spacing: 0.4px;
 }
 
+.pf-pass-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.pf-pass-input-wrap input {
+    flex: 1;
+    border: 1px solid #d1d5db;
+    border-radius: 7px;
+    padding: 8px 38px 8px 12px;
+    font-size: 13px;
+    color: #111827;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+}
+
+.pf-pass-input-wrap input:focus {
+    border-color: #1a3a5c;
+}
+
+.pf-pass-eye {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #6b7280;
+    font-size: 15px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    transition: color 0.15s;
+}
+
+.pf-pass-eye:hover {
+    color: #1a3a5c;
+}
+
+/* legacy — keep for any leftover direct inputs */
 .pf-pass-field input {
     border: 1px solid #d1d5db;
     border-radius: 7px;
@@ -225,6 +266,39 @@
 
 .pf-pass-field input:focus {
     border-color: #1a3a5c;
+}
+
+/* ── Reglas de contraseña ── */
+.pf-pass-rules {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.pf-pass-rules li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #9ca3af;
+    transition: color 0.2s;
+}
+
+.pf-pass-rules li i {
+    font-size: 12px;
+    flex-shrink: 0;
+    transition: color 0.2s;
+}
+
+.pf-pass-rules li.ok {
+    color: #16a34a;
+}
+
+.pf-pass-rules li.ok i {
+    color: #16a34a;
 }
 
 /* ── Mensaje ── */

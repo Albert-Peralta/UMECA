@@ -36,6 +36,9 @@ const Perfil = () => {
     const [passForm, setPassForm]   = useState({ actual: '', nueva: '', confirmar: '' });
     const [passMsg,  setPassMsg]    = useState(null);   // { ok, texto }
     const [loading,  setLoading]    = useState(false);
+    const [showActual,    setShowActual]    = useState(false);
+    const [showNueva,     setShowNueva]     = useState(false);
+    const [showConfirmar, setShowConfirmar] = useState(false);
 
     const iniciales = [user?.nombre, user?.apPaterno]
         .filter(Boolean).map(s => s.charAt(0).toUpperCase()).join('');
@@ -93,7 +96,7 @@ const Perfil = () => {
         try {
             // 1. Verificar contraseña actual
             const verif = await api.post('/auth/verificar-password', { password: passForm.actual });
-            if (!verif.data.ok || !verif.data.data) {
+            if (!verif.data.ok) {
                 setPassMsg({ ok: false, texto: 'La contraseña actual es incorrecta.' });
                 setLoading(false);
                 return;
@@ -194,33 +197,64 @@ const Perfil = () => {
                         <div className="pf-pass-fields">
                             <div className="pf-pass-field pf-pass-field-full">
                                 <label>Contraseña actual</label>
-                                <input
-                                    type="password"
-                                    placeholder="Ingresa tu contraseña actual"
-                                    value={passForm.actual}
-                                    onChange={e => setPassForm(f => ({ ...f, actual: e.target.value }))}
-                                    required
-                                />
+                                <div className="pf-pass-input-wrap">
+                                    <input
+                                        type={showActual ? 'text' : 'password'}
+                                        placeholder="Ingresa tu contraseña actual"
+                                        value={passForm.actual}
+                                        onChange={e => setPassForm(f => ({ ...f, actual: e.target.value }))}
+                                        required
+                                    />
+                                    <button type="button" className="pf-pass-eye" onClick={() => setShowActual(v => !v)} tabIndex={-1}>
+                                        <i className={`bi ${showActual ? 'bi-eye-slash' : 'bi-eye'}`} />
+                                    </button>
+                                </div>
                             </div>
                             <div className="pf-pass-field">
                                 <label>Nueva contraseña</label>
-                                <input
-                                    type="password"
-                                    placeholder="Mín. 8 caracteres, mayúscula, minúscula, número y especial"
-                                    value={passForm.nueva}
-                                    onChange={e => setPassForm(f => ({ ...f, nueva: e.target.value }))}
-                                    required
-                                />
+                                <div className="pf-pass-input-wrap">
+                                    <input
+                                        type={showNueva ? 'text' : 'password'}
+                                        placeholder="Nueva contraseña"
+                                        value={passForm.nueva}
+                                        onChange={e => setPassForm(f => ({ ...f, nueva: e.target.value }))}
+                                        required
+                                    />
+                                    <button type="button" className="pf-pass-eye" onClick={() => setShowNueva(v => !v)} tabIndex={-1}>
+                                        <i className={`bi ${showNueva ? 'bi-eye-slash' : 'bi-eye'}`} />
+                                    </button>
+                                </div>
+                                {passForm.nueva && (
+                                    <ul className="pf-pass-rules">
+                                        {[
+                                            { ok: passForm.nueva.length >= 8,          texto: 'Mínimo 8 caracteres' },
+                                            { ok: /[A-Z]/.test(passForm.nueva),         texto: 'Al menos una mayúscula' },
+                                            { ok: /[a-z]/.test(passForm.nueva),         texto: 'Al menos una minúscula' },
+                                            { ok: /[0-9]/.test(passForm.nueva),         texto: 'Al menos un número' },
+                                            { ok: /[!@#$%&*?]/.test(passForm.nueva),    texto: 'Al menos un carácter especial (!@#$%&*?)' },
+                                        ].map(({ ok, texto }) => (
+                                            <li key={texto} className={ok ? 'ok' : ''}>
+                                                <i className={`bi ${ok ? 'bi-check-circle-fill' : 'bi-circle'}`} />
+                                                {texto}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
                             </div>
                             <div className="pf-pass-field">
                                 <label>Confirmar nueva contraseña</label>
-                                <input
-                                    type="password"
-                                    placeholder="Repite la nueva contraseña"
-                                    value={passForm.confirmar}
-                                    onChange={e => setPassForm(f => ({ ...f, confirmar: e.target.value }))}
-                                    required
-                                />
+                                <div className="pf-pass-input-wrap">
+                                    <input
+                                        type={showConfirmar ? 'text' : 'password'}
+                                        placeholder="Repite la nueva contraseña"
+                                        value={passForm.confirmar}
+                                        onChange={e => setPassForm(f => ({ ...f, confirmar: e.target.value }))}
+                                        required
+                                    />
+                                    <button type="button" className="pf-pass-eye" onClick={() => setShowConfirmar(v => !v)} tabIndex={-1}>
+                                        <i className={`bi ${showConfirmar ? 'bi-eye-slash' : 'bi-eye'}`} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
