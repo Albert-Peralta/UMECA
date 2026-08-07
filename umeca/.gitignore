@@ -33,4 +33,4 @@ build/
 .vscode/
 
 ### Uploads (archivos subidos por usuarios, no deben ir al repo) ###
-### uploads/ ###
+uploads/
