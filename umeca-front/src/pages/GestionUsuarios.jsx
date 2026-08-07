@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { getUsuarios, crearUsuario, actualizarUsuario, toggleUsuario } from '../api/usuariosApi';
+import { exportarBackupZip } from '../api/backupApi';
 import { useToast } from '../context/ToastContext';
 import './GestionUsuarios.css';
 
@@ -47,6 +48,28 @@ const GestionUsuarios = () => {
     const [busqueda, setBusqueda] = useState('');
     const [filtroRol, setFiltroRol] = useState('');
     const [filtroEstado, setFiltroEstado] = useState('');
+    const [descargandoBackup, setDescargandoBackup] = useState(false);
+
+    const handleDescargarBackup = async () => {
+        setDescargandoBackup(true);
+        try {
+            const res = await exportarBackupZip();
+            const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/zip' }));
+            const a = document.createElement('a');
+            const hoy = new Date().toISOString().slice(0, 10);
+            a.href = url;
+            a.download = `UMECA_Backup_${hoy}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            showToast('Backup descargado correctamente', 'success');
+        } catch {
+            showToast('Error al generar el backup', 'error');
+        } finally {
+            setDescargandoBackup(false);
+        }
+    };
 
     const usuariosFiltrados = usuarios.filter(u => {
         const nombreCompleto = `${u.nombre} ${u.apPaterno} ${u.apMaterno} ${u.username || ''}`.toLowerCase();
@@ -157,9 +180,20 @@ const GestionUsuarios = () => {
         <div className="gu-container">
             <div className="gu-header">
                 <span>Mostrando {usuariosFiltrados.length} de {usuarios.length} usuarios</span>
-                <button className="gu-btn-nuevo" onClick={() => { setForm(initialForm); setEditId(null); setShowModal(true); }}>
-                    + Nuevo usuario
-                </button>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <button
+                        className="gu-btn-backup"
+                        onClick={handleDescargarBackup}
+                        disabled={descargandoBackup}
+                        title="Exportar todos los registros del sistema en un ZIP con archivos Excel"
+                    >
+                        <i className={`bi ${descargandoBackup ? 'bi-hourglass-split' : 'bi-cloud-download'}`} />
+                        {descargandoBackup ? ' Generando...' : ' Exportar Backup'}
+                    </button>
+                    <button className="gu-btn-nuevo" onClick={() => { setForm(initialForm); setEditId(null); setShowModal(true); }}>
+                        + Nuevo usuario
+                    </button>
+                </div>
             </div>
 
             <div className="gu-filtros">

@@ -9,6 +9,24 @@
     margin-bottom: 16px;
 }
 
+.gu-btn-backup {
+    background: transparent;
+    color: #376842;
+    border: 1.5px solid #376842;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+}
+.gu-btn-backup:hover:not(:disabled) { background: #f0f7f1; }
+.gu-btn-backup:disabled { opacity: 0.6; cursor: not-allowed; }
+
 .gu-btn-nuevo {
     background-color: #376842;
     color: white;
