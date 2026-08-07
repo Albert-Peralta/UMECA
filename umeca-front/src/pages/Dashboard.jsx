@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useFormGuard } from '../context/FormGuardContext';
 import gobiernoImg from '../assets/gobierno-mexico.png';
 import logoMorelos from '../assets/logo-morelos-nuevo.png';
 import footerDorado from '../assets/footer-dorado.png';
@@ -132,6 +133,8 @@ const Dashboard = () => {
     const [avatarSrc, setAvatarSrc] = useState(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [corrPendientes, setCorrPendientes] = useState(0);
+    const [guardConfirm, setGuardConfirm] = useState(null); // key pendiente de navegar
+    const { isFormDirty, setFormDirty } = useFormGuard();
 
     // Si el token desaparece (logout en otra pestaña o navegación por historial), cierra sesión
     useEffect(() => {
@@ -210,9 +213,20 @@ const Dashboard = () => {
     }, [user?.id]);
 
     // Cambia de sección actualizando el hash — el navegador registra la entrada en su historial
-    const navegarA = (key) => {
+    const navegarA = useCallback((key) => {
+        if (isFormDirty()) {
+            setGuardConfirm(key);
+            setSidebarOpen(false);
+            return;
+        }
         navigate(`/dashboard#${key}`);
         setSidebarOpen(false);
+    }, [isFormDirty, navigate]);
+
+    const confirmarNavegacion = () => {
+        setFormDirty(false);
+        navigate(`/dashboard#${guardConfirm}`);
+        setGuardConfirm(null);
     };
 
     const handleLogout = () => {
@@ -265,6 +279,30 @@ const Dashboard = () => {
 
     return (
     <>
+        {/* Modal confirmación cambio de módulo con formulario activo */}
+        {guardConfirm && (
+            <div className="guard-overlay">
+                <div className="guard-modal">
+                    <div className="guard-badge">
+                        <div className="guard-badge-ring">
+                            <i className="bi bi-file-earmark-x" />
+                        </div>
+                    </div>
+                    <div className="guard-body">
+                        <h3 className="guard-title">Cambios sin guardar</h3>
+                        <p className="guard-msg">Si cambias de módulo ahora, <strong>perderás todo el progreso</strong> capturado en el formulario actual.</p>
+                    </div>
+                    <div className="guard-actions">
+                        <button className="guard-btn-cancel" onClick={() => setGuardConfirm(null)}>
+                            <i className="bi bi-pencil" /> Seguir editando
+                        </button>
+                        <button className="guard-btn-confirm" onClick={confirmarNavegacion}>
+                            <i className="bi bi-box-arrow-right" /> Salir sin guardar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
         {user?.primerLogin && (
             <PrimerLogin onCompletado={() => {
                 const updatedUser = { ...user, primerLogin: false };

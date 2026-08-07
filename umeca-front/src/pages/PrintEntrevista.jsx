@@ -188,7 +188,8 @@ const PrintEntrevista = ({ entrevista: e, onCerrar, autoImprimir = false }) => {
 
                 {/* 1. Datos personales */}
                 <div className="pr-section-title pr-first-section">1. DATOS PERSONALES</div>
-                <div className="pr-grid">
+                <div className="pr-datos-personales-wrap">
+                <div className="pr-grid pr-grid-con-foto">
                     <Row label="Nombre(s)" value={e.nombre} />
                     <Row label="Apellido Paterno" value={e.apPaterno} half />
                     <Row label="Apellido Materno" value={e.apMaterno} half />
@@ -208,6 +209,13 @@ const PrintEntrevista = ({ entrevista: e, onCerrar, autoImprimir = false }) => {
                     <Row label="Documentos Migratorios" value={e.documentosMigratorios} />
                     <Row label="Alias / Apodo" value={e.alias} half />
                     <Row label="Enfermedad" value={e.enfermedad} half />
+                </div>
+                {imputado.foto && (
+                    <div className="pr-foto-lateral">
+                        <img src={imputado.foto} alt="Foto imputado" className="pr-foto-lateral-img" />
+                        <span className="pr-foto-lateral-lbl">FOTOGRAFÍA</span>
+                    </div>
+                )}
                 </div>
 
                 {/* 2. Señas particulares */}

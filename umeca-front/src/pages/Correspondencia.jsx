@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useFormGuard } from '../context/FormGuardContext';
 import {
     getCorrespondencia, getMisAsignados, getMisRegistros, crearCorrespondencia,
     editarCorrespondencia, eliminarCorrespondencia,
@@ -21,6 +22,7 @@ const FORM_VACIO = {
 export default function Correspondencia() {
     const { user } = useAuth();
     const { showToast } = useToast();
+    const { setFormDirty } = useFormGuard();
     const esAdmin           = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN';
     const esCorrespondencia = user?.rol === 'CORRESPONDENCIA'; // solo para ver "mis registros"
     const puedeRegistrar    = esCorrespondencia || esAdmin;    // puede crear nuevo oficio
@@ -33,6 +35,7 @@ export default function Correspondencia() {
 
     // Vista activa: 'lista' | 'form' | 'detalle'
     const [vista,    setVista]    = useState('lista');
+    useEffect(() => { setFormDirty(vista === 'form'); return () => setFormDirty(false); }, [vista]);
     const [registro, setRegistro] = useState(null);
 
     // Form nuevo registro
@@ -110,6 +113,7 @@ export default function Correspondencia() {
             );
             if (res.data.ok) {
                 showToast('Registro enviado al administrador');
+                setFormDirty(false);
                 setVista('lista');
                 setForm(FORM_VACIO);
                 setArchivo(null);
@@ -168,6 +172,7 @@ export default function Correspondencia() {
             );
             if (res.data.ok) {
                 showToast('Registro actualizado correctamente');
+                setFormDirty(false);
                 setVista('lista');
                 setForm(FORM_VACIO);
                 setArchivo(null);
@@ -332,7 +337,7 @@ export default function Correspondencia() {
         return (
             <div className="corr-container">
                 <div className="corr-form-header">
-                    <button className="corr-btn-volver" onClick={() => { setVista('lista'); setForm(FORM_VACIO); setArchivo(null); setModoEditar(false); setRegistroEditar(null); setErroresCampo({}); }}>
+                    <button className="corr-btn-volver" onClick={() => { setFormDirty(false); setVista('lista'); setForm(FORM_VACIO); setArchivo(null); setModoEditar(false); setRegistroEditar(null); setErroresCampo({}); }}>
                         <i className="bi bi-arrow-left" /> Cancelar
                     </button>
                 </div>

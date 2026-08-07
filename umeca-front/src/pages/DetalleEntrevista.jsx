@@ -186,7 +186,7 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
             await actualizarEntrevista(entrevista.id, payload);
             setEditando(false);
             showToast('Entrevista actualizada correctamente');
-            onVolver();
+            document.querySelector('.dashboard-content')?.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (e) {
             setError(e.response?.data?.message || 'Error al actualizar');
         }

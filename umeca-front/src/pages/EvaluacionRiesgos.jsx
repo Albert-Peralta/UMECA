@@ -225,12 +225,12 @@ const EvaluacionRiesgos = () => {
                     setVolverADetalle(false);
                 }}
                 onGuardado={() => {
-                    // Guardado exitoso → SIEMPRE ir a la tabla
-                    setShowFormulario(false);
-                    setShowDetalle(false);
-                    setVolverADetalle(false);
                     cargarDatos();
                     showToast('Evaluación guardada correctamente');
+                    setShowFormulario(false);
+                    setVolverADetalle(false);
+                    setShowDetalle(true);
+                    document.querySelector('.dashboard-content')?.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
             />
         );

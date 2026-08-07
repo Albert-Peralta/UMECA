@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { crearMedida, actualizarMedida, getMedidasByImputado } from '../api/medidasApi';
 import { useAuth } from '../context/AuthContext';
+import { useFormGuard } from '../context/FormGuardContext';
 import './FormularioMedida.css';
 
 // ── Fracciones MC (Art.155) ───────────────────────────────────────────────────
@@ -166,6 +167,9 @@ const FormularioMedida = ({ medidaInicial, onVolver, onGuardado }) => {
     const esMC = medidaInicial?.tipo !== 'SUSPENSION_CONDICIONAL';
     const esEdicion = !!medidaInicial?.id;
     const { user } = useAuth();
+    const { setFormDirty } = useFormGuard();
+
+    useEffect(() => { setFormDirty(true); return () => setFormDirty(false); }, []);
 
     const [form, setForm] = useState(() => {
         if (medidaInicial) {
@@ -350,6 +354,7 @@ const FormularioMedida = ({ medidaInicial, onVolver, onGuardado }) => {
                 await crearMedida(payload);
             }
             borrarDraft();
+            setFormDirty(false);
             onGuardado?.();
         } catch (e) {
             setError(e.response?.data?.message || 'Error al guardar');
@@ -365,7 +370,7 @@ const FormularioMedida = ({ medidaInicial, onVolver, onGuardado }) => {
         <div className="fm-container">
             {/* Topbar */}
             <div className="fm-topbar">
-                <button className="fm-btn-volver" onClick={onVolver}>
+                <button className="fm-btn-volver" onClick={() => { setFormDirty(false); onVolver?.(); }}>
                     <i className="bi bi-arrow-left" /> Cancelar y Volver
                 </button>
                 <span className="fm-topbar-titulo">
@@ -744,7 +749,7 @@ const FormularioMedida = ({ medidaInicial, onVolver, onGuardado }) => {
 
             {/* ── ACCIONES ── */}
             <div className="fm-acciones">
-                <button className="fm-btn-cancelar" onClick={onVolver}>Cancelar</button>
+                <button className="fm-btn-cancelar" onClick={() => { setFormDirty(false); onVolver?.(); }}>Cancelar</button>
                 <button className="fm-btn-guardar" onClick={handleGuardar} disabled={guardando}>
                     {guardando ? 'Guardando...' : (esMC ? 'Guardar Medida Cautelar' : 'Guardar S.C.P.')}
                 </button>

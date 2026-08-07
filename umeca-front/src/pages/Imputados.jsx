@@ -1011,7 +1011,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
 
                                         const accionesPorTab = {
                                             entrevistas: {
-                                                nueva: onNavigarEntrevista && (user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN'  || user?.rol === 'SUPERVISION') && {
+                                                nueva: onNavigarEntrevista && (user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION' || user?.rol === 'EVALUADOR_RIESGO' || user?.rol === 'CORRESPONDENCIA') && {
                                                     label: 'Nueva Entrevista', icon: 'bi-journal-plus',
                                                     action: () => { onNavigarEntrevista(perfil); setShowPerfil(false); setPerfil(null); }
                                                 },

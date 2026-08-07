@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useFormGuard } from '../context/FormGuardContext';
 import { crearEvaluacion, actualizarEvaluacion, getEvaluacionesByImputado } from '../api/evaluacionesApi';
 import { getImputados, getImputadoById, getImputadosPorCausaPenal } from '../api/imputadosApi';
 import { getEntrevistaById } from '../api/entrevistasApi';
@@ -138,7 +139,10 @@ const BloqueVerificacion = ({ secId, form, s }) => (
 const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { setFormDirty } = useFormGuard();
   const esEdicion = !!evaluacion;
+
+  useEffect(() => { setFormDirty(true); return () => setFormDirty(false); }, []);
 
   const [form, setForm] = useState(() => {
     if (esEdicion) return {
@@ -774,6 +778,7 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
       if (res.data.ok) {
         // Guardado exitoso → limpiar draft y notificar al padre
         borrarDraft();
+        setFormDirty(false);
         onGuardado?.();
       } else {
         // Error del servidor → quedarse en el formulario con mensaje
@@ -800,7 +805,7 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
       <div className="fev-topbar">
         <span className="fev-topbar-titulo">{esEdicion ? 'Editar Evaluación' : 'Nueva Evaluación'}</span>
         <div className="fev-topbar-acciones">
-          <button className="fev-btn-cancelar" onClick={onVolver}>← Cancelar y Volver</button>
+          <button className="fev-btn-cancelar" onClick={() => { setFormDirty(false); onVolver?.(); }}>← Cancelar y Volver</button>
         </div>
       </div>
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import PrintConsulta from './PrintConsulta';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
+import { useFormGuard } from '../context/FormGuardContext';
 import {
     getConsultas, getConsultaById, getAntecedentes,
     crearConsulta, actualizarConsulta, eliminarConsulta, buscarRegistros
@@ -40,7 +41,10 @@ const hoy = new Date().toISOString().split('T')[0];
 // ── Formulario ─────────────────────────────────────────────────────────────
 const FormularioConsulta = ({ consulta, onVolver, onGuardado }) => {
     const { showToast } = useToast();
+    const { setFormDirty } = useFormGuard();
     const esEdicion = !!consulta;
+
+    useEffect(() => { setFormDirty(true); return () => setFormDirty(false); }, []);
     const [form, setForm] = useState(esEdicion
         ? { ...FORM_BASE, ...consulta, imputados: reconstruirImputados(consulta) }
         : { ...FORM_BASE });
@@ -124,6 +128,7 @@ const FormularioConsulta = ({ consulta, onVolver, onGuardado }) => {
             else           res = await crearConsulta(payload);
             if (res.data.ok) {
                 showToast(esEdicion ? 'Consulta actualizada' : 'Consulta registrada');
+                setFormDirty(false);
                 onGuardado?.(res.data.data);
                 onVolver();
             } else {
@@ -148,7 +153,7 @@ const FormularioConsulta = ({ consulta, onVolver, onGuardado }) => {
         <div className="cr-form-container">
             <div className="cr-topbar">
                 <span className="cr-topbar-titulo">{esEdicion ? 'Editar Consulta' : 'Nueva Consulta de Registro'}</span>
-                <button className="cr-btn-cancelar" onClick={onVolver}>← Cancelar</button>
+                <button className="cr-btn-cancelar" onClick={() => { setFormDirty(false); onVolver?.(); }}>← Cancelar</button>
             </div>
 
             {/* Alerta de antecedentes */}
@@ -326,7 +331,7 @@ const FormularioConsulta = ({ consulta, onVolver, onGuardado }) => {
 
             {error && <div className="cr-error">{error}</div>}
             <div className="cr-acciones">
-                <button className="cr-btn-cancelar" onClick={onVolver}>✕ Cancelar</button>
+                <button className="cr-btn-cancelar" onClick={() => { setFormDirty(false); onVolver?.(); }}>✕ Cancelar</button>
                 <button className="cr-btn-guardar" onClick={handleGuardar} disabled={loading}>
                     {loading ? 'Guardando...' : '✔ Guardar Consulta'}
                 </button>

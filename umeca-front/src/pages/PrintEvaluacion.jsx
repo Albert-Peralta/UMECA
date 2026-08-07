@@ -290,7 +290,7 @@ const PrintEvaluacion = ({ evaluacion: d, onCerrar, autoImprimir = false }) => {
                         ))}
 
                         {/* ── FACILIDAD DE ABANDONAR ── */}
-                        <tr className="pev-tv-grupo pev-grupo-avoid"><td colSpan={4}>5. FACILIDAD DE ABANDONAR EL ESTADO/PAÍS</td></tr>
+                        <tr className="pev-tv-grupo pev-grupo-avoid"><td colSpan={4}>FACILIDAD DE ABANDONAR EL ESTADO/PAÍS</td></tr>
                         <tr className="pev-grupo-avoid"><td className="pev-tv-factor">Tiempo en Morelos</td><td>{val(d.tiempoEnMorelos)}</td><td rowSpan={6} className="pev-tv-metodo">{val(d.verifS5Metodo)}</td><td rowSpan={6}>{val(d.verifS5Resultado)}</td></tr>
                         <tr><td className="pev-tv-factor">Familiares fuera del país</td><td>{val(d.familiaresOtroPais)}</td></tr>
                         <tr><td className="pev-tv-factor">Medios de comunicación</td><td>{val(d.mediosComunicacion)}</td></tr>
@@ -299,7 +299,7 @@ const PrintEvaluacion = ({ evaluacion: d, onCerrar, autoImprimir = false }) => {
                         <tr><td className="pev-tv-factor">¿Tiene Pasaporte?</td><td>{yesno(d.tienePasaporte)}</td></tr>
 
                         {/* ── INFORMACIÓN LABORAL ── */}
-                        <tr className="pev-tv-grupo pev-grupo-avoid"><td colSpan={4}>6. INFORMACIÓN LABORAL / OCUPACIONAL</td></tr>
+                        <tr className="pev-tv-grupo pev-grupo-avoid"><td colSpan={4}>INFORMACIÓN LABORAL / OCUPACIONAL</td></tr>
                         <tr className="pev-grupo-avoid"><td className="pev-tv-factor">Empresa</td><td>{val(d.empresaImp)}</td><td className="pev-tv-metodo" rowSpan={2}>{val(d.verifS6Metodo)}</td><td rowSpan={2}>{val(d.verifS6Resultado)}</td></tr>
                         <tr><td className="pev-tv-factor">Puesto</td><td>{val(d.puestoImp)}</td></tr>
                         <tr><td className="pev-tv-factor">Horario</td><td>{val(d.horarioTrabajoImp)}</td><td className="pev-tv-metodo" rowSpan={4 + empAnt.length}></td><td rowSpan={4 + empAnt.length}></td></tr>
@@ -311,7 +311,7 @@ const PrintEvaluacion = ({ evaluacion: d, onCerrar, autoImprimir = false }) => {
                         ))}
 
                         {/* ── COMPORTAMIENTO / ENTORNO ── */}
-                        <tr className="pev-tv-grupo pev-grupo-avoid"><td colSpan={4}>8. ENTORNO SOCIAL</td></tr>
+                        <tr className="pev-tv-grupo pev-grupo-avoid"><td colSpan={4}>ENTORNO SOCIAL</td></tr>
                         <tr className="pev-grupo-avoid"><td className="pev-tv-factor">Enfermedades</td><td>{val(d.enfermedades)}</td><td rowSpan={3} className="pev-tv-metodo">{val(d.verifS9Metodo)}</td><td rowSpan={3}>{val(d.verifS9Resultado)}</td></tr>
                         <tr><td className="pev-tv-factor">Hobbies / Deporte</td><td>{val(d.hobbies)}</td></tr>
                         <tr><td className="pev-tv-factor">Organizaciones</td><td>{val(d.organizaciones)}</td></tr>

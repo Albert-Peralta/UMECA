@@ -427,3 +427,96 @@
 }
 
 
+
+/* ── Form Guard Modal ── */
+.guard-overlay {
+    position: fixed; inset: 0;
+    background: rgba(8, 18, 10, 0.55);
+    backdrop-filter: blur(5px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999;
+    animation: guardFadeIn 0.16s ease;
+}
+@keyframes guardFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.guard-modal {
+    background: #fff;
+    border-radius: 18px;
+    padding: 0;
+    max-width: 380px; width: 92%;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.22), 0 0 0 1px rgba(55,104,66,0.08);
+    display: flex; flex-direction: column; align-items: stretch;
+    overflow: visible;
+    animation: guardSlideUp 0.24s cubic-bezier(0.34,1.5,0.64,1);
+    position: relative;
+    margin-top: 36px;
+}
+@keyframes guardSlideUp {
+    from { opacity: 0; transform: translateY(28px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+/* Badge flotante encima del modal */
+.guard-badge {
+    position: absolute;
+    top: -36px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; justify-content: center;
+}
+.guard-badge-ring {
+    width: 68px; height: 68px; border-radius: 50%;
+    background: linear-gradient(145deg, #376842, #2d5535);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.75rem; color: #fff;
+    box-shadow: 0 6px 20px rgba(55,104,66,0.45), 0 0 0 5px #fff, 0 0 0 6px rgba(55,104,66,0.2);
+}
+
+/* Línea decorativa superior del modal */
+.guard-modal::before {
+    content: '';
+    display: block;
+    height: 4px;
+    background: linear-gradient(90deg, #376842, #52a06b, #376842);
+    border-radius: 18px 18px 0 0;
+}
+
+.guard-body {
+    padding: 44px 30px 22px;
+    display: flex; flex-direction: column; align-items: center; gap: 9px;
+    text-align: center;
+}
+.guard-title {
+    font-size: 1.12rem; font-weight: 800; color: #111827; margin: 0;
+    letter-spacing: -0.3px;
+}
+.guard-msg {
+    font-size: 0.83rem; color: #6b7280; margin: 0; line-height: 1.7;
+    max-width: 280px;
+}
+.guard-msg strong { color: #374151; }
+
+.guard-actions {
+    display: flex; gap: 10px;
+    padding: 4px 20px 20px;
+}
+.guard-btn-cancel {
+    flex: 1; padding: 10px 0;
+    border: 1.5px solid #376842;
+    background: #fff; color: #376842;
+    font-size: 0.83rem; font-weight: 700;
+    cursor: pointer; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    transition: all 0.15s;
+}
+.guard-btn-cancel:hover { background: #f0f7f1; }
+.guard-btn-confirm {
+    flex: 1.3; padding: 10px 0;
+    border: none;
+    background: linear-gradient(135deg, #376842, #2d5535);
+    color: #fff;
+    font-size: 0.83rem; font-weight: 700;
+    cursor: pointer; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    transition: opacity 0.15s;
+    box-shadow: 0 3px 10px rgba(55,104,66,0.35);
+}
+.guard-btn-confirm:hover { opacity: 0.88; }

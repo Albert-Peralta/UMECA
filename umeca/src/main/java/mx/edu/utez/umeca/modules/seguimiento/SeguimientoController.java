@@ -27,7 +27,7 @@ public class SeguimientoController {
 
     // Todos los seguimientos de un imputado (para expediente)
     @GetMapping("/imputado/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO','ROLE_CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> porImputado(@PathVariable Long id) {
         return ResponseEntity.ok(service.getPorImputado(id));
     }

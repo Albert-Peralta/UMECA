@@ -162,6 +162,15 @@ public class EvaluacionRiesgoService {
 
             mapDtoToEntity(dto, ev);
 
+            // Actualizar delito y ubicación física en el imputado
+            if (ev.getImputado() != null) {
+                if (dto.getDelito() != null && !dto.getDelito().isBlank())
+                    ev.getImputado().setDelito(dto.getDelito());
+                if (dto.getUbicacionFisica() != null && !dto.getUbicacionFisica().isBlank())
+                    ev.getImputado().setUbicacionFisica(dto.getUbicacionFisica().trim());
+                imputadoRepository.save(ev.getImputado());
+            }
+
             if (dto.getResultado() != null && !dto.getResultado().isBlank()) {
                 try {
                     ev.setResultado(EvaluacionRiesgo.Resultado.valueOf(dto.getResultado()));

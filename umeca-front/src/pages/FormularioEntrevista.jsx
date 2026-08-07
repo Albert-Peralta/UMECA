@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { crearEntrevista } from '../api/entrevistasApi';
 import { getImputados, getImputadoById } from '../api/imputadosApi';
+import { useFormGuard } from '../context/FormGuardContext';
 import './FormularioEntrevista.css';
 import './FormularioEvaluacion.css';
 import './Imputados.css';
@@ -143,6 +144,7 @@ const campo = (label, children, err = false) => (
  * @param {Function} onGuardado  callback al guardar exitosamente
  */
 const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
+    const { setFormDirty } = useFormGuard();
     const [form, setForm] = useState(initialForm);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -160,6 +162,12 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
     const [referencias, setReferencias] = useState([{ nombre: '', parentesco: '', edad: '', telefono: '', direccion: '' }]);
 
     const [showConfirmTipo, setShowConfirmTipo] = useState(false);
+
+    // Registrar formulario como activo cuando el usuario empieza a llenar
+    useEffect(() => {
+        setFormDirty(true);
+        return () => setFormDirty(false);
+    }, []);
     const [curpManual, setCurpManual] = useState(false);
     const [tieneDraft, setTieneDraft] = useState(false);
     const [draftGuardadoEn, setDraftGuardadoEn] = useState(null);
@@ -364,6 +372,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
             const res = await crearEntrevista(payload);
             if (res.data.ok) {
                 borrarDraft();
+                setFormDirty(false);
                 onGuardado();
             } else {
                 setError(res.data.message || 'Error al guardar la entrevista');

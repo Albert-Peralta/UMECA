@@ -347,6 +347,7 @@ const SeguimientoCasos = () => {
                 } catch {}
                 setMedidaActiva(null);
                 setVista('detalle');
+                document.querySelector('.dashboard-content')?.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
                 setMedidaActiva(null);
                 setVista('lista');

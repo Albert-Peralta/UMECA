@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { FormGuardProvider } from './context/FormGuardContext';
 import PrivateRoute from './components/PrivateRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -13,6 +14,7 @@ const App = () => {
     return (
         <AuthProvider>
         <ToastProvider>
+        <FormGuardProvider>
             <BrowserRouter>
                 <Routes>
                     <Route path="/" element={<Login />} />
@@ -37,6 +39,7 @@ const App = () => {
                     />
                 </Routes>
             </BrowserRouter>
+        </FormGuardProvider>
         </ToastProvider>
         </AuthProvider>
     );

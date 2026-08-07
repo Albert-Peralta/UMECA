@@ -19,7 +19,7 @@ public class ImputadoController {
     private final ImputadoService service;
 
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN', 'ROLE_SUPERVISION', 'ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN', 'ROLE_SUPERVISION', 'ROLE_EVALUADOR_RIESGO', 'ROLE_CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> findAll(@RequestParam(required = false) String buscar) {
         ApiResponse res = (buscar != null && !buscar.isBlank())
                 ? service.buscar(buscar)
@@ -29,14 +29,14 @@ public class ImputadoController {
 
     /** Devuelve todos los imputados que comparten la misma causa penal. */
     @GetMapping("/por-causa")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN', 'ROLE_SUPERVISION', 'ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN', 'ROLE_SUPERVISION', 'ROLE_EVALUADOR_RIESGO', 'ROLE_CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> findByCausaPenal(@RequestParam String causaPenal) {
         ApiResponse res = service.findByCausaPenal(causaPenal);
         return ResponseEntity.ok(res);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN', 'ROLE_SUPERVISION', 'ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN', 'ROLE_SUPERVISION', 'ROLE_EVALUADOR_RIESGO', 'ROLE_CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> findById(@PathVariable Long id) {
         ApiResponse res = service.findById(id);
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.status(404).body(res);
@@ -50,7 +50,7 @@ public class ImputadoController {
     }
 
     @PatchMapping("/{id}/foto")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN', 'ROLE_SUPERVISION')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN', 'ROLE_SUPERVISION', 'ROLE_EVALUADOR_RIESGO', 'ROLE_CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> actualizarFoto(@PathVariable Long id,
                                                       @RequestBody Map<String, String> body) {
         ApiResponse res = service.actualizarFoto(id, body.get("foto"));
