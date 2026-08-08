@@ -6,6 +6,7 @@ import mx.edu.utez.umeca.modules.bitacora.Bitacora;
 import mx.edu.utez.umeca.modules.bitacora.BitacoraService;
 import mx.edu.utez.umeca.modules.security.user.User;
 import mx.edu.utez.umeca.modules.security.user.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,7 +35,8 @@ public class CorrespondenciaService {
     private final UserRepository userRepository;
     private final BitacoraService bitacoraService;
 
-    private static final String UPLOAD_DIR = "uploads/correspondencia/";
+    @Value("${app.upload.dir}")
+    private String UPLOAD_DIR;
 
     // ── Utilidad: usuario autenticado ─────────────────────────────────────────
     private User usuarioActual() {
@@ -58,7 +60,7 @@ public class CorrespondenciaService {
         if (!Files.exists(dir)) Files.createDirectories(dir);
         String nombre = UUID.randomUUID() + "_" + file.getOriginalFilename();
         Files.copy(file.getInputStream(), dir.resolve(nombre));
-        return UPLOAD_DIR + nombre;
+        return nombre; // solo el nombre, la ruta base la maneja el servidor
     }
 
     // ── Listar todos (admin) ──────────────────────────────────────────────────

@@ -3,6 +3,7 @@ package mx.edu.utez.umeca.modules.correspondencia;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import mx.edu.utez.umeca.kernel.ApiResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -25,6 +26,9 @@ public class CorrespondenciaController {
 
     private final CorrespondenciaService service;
     private final ObjectMapper objectMapper;
+
+    @Value("${app.upload.dir}")
+    private String uploadDir;
 
     /** Admin: ver todos los registros */
     @GetMapping
@@ -155,13 +159,15 @@ public class CorrespondenciaController {
         }
     }
 
-    /** Descargar/ver PDF — solo archivos dentro del directorio uploads/correspondencia/ */
+    /** Descargar/ver PDF — recibe solo el nombre del archivo, construye la ruta internamente */
     @GetMapping("/pdf")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_CORRESPONDENCIA','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
     public ResponseEntity<Resource> verPdf(@RequestParam String ruta) {
         try {
-            Path baseDir = Paths.get("uploads/correspondencia").toAbsolutePath().normalize();
-            Path path = Paths.get(ruta).toAbsolutePath().normalize();
+            // Extraer solo el nombre del archivo (seguridad: evitar path traversal)
+            String nombreArchivo = Paths.get(ruta).getFileName().toString();
+            Path baseDir = Paths.get(uploadDir).toAbsolutePath().normalize();
+            Path path = baseDir.resolve(nombreArchivo).normalize();
             // Seguridad: rechazar cualquier ruta fuera del directorio base
             if (!path.startsWith(baseDir)) {
                 return ResponseEntity.status(403).build();
