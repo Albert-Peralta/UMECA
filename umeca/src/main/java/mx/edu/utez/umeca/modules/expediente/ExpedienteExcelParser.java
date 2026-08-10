@@ -173,7 +173,7 @@ public class ExpedienteExcelParser {
      */
     private ExpedienteAnteriorDTO parsearFilaHistoricoInactivosXochi(Row row, ExpedienteAnteriorDTO dto) {
         // Columnas 0-93: misma estructura que el HISTORICO existente
-        dto.setNumero(str(row, 0));
+        dto.setNumero(trunc(str(row, 0), 50));
         dto.setEstatus(str(row, 1));
         dto.setResponsable(str(row, 2));
         dto.setNombre(str(row, 3));            // NOMBRE DEL IMPUTADO (campo único)
@@ -327,7 +327,7 @@ public class ExpedienteExcelParser {
     // ── Parser específico MC ─────────────────────────────────
     private ExpedienteAnteriorDTO parsearFilaMc(Row row, ExpedienteAnteriorDTO dto) {
         // Datos del imputado
-        dto.setNumero(str(row, 0));
+        dto.setNumero(trunc(str(row, 0), 50));
         dto.setEstatus(str(row, 1));
         dto.setResponsable(str(row, 2));
         dto.setApPaterno(str(row, 3));
@@ -439,7 +439,7 @@ public class ExpedienteExcelParser {
     // ── Parser específico SCP ────────────────────────────────
     private ExpedienteAnteriorDTO parsearFilaScp(Row row, ExpedienteAnteriorDTO dto) {
         // Datos básicos (mismas columnas que MC)
-        dto.setNumero(str(row, 0));
+        dto.setNumero(trunc(str(row, 0), 50));
         dto.setEstatus(str(row, 1));
         dto.setResponsable(str(row, 2));
         dto.setApPaterno(str(row, 3));
@@ -567,7 +567,7 @@ public class ExpedienteExcelParser {
     // CN=91:OFICIO SOBRESEIMIENTO, CO=92:FECHA ENVIO ARCHIVO 50(skip), CP=93:FECHA INFORME FINAL
     // CQ=94:OBSERVACIONES
     private ExpedienteAnteriorDTO parsearFilaHistorico(Row row, ExpedienteAnteriorDTO dto) {
-        dto.setNumero(str(row, 0));
+        dto.setNumero(trunc(str(row, 0), 50));
         dto.setEstatus(str(row, 1));
         dto.setResponsable(str(row, 2));
         // Nombre completo en un solo campo → lo guardamos en nombre
@@ -690,6 +690,12 @@ public class ExpedienteExcelParser {
     }
 
     // ── Helpers ──────────────────────────────────────────────
+    /** Trunca un String al máximo de caracteres indicado, para evitar errores de BD. */
+    private String trunc(String s, int max) {
+        if (s == null) return null;
+        return s.length() <= max ? s : s.substring(0, max);
+    }
+
     private String str(Row row, int col) {
         Cell cell = row.getCell(col, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
         if (cell == null) return null;
@@ -865,9 +871,9 @@ public class ExpedienteExcelParser {
                     Cell celdaNum = row.getCell(0);
                     if (celdaNum != null) {
                         if (celdaNum.getCellType() == CellType.NUMERIC)
-                            dto.setNumero(String.valueOf((int) celdaNum.getNumericCellValue()));
+                            dto.setNumero(trunc(String.valueOf((int) celdaNum.getNumericCellValue()), 50));
                         else if (celdaNum.getCellType() == CellType.STRING && !celdaNum.getStringCellValue().isBlank())
-                            dto.setNumero(celdaNum.getStringCellValue().trim());
+                            dto.setNumero(trunc(celdaNum.getStringCellValue().trim(), 50));
                     }
                     dto.setArchivo(strH(row, cols,
                         "FECHA DE ARCHIVO TEMPORAL", // CUERNAVACA exacto
@@ -948,9 +954,9 @@ public class ExpedienteExcelParser {
                     Cell celdaNum = row.getCell(0);
                     if (celdaNum != null) {
                         if (celdaNum.getCellType() == CellType.NUMERIC)
-                            dto.setNumero(String.valueOf((int) celdaNum.getNumericCellValue()));
+                            dto.setNumero(trunc(String.valueOf((int) celdaNum.getNumericCellValue()), 50));
                         else if (celdaNum.getCellType() == CellType.STRING && !celdaNum.getStringCellValue().isBlank())
-                            dto.setNumero(celdaNum.getStringCellValue().trim());
+                            dto.setNumero(trunc(celdaNum.getStringCellValue().trim(), 50));
                     }
                     dto.setFechaRecepcion(fechaH(row, cols, "INGRESO", "FECHA INGRESO", "FECHA DE INGRESO"));
                     // Supervisor: primero por header "SUPERVISOR", luego por el nombre detectado en col C
@@ -1081,7 +1087,7 @@ public class ExpedienteExcelParser {
                         dto.setTipo(tipo);
                         dto.setZona("JOJUTLA");
                         String numStr = str(row, 0);
-                        dto.setNumero(numStr);
+                        dto.setNumero(trunc(numStr, 50));
                         dto.setCausaPenal(causaPenal);
                         dto.setNombre(nombre);
                         dto.setArchivo(strH(row, cols, "HA DE ENVIO ARCH", "FECHA ARCH", "ARCHIVO"));
@@ -1208,7 +1214,7 @@ public class ExpedienteExcelParser {
                             dto.setObservaciones2(strH(row, cols, "OBSERVACIONES 2"));
                         }
                         case "CUAT_ESPERA" -> {
-                            dto.setNumero(strH(row, cols, "NO.", "NUMERO", "NO"));
+                            dto.setNumero(trunc(strH(row, cols, "NO.", "NUMERO", "NO"), 50));
                             dto.setDelito(strH(row, cols, "DELITO"));
                             dto.setJuez(strH(row, cols, "JUEZ"));
                             dto.setFechaImposicion(fechaH(row, cols, "FECHA DE IMPOSICION", "FECHA IMPOSICION"));
@@ -1218,7 +1224,7 @@ public class ExpedienteExcelParser {
                             dto.setObservaciones2(strH(row, cols, "OBSERVACIONES 2"));
                         }
                         case "CUAT_CARPETAS_CERRAR" -> {
-                            dto.setNumero(strH(row, cols, "NO.", "NUMERO", "NO"));
+                            dto.setNumero(trunc(strH(row, cols, "NO.", "NUMERO", "NO"), 50));
                         }
                         case "CUAT_OFICIOS" -> {
                             dto.setAsignado(strH(row, cols, "ASIGNADO"));
@@ -1237,7 +1243,7 @@ public class ExpedienteExcelParser {
                             dto.setObservaciones(strH(row, cols, "OBSERVACIONES"));
                         }
                         case "CUAT_ARCHIVO" -> {
-                            dto.setNumero(strH(row, cols, "NUMERO", "NO.", "NO"));
+                            dto.setNumero(trunc(strH(row, cols, "NUMERO", "NO.", "NO"), 50));
                             dto.setCierre(strH(row, cols, "CIERRE"));
                             dto.setTipoMcScp(strH(row, cols, "MC O SCP", "MC Ó SCP"));
                             dto.setMotivoCierre(strH(row, cols, "MOTIVO DE CIERRE", "MOTIVO CIERRE"));

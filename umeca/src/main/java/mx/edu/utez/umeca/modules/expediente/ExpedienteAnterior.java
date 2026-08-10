@@ -38,7 +38,7 @@ public class ExpedienteAnterior extends BaseEntity {
     private Zona zona;
 
     // ── Datos del imputado ───────────────────────────────────
-    @Column(name = "numero", length = 50)
+    @Column(name = "numero", length = 500)
     private String numero;
 
     @Column(name = "estatus", columnDefinition = "TEXT")
@@ -351,7 +351,7 @@ public class ExpedienteAnterior extends BaseEntity {
     @Column(name = "resolucion", columnDefinition = "TEXT")
     private String resolucion;
 
-    @Column(name = "sexo", columnDefinition = "TEXT")
+    @Column(name = "sexo", length = 500)
     private String sexo;
 
     @Column(name = "bitacora", columnDefinition = "TEXT")

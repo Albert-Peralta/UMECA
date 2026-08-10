@@ -257,7 +257,7 @@ export default function ExpedientesAnteriores() {
                     <div className="exp-detalle-badges">
                         {detalle.tipo && <span className={`exp-tipo-badge exp-tipo-${detalle.tipo.toLowerCase()}`}>{detalle.tipo}</span>}
                         {detalle.zona && <span className={`zona-tag zona-tag-${detalle.zona.toLowerCase()}`}>
-                            {({'XOCHITEPEC':'Xochi','CUAUTLA':'Cuat','JOJUTLA':'Jojut'})[detalle.zona] ?? detalle.zona}
+                            {({'XOCHITEPEC':'Xochi','CUAUTLA':'Cuau','JOJUTLA':'Jojut'})[detalle.zona] ?? detalle.zona}
                         </span>}
                         {detalle.estatus && detalle.tipo !== 'SUSTRAIDO' && detalle.tipo !== 'CIERRE_CARPETA' && <span className="exp-estatus-badge">{detalle.estatus}</span>}
                     </div>
@@ -738,7 +738,7 @@ export default function ExpedientesAnteriores() {
                                         <span>{nombreCompleto}</span>
                                         {e.zona && (
                                             <span className={`zona-tag zona-tag-${e.zona.toLowerCase()}`}>
-                                                {({'XOCHITEPEC':'Xochi','CUAUTLA':'Cuat','JOJUTLA':'Jojut'})[e.zona] ?? e.zona}
+                                                {({'XOCHITEPEC':'Xochi','CUAUTLA':'Cuau','JOJUTLA':'Jojut'})[e.zona] ?? e.zona}
                                             </span>
                                         )}
                                     </div>
@@ -767,7 +767,7 @@ export default function ExpedientesAnteriores() {
                                 ) : SUBTIPOS_POR_BASE[tipoFiltro] ? (
                                     <>
                                         <td><span className={`exp-tipo-badge exp-tipo-${(e.tipo||'').toLowerCase()}`}>{SUBTIPO_LABELS[e.tipo] || e.tipo || '—'}</span></td>
-                                        <td>{e.zona ? ({'XOCHITEPEC':'Xochi','CUAUTLA':'Cuat','JOJUTLA':'Jojut'})[e.zona] ?? e.zona : '—'}</td>
+                                        <td>{e.zona ? ({'XOCHITEPEC':'Xochi','CUAUTLA':'Cuau','JOJUTLA':'Jojut'})[e.zona] ?? e.zona : '—'}</td>
                                         {(tipoFiltro !== 'BASE_CUAT' || subtipoFiltro === 'CUAT_PRISION' || subtipoFiltro === null)
                                             && (tipoFiltro !== 'BASE_JOJU' || subtipoFiltro === 'JOJU_SOBRESEIMIENTO' || subtipoFiltro === null)
                                             && <td>{e.estatus || '—'}</td>}
@@ -950,7 +950,7 @@ export default function ExpedientesAnteriores() {
                                         {(importTipo === 'BASE_IMPUTADOS' || importTipo === 'INACTIVOS') && importZona && (
                                             <div className="exp-zona-alerta">
                                                 <i className="bi bi-exclamation-triangle-fill" />
-                                                Verifica que el archivo corresponde a la sede <strong>{ZONA_LABELS[importZona]}</strong> antes de continuar.
+                                                <span>Verifica que el archivo corresponde a la sede <strong>{ZONA_LABELS[importZona]}</strong> antes de continuar.</span>
                                             </div>
                                         )}
                                     </div>
