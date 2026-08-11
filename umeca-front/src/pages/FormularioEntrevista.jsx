@@ -652,7 +652,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                 ))}
             </div>
             <div className="fe-grid-2">
-                {campo('Estatura (cm)', <input type="number" value={form.estatura} onChange={e => set('estatura', e.target.value)} placeholder="cm" />)}
+                {campo('Estatura (cm)', <input type="number" step="0.01" min="0" value={form.estatura} onChange={e => set('estatura', e.target.value)} placeholder="ej. 170 o 1.70" />)}
                 {campo('Tamaño y Color de Ojos', <input value={form.colorOjos} onChange={e => set('colorOjos', e.target.value)} />)}
             </div>
             <div className="fe-grid-3">

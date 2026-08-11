@@ -208,11 +208,11 @@ public class MedidaCautelarService {
 
     @Transactional
     public ApiResponse cambiarCumplimiento(Long id, String valor) {
-        if (!valor.equals("CUMPLIMIENTO") && !valor.equals("INCUMPLIMIENTO"))
-            return new ApiResponse(false, "Valor inválido. Use CUMPLIMIENTO o INCUMPLIMIENTO");
+        if (valor != null && !valor.isEmpty() && !valor.equals("CUMPLIMIENTO") && !valor.equals("INCUMPLIMIENTO") && !valor.equals("SIN_ASIGNAR"))
+            return new ApiResponse(false, "Valor inválido. Use CUMPLIMIENTO, INCUMPLIMIENTO o SIN_ASIGNAR");
         return repository.findById(id).map(m -> {
             String anterior = m.getCumpliendoIncumpliendo() != null ? m.getCumpliendoIncumpliendo() : "Sin asignar";
-            m.setCumpliendoIncumpliendo(valor);
+            m.setCumpliendoIncumpliendo((valor == null || valor.isEmpty() || valor.equals("SIN_ASIGNAR")) ? null : valor);
             MedidaCautelar saved = repository.save(m);
             String nombre = saved.getImputado() != null
                     ? saved.getImputado().getNombre() + " " + saved.getImputado().getApPaterno() : "—";

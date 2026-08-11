@@ -435,7 +435,8 @@
 .historico-tabla colgroup col:nth-child(2)  { width: 180px; }
 .historico-tabla colgroup col:nth-child(3)  { width: 110px; }
 .historico-tabla colgroup col:nth-child(4)  { width: 120px; }
-.historico-tabla colgroup col:nth-child(5)  { width: 140px; }
+.historico-tabla colgroup col:nth-child(5)  { width: 160px; }
+.historico-tabla td.col-delito { max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .historico-tabla colgroup col:nth-child(6)  { width: 100px; }
 .historico-tabla colgroup col:nth-child(7)  { width: 160px; }
 .historico-tabla colgroup col:nth-child(8)  { width: 90px; }

@@ -298,6 +298,30 @@ public class ImputadoService {
         }).orElse(new ApiResponse(false, "Imputado no encontrado"));
     }
 
+    /** Revierte el cierre de carpeta de un imputado, regresándolo a estado activo. */
+    @Transactional
+    public ApiResponse revertirCierreCarpeta(Long id) {
+        return imputadoRepository.findById(id).map(imp -> {
+            if (!imp.isCarpetaCerrada())
+                return new ApiResponse(false, "La carpeta de este imputado no está cerrada");
+            String numeroCierre = imp.getNumeroCierreCarpeta();
+            imp.setCarpetaCerrada(false);
+            imp.setNumeroCierreCarpeta(null);
+            imp.setFechaCierreCarpeta(null);
+            imp.setResponsableCierreCarpeta(null);
+            imp.setMotivoCierreCarpeta(null);
+            imp.setEstatusCumplimientoCierre(null);
+            imp.setFechaIngresoCierre(null);
+            imp.setNotasCierre(null);
+            imputadoRepository.save(imp);
+            bitacoraService.registrar(Bitacora.Entidad.IMPUTADO, imp.getId(),
+                    imp.getNombre() + " " + imp.getApPaterno(),
+                    Bitacora.Accion.EDITAR,
+                    "Cierre de carpeta revertido — número anterior: " + numeroCierre);
+            return new ApiResponse(true, "Cierre de carpeta revertido exitosamente", ImputadoResponseDTO.fromSimple(imp));
+        }).orElse(new ApiResponse(false, "Imputado no encontrado"));
+    }
+
     /** Reemplaza la foto del imputado (base64 o URL) y registra el cambio en bitácora. */
     @Transactional
     public ApiResponse actualizarFoto(Long id, String foto) {

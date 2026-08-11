@@ -516,7 +516,7 @@ const SeguimientoCasos = () => {
                                             </span>
                                         )}
                                     </td>
-                                    <td>
+                                    <td className="col-delito" title={item.delito || ''}>
                                         {item.delito || '—'}
                                         {alerta && (
                                             <span className={`badge-alerta-plazo ${alerta.clase}`} title={alerta.label} style={{marginLeft:5,display:'inline-flex',alignItems:'center',gap:3}}>
@@ -531,10 +531,13 @@ const SeguimientoCasos = () => {
                                             : '—'}
                                     </td>
                                     <td>
-                                        {item.cumpliendoIncumpliendo
-                                            ? <span className={`cumpl-badge-tabla ${item.cumpliendoIncumpliendo === 'CUMPLIMIENTO' ? 'cumpl-cumplimiento' : 'cumpl-incumplimiento'}`}>
-                                                <i className={`bi ${item.cumpliendoIncumpliendo === 'CUMPLIMIENTO' ? 'bi-check-circle-fill' : 'bi-x-circle-fill'}`} />
-                                                {item.cumpliendoIncumpliendo === 'CUMPLIMIENTO' ? 'Cumplimiento' : 'Incumplimiento'}
+                                        {item.cumpliendoIncumpliendo === 'CUMPLIMIENTO'
+                                            ? <span className="cumpl-badge-tabla cumpl-cumplimiento">
+                                                <i className="bi bi-check-circle-fill" /> Cumplimiento
+                                              </span>
+                                            : item.cumpliendoIncumpliendo === 'INCUMPLIMIENTO'
+                                            ? <span className="cumpl-badge-tabla cumpl-incumplimiento">
+                                                <i className="bi bi-x-circle-fill" /> Incumplimiento
                                               </span>
                                             : <span className="cumpl-badge-tabla cumpl-sin-asignar">Sin estatus</span>
                                         }

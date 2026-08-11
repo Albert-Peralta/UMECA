@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getImputados, getImputadoById, actualizarFotoImputado, registrarFallecimiento, registrarCierreCarpeta } from '../api/imputadosApi';
+import { getImputados, getImputadoById, actualizarFotoImputado, registrarFallecimiento, registrarCierreCarpeta, revertirCierreCarpeta } from '../api/imputadosApi';
 import { getSeguimientosPorImputado } from '../api/seguimientosApi';
 import { cambiarCumplimiento } from '../api/medidasApi';
 import { useAuth } from '../context/AuthContext';
@@ -97,7 +97,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
                     cargarDatos(),
                 ]);
                 if (resPerfil.data.ok) setPerfil(resPerfil.data.data);
-                showToast(`Estatus actualizado: ${valor === 'CUMPLIMIENTO' ? 'Cumplimiento' : 'Incumplimiento'}`);
+                showToast(`Estatus actualizado: ${valor === 'CUMPLIMIENTO' ? 'Cumplimiento' : valor === 'INCUMPLIMIENTO' ? 'Incumplimiento' : 'Sin estatus'}`);
             }
         } catch { showToast('No se pudo actualizar el estatus', 'error'); }
         finally { setGuardandoCumplimiento(false); }
@@ -109,6 +109,24 @@ const Imputados = ({ onNavigarEntrevista }) => {
     const [guardandoCierre, setGuardandoCierre] = useState(false);
     const [cierreMsg, setCierreMsg] = useState(null);
     const [cierreConfirmando, setCierreConfirmando] = useState(false);
+    const [confirmRevertir, setConfirmRevertir] = useState(false);
+    const [reviertiendo, setReviertiendo] = useState(false);
+
+    const handleRevertirCierre = async () => {
+        setReviertiendo(true);
+        try {
+            const res = await revertirCierreCarpeta(perfil.id);
+            if (res.data.ok) {
+                const resPerfil = await getImputadoById(perfil.id);
+                if (resPerfil.data.ok) setPerfil(resPerfil.data.data);
+                await cargarDatos();
+                showToast('Cierre de carpeta revertido. El imputado volvió a activos.');
+            } else {
+                showToast(res.data.message || 'No se pudo revertir el cierre', 'error');
+            }
+        } catch { showToast('Error al revertir el cierre', 'error'); }
+        finally { setReviertiendo(false); setConfirmRevertir(false); }
+    };
 
     useEffect(() => { cargarDatos(); }, []);
 
@@ -283,7 +301,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
                 setShowPerfil(false);
                 setPerfil(null);
                 cargarDatos();
-                showToast('Cierre de carpeta registrado correctamente');
+                showToast(res.data.message || 'Cierre registrado correctamente');
             } else {
                 setCierreMsg({ tipo: 'error', texto: res.data.message || 'No se pudo registrar el cierre' });
             }
@@ -554,11 +572,14 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                         )}
                                     </td>
                                     <td style={{ textAlign: 'center' }}>
-                                        {item.tipoMedidaActiva && item.cumplimientoMedidaActiva
-                                            ? <span className={`cumpl-badge-tabla ${item.cumplimientoMedidaActiva === 'CUMPLIMIENTO' ? 'cumpl-cumplimiento' : 'cumpl-incumplimiento'}`}>
-                                                <i className={`bi ${item.cumplimientoMedidaActiva === 'CUMPLIMIENTO' ? 'bi-check-circle-fill' : 'bi-x-circle-fill'}`} />
-                                                {item.cumplimientoMedidaActiva === 'CUMPLIMIENTO' ? 'Cumplimiento' : 'Incumplimiento'}
+                                        {item.tipoMedidaActiva && item.cumplimientoMedidaActiva === 'CUMPLIMIENTO'
+                                            ? <span className="cumpl-badge-tabla cumpl-cumplimiento">
+                                                <i className="bi bi-check-circle-fill" /> Cumplimiento
                                               </span>
+                                            : item.tipoMedidaActiva && item.cumplimientoMedidaActiva === 'INCUMPLIMIENTO'
+                                                ? <span className="cumpl-badge-tabla cumpl-incumplimiento">
+                                                    <i className="bi bi-x-circle-fill" /> Incumplimiento
+                                                  </span>
                                             : item.tipoMedidaActiva
                                                 ? <span className="cumpl-badge-tabla cumpl-sin-asignar">Sin estatus</span>
                                                 : <span style={{ color: '#d1d5db', fontSize: 13 }}>—</span>
@@ -668,6 +689,9 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                                                         </button>
                                                                         <button onClick={() => handleCambiarCumplimiento(medidaActiva.id, 'INCUMPLIMIENTO')}>
                                                                             <i className="bi bi-x-circle-fill" style={{ color: '#dc2626' }} /> Incumplimiento
+                                                                        </button>
+                                                                        <button onClick={() => handleCambiarCumplimiento(medidaActiva.id, 'SIN_ASIGNAR')}>
+                                                                            <i className="bi bi-dash-circle" style={{ color: '#6b7280' }} /> Sin estatus
                                                                         </button>
                                                                     </div>
                                                                 )}
@@ -823,6 +847,37 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                                 </div>
                                             )}
                                         </div>
+                                        {(user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN') && (
+                                            <div style={{ marginTop: 12 }}>
+                                                {!confirmRevertir ? (
+                                                    <button
+                                                        onClick={() => setConfirmRevertir(true)}
+                                                        style={{ background: 'none', border: '1.5px solid #dc2626', color: '#dc2626', borderRadius: 7, padding: '5px 14px', fontSize: 12, cursor: 'pointer', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6, transition: 'all 0.15s' }}
+                                                        onMouseEnter={e => { e.currentTarget.style.background = '#dc2626'; e.currentTarget.style.color = '#fff'; }}
+                                                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#dc2626'; }}
+                                                    >
+                                                        <i className="bi bi-arrow-counterclockwise" /> Revertir cierre
+                                                    </button>
+                                                ) : (
+                                                    <div style={{ background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: 8, padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                                        <span style={{ fontSize: 12, color: '#991b1b', fontWeight: 700 }}>
+                                                            <i className="bi bi-exclamation-triangle-fill" style={{ marginRight: 5 }} />
+                                                            ¿Revertir el cierre de carpeta? El imputado regresará a activos.
+                                                        </span>
+                                                        <div style={{ display: 'flex', gap: 8 }}>
+                                                            <button onClick={handleRevertirCierre} disabled={reviertiendo}
+                                                                style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 7, padding: '5px 14px', fontSize: 12, cursor: 'pointer', fontWeight: 700 }}>
+                                                                {reviertiendo ? 'Revirtiendo...' : 'Sí, revertir'}
+                                                            </button>
+                                                            <button onClick={() => setConfirmRevertir(false)}
+                                                                style={{ background: '#fff', color: '#555', border: '1px solid #d1d5db', borderRadius: 7, padding: '5px 14px', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>
+                                                                Cancelar
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 

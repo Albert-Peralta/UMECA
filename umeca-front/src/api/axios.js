@@ -20,18 +20,33 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
-// Si el backend responde 401 (token expirado o inválido), limpia la sesión
-// y redirige al login, excepto cuando el 401 viene del propio endpoint de login.
+// Mensajes descriptivos por código de error HTTP
+const MENSAJES_ERROR = {
+    400: 'Datos incorrectos. Verifica que todos los campos estén bien capturados.',
+    401: 'Sesión expirada. Por favor inicia sesión nuevamente.',
+    403: 'No tienes permiso para realizar esta acción.',
+    404: 'El recurso solicitado no fue encontrado.',
+    409: 'Ya existe un registro con esa información.',
+    413: 'El archivo es demasiado grande para ser enviado.',
+    422: 'Los datos enviados no son válidos. Revisa el formulario.',
+    500: 'Error interno del servidor. Intenta de nuevo o contacta al administrador.',
+    503: 'El servidor no está disponible en este momento. Intenta más tarde.',
+};
+
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
+        const status = error.response?.status;
+        if (status === 401) {
             const isLoginRoute = error.config.url.includes('/auth/login');
             if (!isLoginRoute) {
                 localStorage.clear();
                 window.location.replace('/');
             }
         }
+        // Adjuntar mensaje descriptivo al error para que los componentes lo usen
+        const mensajeBackend = error.response?.data?.message;
+        error.mensajeDescriptivo = mensajeBackend || MENSAJES_ERROR[status] || `Error inesperado (${status || 'sin conexión'}).`;
         return Promise.reject(error);
     }
 );

@@ -132,9 +132,13 @@
     display: flex; align-items: center;
     border-right: 1px solid #e0e0e0;
 }
+.pr-field.pr-half .pr-label {
+    min-width: 80px; width: 80px;
+}
 .pr-value {
-    padding: 3px 6px; font-size: 9pt; color: #222;
+    padding: 3px 6px; font-size: 8.5pt; color: #222;
     display: flex; align-items: center; flex: 1;
+    word-break: break-all;
 }
 
 /* Tablas — pegadas al título (sin margen top) */

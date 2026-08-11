@@ -20,3 +20,6 @@ export const registrarFallecimiento = (id, datos) =>
 
 export const registrarCierreCarpeta = (id, datos) =>
     api.patch(`/imputados/${id}/cierre-carpeta`, datos);
+
+export const revertirCierreCarpeta = (id) =>
+    api.patch(`/imputados/${id}/revertir-cierre`);
