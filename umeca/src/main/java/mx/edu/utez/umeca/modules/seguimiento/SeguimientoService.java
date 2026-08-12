@@ -126,10 +126,11 @@ public class SeguimientoService {
     // ── Calcular reporte diario automático por zona (vista propia) ───────────
     @Transactional(readOnly = true)
     public ApiResponse getReporteAutomatico(LocalDate fecha, User.Zona zona) {
+        User usuario = usuarioActual();
         LocalDateTime inicio = fecha.atStartOfDay();
         LocalDateTime fin    = fecha.plusDays(1).atStartOfDay();
 
-        List<Seguimiento> segs = repository.findByZonaYRango(zona, inicio, fin);
+        List<Seguimiento> segs = repository.findByZonaYRangoYUsuario(zona, inicio, fin, usuario.getId());
 
         Map<String, Long> conteo = segs.stream()
                 .collect(Collectors.groupingBy(

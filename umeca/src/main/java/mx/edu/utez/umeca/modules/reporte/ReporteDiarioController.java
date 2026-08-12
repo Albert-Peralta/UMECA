@@ -75,6 +75,15 @@ public class ReporteDiarioController {
         return ResponseEntity.ok(service.getCumplimiento(desde, hasta));
     }
 
+    /** Guarda solo el campo oficiosRegistros (campo manual para el evaluador) */
+    @PatchMapping("/oficios-registro")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','EVALUADOR_RIESGO','ADMINISTRADOR')")
+    public ResponseEntity<ApiResponse> actualizarOficiosRegistro(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+            @RequestParam int valor) {
+        return ResponseEntity.ok(service.actualizarOficiosRegistro(fecha, valor));
+    }
+
     /** Semana actual: lunes a hoy */
     @GetMapping("/semana-actual")
     @PreAuthorize("hasAnyRole('SUPERADMIN','SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR')")

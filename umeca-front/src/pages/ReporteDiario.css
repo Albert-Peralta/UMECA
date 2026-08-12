@@ -941,3 +941,90 @@
     margin-top: 2px;
     line-height: 1.5;
 }
+
+/* ── Campo manual: Oficios de registro ─────────────────────────────────────── */
+.rd-oficios-manual {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.rd-oficios-controles {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.rd-oficios-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: #2d6a4f;
+    border-radius: 50%;
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .15s, transform .1s, box-shadow .15s;
+    user-select: none;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(45,106,79,.35);
+    line-height: 1;
+}
+
+.rd-oficios-btn:hover:not(:disabled) {
+    background: #1b4332;
+    transform: scale(1.08);
+    box-shadow: 0 3px 8px rgba(45,106,79,.45);
+}
+.rd-oficios-btn:active:not(:disabled) { transform: scale(0.95); }
+.rd-oficios-btn:disabled { opacity: 0.3; cursor: not-allowed; box-shadow: none; }
+
+.rd-oficios-input {
+    width: 62px;
+    text-align: center;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 4px 6px;
+    font-size: 22px;
+    font-weight: 800;
+    color: #1b4332;
+    background: #f0fdf4;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.06);
+    transition: border-color .15s;
+    -moz-appearance: textfield;
+}
+.rd-oficios-input:focus { outline: none; border-color: #2d6a4f; }
+.rd-oficios-input::-webkit-inner-spin-button,
+.rd-oficios-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.rd-oficios-input:disabled { background: #f3f4f6; color: #9ca3af; border-color: #e5e7eb; }
+
+.rd-oficios-guardar {
+    align-self: center;
+    padding: 6px 16px;
+    background: linear-gradient(135deg, #2d6a4f 0%, #1b4332 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: .2px;
+    box-shadow: 0 2px 6px rgba(45,106,79,.35);
+    transition: opacity .15s, box-shadow .15s, transform .1s;
+}
+
+.rd-oficios-guardar:hover:not(:disabled) {
+    opacity: .9;
+    box-shadow: 0 3px 10px rgba(45,106,79,.45);
+    transform: translateY(-1px);
+}
+.rd-oficios-guardar:active:not(:disabled) { transform: translateY(0); }
+.rd-oficios-guardar:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }

@@ -7,3 +7,5 @@ export const getListaReportes    = (params)       => api.get('/reportes-diarios'
 export const getConsolidado      = (params)       => api.get('/reportes-diarios/consolidado', { params });
 export const getSemanaActual     = ()             => api.get('/reportes-diarios/semana-actual');
 export const getCumplimiento     = (params)       => api.get('/reportes-diarios/cumplimiento', { params });
+export const actualizarOficiosRegistro = (fecha, valor) =>
+    api.patch('/reportes-diarios/oficios-registro', null, { params: { fecha, valor } });

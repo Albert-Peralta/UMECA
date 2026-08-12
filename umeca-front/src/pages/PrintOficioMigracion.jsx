@@ -133,6 +133,27 @@ ${procedimiento ? `<p style="text-align:justify">El procedimiento establecido pa
                 footerEl.style.marginTop = gap + 'px';
             }
 
+            // html2canvas no puede renderizar elementos contenteditable —
+            // los reemplazamos por divs estáticos, generamos el PDF y los restauramos.
+            const editables = Array.from(el.querySelectorAll('[contenteditable]'));
+            const snapshots = editables.map(orig => {
+                const snap = document.createElement('div');
+                snap.innerHTML = orig.innerHTML;
+                snap.className = orig.className;
+                const cs = window.getComputedStyle(orig);
+                snap.style.cssText    = orig.style.cssText;
+                snap.style.fontFamily = cs.fontFamily;
+                snap.style.fontSize   = cs.fontSize;
+                snap.style.lineHeight = cs.lineHeight;
+                snap.style.color      = cs.color;
+                snap.style.whiteSpace = cs.whiteSpace;
+                snap.style.padding    = cs.padding;
+                snap.style.border     = 'none';
+                orig.parentNode.insertBefore(snap, orig);
+                orig.style.display = 'none';
+                return { orig, snap };
+            });
+
             const blobUrl = await html2pdf()
                 .set({
                     margin:      [6, 14, 10, 14],
@@ -143,6 +164,12 @@ ${procedimiento ? `<p style="text-align:justify">El procedimiento establecido pa
                 })
                 .from(el)
                 .output('bloburl');
+
+            // Restaurar elementos originales
+            snapshots.forEach(({ orig, snap }) => {
+                orig.style.display = '';
+                snap.parentNode.removeChild(snap);
+            });
 
             if (footerEl) footerEl.style.marginTop = '';
             el.style.width     = prevWidth;
@@ -202,8 +229,8 @@ ${procedimiento ? `<p style="text-align:justify">El procedimiento establecido pa
                 {/* Contenido editable con TipTap */}
                 <EditorContent editor={editor} className="pom-editor-wrap" />
 
-                {/* Firma — FIJA */}
-                <div className="pom-firma">
+                {/* Firma — editable */}
+                <div className="pom-firma pom-editable-deps no-print-outline" contentEditable suppressContentEditableWarning>
                     <div className="pom-firma-linea" />
                     <p className="pom-firma-nombre">LIC. REY GIOVANNI RIVAS SANDOVAL</p>
                     <p className="pom-firma-cargo">DIRECTOR DE LA UNIDAD DE MEDIDAS CAUTELARES</p>

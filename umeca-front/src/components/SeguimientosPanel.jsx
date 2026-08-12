@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { registrarSeguimiento, getSeguimientosPorImputado, TIPOS_ACTIVIDAD } from '../api/seguimientosApi';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import './SeguimientosPanel.css';
 
 const SECCION_LABEL = {
@@ -24,6 +25,17 @@ export default function SeguimientosPanel({
     readonly = false,
 }) {
     const { showToast } = useToast();
+    const { user } = useAuth();
+
+    // Filtra los tipos de actividad según el rol del usuario
+    const tiposFiltrados = (() => {
+        const rol = user?.rol;
+        if (rol === 'SUPERVISION')
+            return TIPOS_ACTIVIDAD.filter(t => t.grupo === 'SUPERVISIÓN' || t.grupo === 'GENERAL');
+        if (rol === 'EVALUADOR_RIESGO')
+            return TIPOS_ACTIVIDAD.filter(t => t.grupo === 'EVALUACIÓN' || t.grupo === 'GENERAL');
+        return TIPOS_ACTIVIDAD; // admin y otros ven todo
+    })();
     const [lista, setLista]           = useState([]);
     const [loading, setLoading]       = useState(true);
     const [mostrarForm, setMostrarForm] = useState(false);
@@ -79,7 +91,7 @@ export default function SeguimientosPanel({
     };
 
     // Agrupar opciones por grupo para el select
-    const grupos = [...new Set(TIPOS_ACTIVIDAD.map(t => t.grupo))];
+    const grupos = [...new Set(tiposFiltrados.map(t => t.grupo))];
 
     return (
         <div className="sp-panel">
@@ -107,7 +119,7 @@ export default function SeguimientosPanel({
                             <option value="">— Selecciona —</option>
                             {grupos.map(g => (
                                 <optgroup key={g} label={g}>
-                                    {TIPOS_ACTIVIDAD.filter(t => t.grupo === g).map(t => (
+                                    {tiposFiltrados.filter(t => t.grupo === g).map(t => (
                                         <option key={t.value} value={t.value}>{t.label}</option>
                                     ))}
                                 </optgroup>

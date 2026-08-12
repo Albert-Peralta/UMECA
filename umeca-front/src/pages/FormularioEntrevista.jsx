@@ -154,7 +154,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
     const fotoInputRef = useRef(null);
     const [domicilios, setDomicilios] = useState([{ calle: '', numero: '', colonia: '', ciudad: '', municipio: '', estado: '', cp: '', tipoDomicilio: '', tipoDomicilioOtro: '', coordenadas: '', anios: '', propietario: '', diasDisponibles: '', horaDisponible: '', referencias: '', razon: '' }]);
     const [tatuajes, setTatuajes] = useState([{ parteCuerpo: '', descripcion: '' }]);
-    const SUSTANCIAS_FIJAS = ['BEBIDAS ALCOHÓLICAS', 'MARIHUANA', 'COCAÍNA', 'PIEDRA', 'METANFETAMINAS', 'Otra'];
+    const SUSTANCIAS_FIJAS = ['BEBIDAS ALCOHÓLICAS', 'MARIHUANA', 'COCAÍNA', 'PIEDRA', 'METANFETAMINAS', 'CRISTAL', 'Otra'];
     const [consumoSustancias, setConsumoSustancias] = useState(
         SUSTANCIAS_FIJAS.map(s => ({ sustancia: s, consume: null, otraEsp: '', desde: '', periodicidad: '', cantidad: '', fechaUltimoConsumo: '' }))
     );
@@ -623,7 +623,9 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                         <option>Sin estudios</option>
                         <option>Primaria</option>
                         <option>Secundaria</option>
-                        <option>Preparatoria</option>
+                        <option>Bachillerato / Preparatoria</option>
+                        <option>Carrera técnica</option>
+                        <option>Normal (Formación docente)</option>
                         <option>Licenciatura</option>
                         <option>Posgrado</option>
                     </select>
@@ -933,7 +935,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                                 <td>
                                     <select value={p.escolaridad} onChange={e => { const n=[...personasHabita]; n[i]={...n[i],escolaridad:e.target.value}; setPersonasHabita(n); }}>
                                         <option value="">Seleccionar...</option>
-                                        {['Sin estudios','Primaria','Secundaria','Preparatoria','Licenciatura','Posgrado'].map(o => <option key={o}>{o}</option>)}
+                                        {['Sin estudios','Primaria','Secundaria','Bachillerato / Preparatoria','Carrera técnica','Normal (Formación docente)','Licenciatura','Posgrado'].map(o => <option key={o}>{o}</option>)}
                                     </select>
                                 </td>
                                 <td><input value={p.ocupacion}   onChange={e => { const n=[...personasHabita]; n[i]={...n[i],ocupacion:e.target.value};   setPersonasHabita(n); }} /></td>

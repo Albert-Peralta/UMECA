@@ -66,6 +66,22 @@ public class ReporteDiarioService {
         return new ApiResponse(true, esNuevo ? "Reporte creado" : "Reporte actualizado", ReporteDiarioResponseDTO.from(r));
     }
 
+    // ── Guardar solo el campo oficiosRegistros para el evaluador ─────────────
+    @Transactional
+    public ApiResponse actualizarOficiosRegistro(LocalDate fecha, int valor) {
+        User user = usuarioActual();
+        Optional<ReporteDiario> existente = repo.findByFechaAndZonaAndUsuarioId(fecha, user.getZona(), user.getId());
+        ReporteDiario r = existente.orElse(new ReporteDiario());
+        if (existente.isEmpty()) {
+            r.setFecha(fecha);
+            r.setZona(user.getZona());
+            r.setUsuario(user);
+        }
+        r.setOficiosRegistros(valor);
+        repo.save(r);
+        return new ApiResponse(true, "Oficios de registro actualizados", ReporteDiarioResponseDTO.from(r));
+    }
+
     // ── Obtener reporte del día actual del usuario ────────────────────────────
     @Transactional(readOnly = true)
     public ApiResponse getMiReporteHoy() {

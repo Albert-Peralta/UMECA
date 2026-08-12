@@ -25,6 +25,21 @@ public interface SeguimientoRepository extends JpaRepository<Seguimiento, Long> 
         @Param("fin") LocalDateTime fin
     );
 
+    // Seguimientos del día filtrados por zona Y usuario (reporte personal)
+    @Query("""
+        SELECT s FROM Seguimiento s
+        WHERE s.fechaRegistro >= :inicio
+          AND s.fechaRegistro < :fin
+          AND s.registradoPor.zona = :zona
+          AND s.registradoPor.id = :usuarioId
+    """)
+    List<Seguimiento> findByZonaYRangoYUsuario(
+        @Param("zona") mx.edu.utez.umeca.modules.security.user.User.Zona zona,
+        @Param("inicio") LocalDateTime inicio,
+        @Param("fin") LocalDateTime fin,
+        @Param("usuarioId") Long usuarioId
+    );
+
     // Todos los seguimientos en un rango de fechas (para reporte consolidado del admin)
     @Query("""
         SELECT s FROM Seguimiento s

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { getReporteAutomatico, getReporteConsolidado, getHistorialPorUsuario } from '../api/seguimientosApi';
+import { getMiReportePorFecha, actualizarOficiosRegistro } from '../api/reporteDiarioApi';
 import './ReporteDiario.css';
 
 // ── Definición de campos por sección ─────────────────────────────────────────
@@ -67,6 +68,14 @@ export default function ReporteDiario() {
     const [datosAuto,   setDatosAuto]     = useState({});
     const [cargandoAuto, setCargandoAuto] = useState(false);
 
+    // ── Estado: campo manual oficios de registro (solo evaluador) ────────────
+    // oficiosGuardados: valor confirmado (afecta el total)
+    // oficiosEditando:  valor en edición (solo afecta el input)
+    const [oficiosGuardados,  setOficiosGuardados]  = useState(0);
+    const [oficiosEditando,   setOficiosEditando]   = useState(0);
+    const [guardandoOficios,  setGuardandoOficios]  = useState(false);
+    const [oficiosCargados,   setOficiosCargados]   = useState(false);
+
     useEffect(() => {
         if (esAdmin || !user?.zona) return;
         setCargandoAuto(true);
@@ -78,6 +87,33 @@ export default function ReporteDiario() {
             .catch(() => { setDatosAuto({}); showToast('Error al cargar el reporte diario.', 'error'); })
             .finally(() => setCargandoAuto(false));
     }, [esAdmin, fechaPropia, user?.zona]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Carga el valor guardado de oficiosRegistros al cambiar la fecha (solo evaluador)
+    useEffect(() => {
+        if (!esEval) return;
+        setOficiosCargados(false);
+        getMiReportePorFecha(fechaPropia)
+            .then(res => {
+                const val = res.data?.data?.oficiosRegistros ?? 0;
+                setOficiosGuardados(val);
+                setOficiosEditando(val);
+            })
+            .catch(() => { setOficiosGuardados(0); setOficiosEditando(0); })
+            .finally(() => setOficiosCargados(true));
+    }, [esEval, fechaPropia]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const handleGuardarOficios = async () => {
+        setGuardandoOficios(true);
+        try {
+            await actualizarOficiosRegistro(fechaPropia, oficiosEditando);
+            setOficiosGuardados(oficiosEditando); // solo aquí se actualiza el total
+            showToast('Oficios de registro guardados');
+        } catch {
+            showToast('Error al guardar oficios de registro', 'error');
+        } finally {
+            setGuardandoOficios(false);
+        }
+    };
 
     // ── Estado: pestaña admin ─────────────────────────────────────────────────
     const [pestanaAdmin, setPestanaAdmin] = useState('resumen'); // 'resumen' | 'historial'
@@ -200,7 +236,11 @@ export default function ReporteDiario() {
 
     // ── Render sección (modo solo lectura) ────────────────────────────────────
     const renderSeccion = (titulo, campos, color) => {
-        const total = campos.reduce((s, c) => s + (datosAuto[c.key] || 0), 0);
+        // Para evaluación: el total incluye oficiosRegistros (manual) + seguimientos automáticos
+        const totalAuto = campos
+            .filter(c => c.key !== 'oficiosRegistros')
+            .reduce((s, c) => s + (datosAuto[c.key] || 0), 0);
+        const total = totalAuto + (esEval ? oficiosGuardados : 0);
         return (
             <div className="rd-seccion" style={{ '--rd-color': color }}>
                 <div className="rd-seccion-titulo">
@@ -210,6 +250,43 @@ export default function ReporteDiario() {
                 </div>
                 <div className="rd-campos-grid">
                     {campos.map(c => {
+                        // Campo manual editable solo para oficiosRegistros en la vista del evaluador
+                        if (c.key === 'oficiosRegistros' && esEval) {
+                            return (
+                                <div key={c.key} className={`rd-campo ${oficiosGuardados > 0 ? 'rd-campo-activo' : ''}`}>
+                                    <label>{c.label}</label>
+                                    <div className="rd-oficios-manual">
+                                        <div className="rd-oficios-controles">
+                                            <button
+                                                className="rd-oficios-btn"
+                                                onClick={() => setOficiosEditando(v => Math.max(0, v - 1))}
+                                                disabled={oficiosEditando <= 0 || !oficiosCargados}
+                                            >−</button>
+                                            <input
+                                                type="number"
+                                                min={0}
+                                                value={oficiosEditando}
+                                                onChange={e => setOficiosEditando(Math.max(0, parseInt(e.target.value) || 0))}
+                                                className="rd-oficios-input"
+                                                disabled={!oficiosCargados}
+                                            />
+                                            <button
+                                                className="rd-oficios-btn"
+                                                onClick={() => setOficiosEditando(v => v + 1)}
+                                                disabled={!oficiosCargados}
+                                            >+</button>
+                                        </div>
+                                        <button
+                                            className="rd-oficios-guardar"
+                                            onClick={handleGuardarOficios}
+                                            disabled={guardandoOficios || !oficiosCargados}
+                                        >
+                                            {guardandoOficios ? '…' : <><i className="bi bi-floppy" /> Guardar</>}
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        }
                         const val = datosAuto[c.key] || 0;
                         return (
                             <div key={c.key} className={`rd-campo rd-campo-readonly ${val > 0 ? 'rd-campo-activo' : ''}`}>
@@ -225,26 +302,29 @@ export default function ReporteDiario() {
         );
     };
 
-    // ── Chips resumen evaluación ──────────────────────────────────────────────
+    // ── Chips resumen ─────────────────────────────────────────────────────────
     const resumenEvalChips = (datos) => {
         const v = k => datos[k] || 0;
         const fc = v('opinionTecnicaFC') + v('negacionesFC') + v('informesFC');
         const ff = v('opinionTecnicaFF') + v('negacionesFF') + v('informesFF');
-        const total = TODOS_CAMPOS.reduce((s, c) => s + (datos[c.key] || 0), 0);
+        const camposRol = esSuper ? CAMPOS_SUPERVISION : esEval ? CAMPOS_EVALUACION : TODOS_CAMPOS;
+        const total = camposRol.reduce((s, c) => s + (c.key === 'oficiosRegistros' ? oficiosGuardados : (datos[c.key] || 0)), 0);
         return (
             <div className="rd-eval-resumen">
                 <div className="rd-eval-chip rd-eval-chip-total">
                     <span className="rd-eval-chip-label">Total General</span>
                     <span className="rd-eval-chip-val">{total}</span>
                 </div>
-                <div className="rd-eval-chip rd-eval-chip-fc">
-                    <span className="rd-eval-chip-label">Evaluación de Riesgos F.C.</span>
-                    <span className="rd-eval-chip-val">{fc}</span>
-                </div>
-                <div className="rd-eval-chip rd-eval-chip-ff">
-                    <span className="rd-eval-chip-label">Evaluación de Riesgos F.F.</span>
-                    <span className="rd-eval-chip-val">{ff}</span>
-                </div>
+                {esEval && <>
+                    <div className="rd-eval-chip rd-eval-chip-fc">
+                        <span className="rd-eval-chip-label">Evaluación de Riesgos F.C.</span>
+                        <span className="rd-eval-chip-val">{fc}</span>
+                    </div>
+                    <div className="rd-eval-chip rd-eval-chip-ff">
+                        <span className="rd-eval-chip-label">Evaluación de Riesgos F.F.</span>
+                        <span className="rd-eval-chip-val">{ff}</span>
+                    </div>
+                </>}
             </div>
         );
     };
