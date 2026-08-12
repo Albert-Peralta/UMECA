@@ -105,6 +105,18 @@ public class EvaluacionRiesgoController {
                 : ResponseEntity.status(400).body(response);
     }
 
+    /** Guarda el HTML editado del informe o negación en la BD (persiste entre equipos). */
+    @PatchMapping("/{id}/html-documento")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')")
+    public ResponseEntity<ApiResponse> guardarHtmlDocumento(@PathVariable Long id,
+                                                             @RequestParam String tipo,
+                                                             @RequestBody String html) {
+        ApiResponse response = evaluacionService.guardarHtmlDocumento(id, tipo, html);
+        return response.isOk()
+                ? ResponseEntity.ok(response)
+                : ResponseEntity.status(400).body(response);
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
     public ResponseEntity<ApiResponse> eliminar(@PathVariable Long id) {

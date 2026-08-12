@@ -152,6 +152,8 @@ public class EvaluacionRiesgoResponseDTO {
     private String verifS10Metodo; private String verifS10Resultado;
     private String verifS11Metodo; private String verifS11Resultado;
     private String tipoDocumento;
+    private String htmlInforme;
+    private String htmlNegacion;
 
     public static EvaluacionRiesgoResponseDTO from(EvaluacionRiesgo e) {
         EvaluacionRiesgoResponseDTO dto = new EvaluacionRiesgoResponseDTO();
@@ -283,6 +285,8 @@ public class EvaluacionRiesgoResponseDTO {
         dto.setVerifS10Metodo(e.getVerifS10Metodo()); dto.setVerifS10Resultado(e.getVerifS10Resultado());
         dto.setVerifS11Metodo(e.getVerifS11Metodo()); dto.setVerifS11Resultado(e.getVerifS11Resultado());
         dto.setTipoDocumento(e.getTipoDocumento() != null ? e.getTipoDocumento().name() : "NORMAL");
+        dto.setHtmlInforme(e.getHtmlInforme());
+        dto.setHtmlNegacion(e.getHtmlNegacion());
         dto.setCreatedAt(e.getCreatedAt());
         return dto;
     }

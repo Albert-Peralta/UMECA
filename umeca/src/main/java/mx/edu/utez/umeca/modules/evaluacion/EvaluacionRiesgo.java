@@ -334,6 +334,14 @@ public class EvaluacionRiesgo extends BaseEntity {
     @Column(name = "factores_estabilidad_json", columnDefinition = "TEXT")
     private String factoresEstabilidadJson;
 
+    /** HTML del informe editado por el usuario (se persiste para compartir entre equipos). */
+    @Column(name = "html_informe", columnDefinition = "LONGTEXT")
+    private String htmlInforme;
+
+    /** HTML de la carta de negación editada por el usuario. */
+    @Column(name = "html_negacion", columnDefinition = "LONGTEXT")
+    private String htmlNegacion;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Estatus estatus = Estatus.PENDIENTE;

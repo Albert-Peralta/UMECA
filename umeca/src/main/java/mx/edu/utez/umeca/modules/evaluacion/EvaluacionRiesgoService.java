@@ -431,6 +431,22 @@ public class EvaluacionRiesgoService {
         }).orElse(new ApiResponse(false, "Evaluación no encontrada"));
     }
 
+    /** Guarda el HTML editado del informe o negación (para persistir entre equipos). */
+    @Transactional
+    public ApiResponse guardarHtmlDocumento(Long id, String tipo, String html) {
+        return evaluacionRepository.findById(id).map(e -> {
+            if ("informe".equalsIgnoreCase(tipo)) {
+                e.setHtmlInforme(html);
+            } else if ("negacion".equalsIgnoreCase(tipo)) {
+                e.setHtmlNegacion(html);
+            } else {
+                return new ApiResponse(false, "Tipo inválido: " + tipo);
+            }
+            evaluacionRepository.save(e);
+            return new ApiResponse(true, "Documento guardado");
+        }).orElse(new ApiResponse(false, "Evaluación no encontrada"));
+    }
+
     @Transactional
     public ApiResponse eliminar(Long id) {
         return evaluacionRepository.findById(id).map(e -> {

@@ -167,8 +167,26 @@ ${tablaIdent}
         }
     };
 
-    const savedContent = localStorage.getItem(storageKey);
+    const savedContent = d.htmlNegacion || localStorage.getItem(storageKey);
     const savedMeta    = localStorage.getItem(storageKey + '-meta');
+
+    /* ── Auto-guardado en BD con debounce ── */
+    const debounceRef = useRef(null);
+    const guardarEnBD = useCallback((html) => {
+        if (!d?.id) return;
+        clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(async () => {
+            try {
+                await import('../api/axios').then(({ default: api }) =>
+                    api.patch(`/evaluaciones/${d.id}/html-documento?tipo=negacion`, html, {
+                        headers: { 'Content-Type': 'text/plain' },
+                    })
+                );
+            } catch (err) {
+                console.error('Error al guardar negación en BD:', err);
+            }
+        }, 2000);
+    }, [d?.id]);
 
     const editor = useEditor({
         extensions: [
@@ -182,10 +200,12 @@ ${tablaIdent}
         ],
         content: savedContent || contenidoInicial,
         onUpdate: ({ editor }) => {
-            localStorage.setItem(storageKey, editor.getHTML());
+            const html = editor.getHTML();
+            localStorage.setItem(storageKey, html);
             const ahora = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
             localStorage.setItem(storageKey + '-meta', ahora);
             setGuardadoEn(ahora);
+            guardarEnBD(html);
         },
     });
 
@@ -199,7 +219,15 @@ ${tablaIdent}
         localStorage.removeItem(storageKey + '-meta');
         editor?.commands.setContent(contenidoInicial);
         setGuardadoEn(null);
-    }, [editor, contenidoInicial, storageKey]);
+        // Limpiar también en BD
+        if (d?.id) {
+            import('../api/axios').then(({ default: api }) =>
+                api.patch(`/evaluaciones/${d.id}/html-documento?tipo=negacion`, '', {
+                    headers: { 'Content-Type': 'text/plain' },
+                })
+            ).catch(() => {});
+        }
+    }, [editor, contenidoInicial, storageKey, d?.id]);
 
     return createPortal(
         <div className="ped-overlay">
