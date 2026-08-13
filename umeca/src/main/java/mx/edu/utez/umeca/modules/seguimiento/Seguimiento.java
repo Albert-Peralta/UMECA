@@ -40,7 +40,8 @@ public class Seguimiento extends BaseEntity {
         EVALUACION_RIESGO_FC,
         EVALUACION_RIESGO_FF,
         // General
-        OTRO
+        OTRO,
+        OTRO_SUPERVISION
     }
 
     public enum Seccion {

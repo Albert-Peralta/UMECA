@@ -31,9 +31,9 @@ export default function SeguimientosPanel({
     const tiposFiltrados = (() => {
         const rol = user?.rol;
         if (rol === 'SUPERVISION')
-            return TIPOS_ACTIVIDAD.filter(t => t.grupo === 'SUPERVISIÓN' || t.grupo === 'GENERAL');
+            return TIPOS_ACTIVIDAD.filter(t => t.grupo === 'SUPERVISIÓN');
         if (rol === 'EVALUADOR_RIESGO')
-            return TIPOS_ACTIVIDAD.filter(t => t.grupo === 'EVALUACIÓN' || t.grupo === 'GENERAL');
+            return TIPOS_ACTIVIDAD.filter(t => t.grupo === 'EVALUACIÓN');
         return TIPOS_ACTIVIDAD; // admin y otros ven todo
     })();
     const [lista, setLista]           = useState([]);
@@ -59,13 +59,14 @@ export default function SeguimientosPanel({
 
     const handleGuardar = async () => {
         if (!form.tipoActividad) { showToast('Selecciona un tipo de actividad', 'error'); return; }
-        if (form.tipoActividad === 'OTRO' && !form.otroTipo?.trim()) {
+        const esOtro = form.tipoActividad === 'OTRO' || form.tipoActividad === 'OTRO_SUPERVISION';
+        if (esOtro && !form.otroTipo?.trim()) {
             showToast('Especifica qué tipo de actividad es', 'error'); return;
         }
         if (!form.detalles?.trim()) { showToast('Agrega los detalles del seguimiento', 'error'); return; }
         setGuardando(true);
         // Si es OTRO, anteponer el tipo especificado a los detalles
-        const detallesFinales = form.tipoActividad === 'OTRO'
+        const detallesFinales = esOtro
             ? `[${form.otroTipo.trim()}] ${form.detalles}`
             : form.detalles;
         try {
@@ -126,7 +127,7 @@ export default function SeguimientosPanel({
                             ))}
                         </select>
                     </div>
-                    {form.tipoActividad === 'OTRO' && (
+                    {(form.tipoActividad === 'OTRO' || form.tipoActividad === 'OTRO_SUPERVISION') && (
                         <div className="sp-form-row">
                             <label>Especifica cuál *</label>
                             <input
@@ -180,7 +181,18 @@ export default function SeguimientosPanel({
                                         : '—'}
                                 </span>
                             </div>
-                            <p className="sp-detalles">{s.detalles}</p>
+                            <p className="sp-detalles">
+                                {(() => {
+                                    const match = s.detalles?.match(/^\[([^\]]+)\]\s*([\s\S]*)$/);
+                                    if (match) return (
+                                        <>
+                                            <span className="sp-detalles-otro-tag">{match[1]}</span>
+                                            {match[2] && <span> {match[2]}</span>}
+                                        </>
+                                    );
+                                    return s.detalles;
+                                })()}
+                            </p>
                             <p className="sp-autor">
                                 <i className="bi bi-person-fill" /> {s.registradoPor || '—'}
                             </p>

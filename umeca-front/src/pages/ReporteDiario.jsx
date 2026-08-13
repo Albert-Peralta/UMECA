@@ -20,6 +20,7 @@ const CAMPOS_SUPERVISION = [
     { key: 'visitasDomiciliarias',    label: 'Visitas domiciliarias',               tipo: 'VISITA_DOMICILIARIA' },
     { key: 'audienciasTTA',           label: 'Audiencias TTA',                      tipo: 'AUDIENCIA_TTA' },
     { key: 'llamadasTelefonicas',     label: 'Llamadas telefónicas',                tipo: 'LLAMADA_TELEFONICA' },
+    { key: 'otroSuper',               label: 'Otro',                                tipo: 'OTRO_SUPERVISION' },
 ];
 
 const CAMPOS_EVALUACION = [
@@ -487,7 +488,13 @@ export default function ReporteDiario() {
                                                                         {seg.fechaRegistro ? new Date(seg.fechaRegistro).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}
                                                                     </span>
                                                                 </div>
-                                                                {seg.detalles && <div className="rd-hist-seg-detalles">{seg.detalles}</div>}
+                                                                {seg.detalles && <div className="rd-hist-seg-detalles">
+                                                                    {(() => {
+                                                                        const m = seg.detalles.match(/^\[([^\]]+)\]\s*([\s\S]*)$/);
+                                                                        if (m) return <><span className="rd-otro-tag">{m[1]}</span>{m[2] && <span> {m[2]}</span>}</>;
+                                                                        return seg.detalles;
+                                                                    })()}
+                                                                </div>}
                                                             </div>
                                                         </div>
                                                     ))}

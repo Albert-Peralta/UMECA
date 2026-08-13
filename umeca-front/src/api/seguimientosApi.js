@@ -49,6 +49,7 @@ export const TIPOS_ACTIVIDAD = [
     { value: 'NEGACION_FF',             label: 'Negación F.F.',                    grupo: 'EVALUACIÓN' },
     { value: 'INFORME_FC',              label: 'Informe F.C.',                     grupo: 'EVALUACIÓN' },
     { value: 'INFORME_FF',              label: 'Informe F.F.',                     grupo: 'EVALUACIÓN' },
-    // General
-    { value: 'OTRO',                    label: 'Otro',                             grupo: 'GENERAL' },
+    // Otro por rol
+    { value: 'OTRO_SUPERVISION',        label: 'Otro',                             grupo: 'SUPERVISIÓN' },
+    { value: 'OTRO',                    label: 'Otro',                             grupo: 'EVALUACIÓN' },
 ];
