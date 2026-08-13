@@ -33,17 +33,30 @@ const MENSAJES_ERROR = {
     503: 'El servidor no está disponible en este momento. Intenta más tarde.',
 };
 
+// Verifica si el JWT en localStorage ya expiró
+const tokenExpirado = () => {
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.exp && payload.exp * 1000 < Date.now();
+    } catch { return false; }
+};
+
 api.interceptors.response.use(
     (response) => response,
     (error) => {
         const status = error.response?.status;
-        if (status === 401) {
-            const isLoginRoute = error.config.url.includes('/auth/login');
-            if (!isLoginRoute) {
-                localStorage.clear();
-                window.location.replace('/');
-            }
+        const isLoginRoute = error.config?.url?.includes('/auth/login');
+
+        // 401: sesión inválida/expirada
+        // 403 con token expirado: Spring Security devuelve 403 en lugar de 401
+        //     cuando no hay AuthenticationEntryPoint configurado
+        if (!isLoginRoute && (status === 401 || (status === 403 && tokenExpirado()))) {
+            localStorage.clear();
+            window.location.replace('/');
         }
+
         // Adjuntar mensaje descriptivo al error para que los componentes lo usen
         const mensajeBackend = error.response?.data?.message;
         error.mensajeDescriptivo = mensajeBackend || MENSAJES_ERROR[status] || `Error inesperado (${status || 'sin conexión'}).`;
