@@ -11,7 +11,7 @@ import {
 } from '../api/correspondenciaApi';
 import './Correspondencia.css';
 
-const POR_PAGINA = 20;
+const POR_PAGINA = 50;
 
 const FORM_VACIO = {
     sede: '', noOficio: '', fechaOficio: '', fechaRecibido: '',
@@ -97,7 +97,7 @@ export default function Correspondencia() {
 
     // ── Filtrado y paginación ───────────────────────────────────────────────
     const filtrada = lista.filter(r =>
-        !buscar || [r.noTurno, r.noOficio, r.remitente, r.asunto]
+        !buscar || [r.noTurno, r.noOficio, r.remitente, r.asunto, r.asignadoANombre]
             .some(v => v?.toLowerCase().includes(buscar.toLowerCase()))
     );
     const totalPags = Math.max(1, Math.ceil(filtrada.length / POR_PAGINA));
@@ -733,7 +733,7 @@ export default function Correspondencia() {
                 <i className="bi bi-search corr-search-icon" />
                 <input
                     className="corr-buscar"
-                    placeholder="Buscar por turno, oficio, remitente o asunto..."
+                    placeholder="Buscar por turno, oficio, remitente, asunto o asignado..."
                     value={buscar}
                     onChange={e => { setBuscar(e.target.value); setPagina(1); }}
                 />

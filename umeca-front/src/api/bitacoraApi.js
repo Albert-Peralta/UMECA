@@ -7,6 +7,10 @@ import api from './axios';
 export const getBitacoraGlobal = (filtros = {}) =>
     api.get('/bitacora', { params: filtros });
 
+/** Lista de usuarios distintos que tienen entradas en la bitácora */
+export const getBitacoraUsuarios = () =>
+    api.get('/bitacora/usuarios');
+
 /**
  * Historial de un registro concreto.
  * @param {string} entidad - IMPUTADO | MEDIDA_CAUTELAR | ENTREVISTA | SUPERVISION | USUARIO

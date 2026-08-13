@@ -15,6 +15,15 @@ public interface BitacoraRepository extends JpaRepository<Bitacora, Long> {
     List<Bitacora> findByEntidadAndEntidadIdOrderByFechaDesc(
             Bitacora.Entidad entidad, Long entidadId);
 
+    /** Lista de usuarios distintos que tienen entradas en la bitácora */
+    @Query("""
+        SELECT DISTINCT u.id, u.nombre, u.apPaterno, u.apMaterno, u.username
+        FROM Bitacora b
+        JOIN b.realizadoPor u
+        ORDER BY u.nombre ASC
+    """)
+    List<Object[]> findUsuariosDistintos();
+
     /** Vista global paginada con filtros opcionales */
     @Query("""
         SELECT b FROM Bitacora b

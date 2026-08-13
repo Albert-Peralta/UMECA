@@ -152,6 +152,26 @@ public class CorrespondenciaService {
         }).orElse(new ApiResponse(false, "Registro no encontrado"));
     }
 
+    // ── Usuarios que han registrado correspondencia ───────────────────────────
+    @Transactional(readOnly = true)
+    public ApiResponse getRegistradores() {
+        List<java.util.Map<String, Object>> lista = repository.findRegistradoreDistintos()
+                .stream()
+                .map(row -> {
+                    Long   id     = ((Number) row[0]).longValue();
+                    String nombre = (String) row[1];
+                    String apPat  = (String) row[2];
+                    String apMat  = row[3] != null ? (String) row[3] : "";
+                    String user   = (String) row[4];
+                    String nombreCompleto = nombre + " " + apPat +
+                            (apMat != null && !apMat.isBlank() ? " " + apMat : "");
+                    return java.util.Map.<String, Object>of(
+                            "id", id, "nombre", nombreCompleto, "username", user);
+                })
+                .toList();
+        return new ApiResponse(true, "OK", lista);
+    }
+
     // ── Obtener personal asignable ────────────────────────────────────────────
     @Transactional(readOnly = true)
     public ApiResponse getPersonalAsignable() {

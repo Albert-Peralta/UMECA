@@ -9,6 +9,9 @@ export const getMisAsignados = () =>
 export const getMisRegistros = () =>
     api.get('/correspondencia/mis-registros');
 
+export const getCorrespondenciaRegistradores = () =>
+    api.get('/correspondencia/registradores');
+
 export const crearCorrespondencia = (datos, archivo) => {
     const form = new FormData();
     form.append('datos', JSON.stringify(datos));

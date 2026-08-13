@@ -43,6 +43,13 @@
 }
 .corr-buscar:focus { outline: none; border-color: #2d6a4f; }
 
+.corr-filtro-usuario {
+    padding: 9px 12px; border: 1.5px solid #d1d5db; border-radius: 10px;
+    font-size: 0.85rem; color: #374151; background: #fff;
+    min-width: 160px; max-width: 220px; cursor: pointer;
+}
+.corr-filtro-usuario:focus { outline: none; border-color: #2d6a4f; }
+
 .corr-pag-top {
     display: flex; align-items: center; gap: 6px;
     border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;

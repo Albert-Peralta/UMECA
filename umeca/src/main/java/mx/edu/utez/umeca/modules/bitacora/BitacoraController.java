@@ -36,6 +36,16 @@ public class BitacoraController {
     }
 
     /**
+     * Lista de usuarios distintos con entradas en la bitácora (para el filtro).
+     * GET /api/bitacora/usuarios
+     */
+    @GetMapping("/usuarios")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR')")
+    public ResponseEntity<ApiResponse> usuarios() {
+        return ResponseEntity.ok(bitacoraService.getUsuarios());
+    }
+
+    /**
      * Historial de un registro concreto.
      * GET /api/bitacora/{entidad}/{id}
      * Accesible para todos los roles autenticados.

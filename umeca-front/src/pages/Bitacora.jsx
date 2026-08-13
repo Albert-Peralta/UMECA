@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getBitacoraGlobal } from '../api/bitacoraApi';
+import { getBitacoraGlobal, getBitacoraUsuarios } from '../api/bitacoraApi';
 import './Bitacora.css';
 
 /** Renderiza la descripción de forma estructurada.
@@ -99,11 +99,20 @@ export default function Bitacora() {
     const [error, setError]               = useState('');
 
     // Filtros
-    const [filtroEntidad, setFiltroEntidad] = useState('');
-    const [filtroAccion, setFiltroAccion]   = useState('');
+    const [filtroEntidad, setFiltroEntidad]   = useState('');
+    const [filtroAccion, setFiltroAccion]     = useState('');
+    const [filtroUsuario, setFiltroUsuario]   = useState('');
     const [filtroBusqueda, setFiltroBusqueda] = useState('');
+    const [usuarios, setUsuarios]             = useState([]);
 
     const TAMANO = 50;
+
+    // Cargar lista de usuarios una sola vez
+    useEffect(() => {
+        getBitacoraUsuarios()
+            .then(res => { if (res.data.ok) setUsuarios(res.data.data || []); })
+            .catch(() => {});
+    }, []);
 
     const cargar = useCallback(async (pag = 0) => {
         setCargando(true);
@@ -112,8 +121,9 @@ export default function Bitacora() {
             const params = {
                 pagina: pag,
                 tamano: TAMANO,
-                ...(filtroEntidad ? { entidad: filtroEntidad } : {}),
-                ...(filtroAccion  ? { accion:  filtroAccion  } : {}),
+                ...(filtroEntidad  ? { entidad:    filtroEntidad          } : {}),
+                ...(filtroAccion   ? { accion:     filtroAccion           } : {}),
+                ...(filtroUsuario  ? { usuarioId:  Number(filtroUsuario)  } : {}),
             };
             const res = await getBitacoraGlobal(params);
             if (res.data.ok) {
@@ -130,15 +140,16 @@ export default function Bitacora() {
         } finally {
             setCargando(false);
         }
-    }, [filtroEntidad, filtroAccion]);
+    }, [filtroEntidad, filtroAccion, filtroUsuario]);
 
     useEffect(() => { cargar(0); }, [cargar]);
 
     const registrosFiltrados = filtroBusqueda.trim()
         ? registros.filter(r =>
-            (r.entidadNombre || '').toLowerCase().includes(filtroBusqueda.toLowerCase()) ||
-            (r.usuario || '').toLowerCase().includes(filtroBusqueda.toLowerCase()) ||
-            (r.descripcion || '').toLowerCase().includes(filtroBusqueda.toLowerCase())
+            (r.entidadNombre    || '').toLowerCase().includes(filtroBusqueda.toLowerCase()) ||
+            (r.usuario          || '').toLowerCase().includes(filtroBusqueda.toLowerCase()) ||
+            (r.usuarioUsername  || '').toLowerCase().includes(filtroBusqueda.toLowerCase()) ||
+            (r.descripcion      || '').toLowerCase().includes(filtroBusqueda.toLowerCase())
           )
         : registros;
 
@@ -175,13 +186,22 @@ export default function Bitacora() {
                         ))}
                     </select>
                 </div>
+                <div className="bit-filtro-grupo">
+                    <label>Usuario</label>
+                    <select value={filtroUsuario} onChange={e => { setFiltroUsuario(e.target.value); setPagina(0); }}>
+                        <option value="">Todos los usuarios</option>
+                        {usuarios.map(u => (
+                            <option key={u.id} value={u.id}>{u.nombre}</option>
+                        ))}
+                    </select>
+                </div>
                 <div className="bit-filtro-grupo bit-filtro-busqueda">
                     <label>Buscar</label>
                     <div className="bit-search-wrap">
                         <i className="bi bi-search" />
                         <input
                             type="text"
-                            placeholder="Nombre, usuario, descripción..."
+                            placeholder="Registro, realizado por, descripción..."
                             value={filtroBusqueda}
                             onChange={e => setFiltroBusqueda(e.target.value)}
                         />

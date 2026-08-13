@@ -80,6 +80,29 @@ public class BitacoraService {
         return new ApiResponse(true, "Bitácora obtenida", resultado);
     }
 
+    /** Devuelve la lista de usuarios distintos que tienen entradas en la bitácora */
+    @Transactional(readOnly = true)
+    public ApiResponse getUsuarios() {
+        List<Map<String, Object>> lista = bitacoraRepository.findUsuariosDistintos()
+                .stream()
+                .map(row -> {
+                    Long   id       = ((Number) row[0]).longValue();
+                    String nombre   = (String) row[1];
+                    String apPat    = (String) row[2];
+                    String apMat    = row[3] != null ? (String) row[3] : "";
+                    String username = (String) row[4];
+                    String nombreCompleto = nombre + " " + apPat +
+                            (apMat != null && !apMat.isBlank() ? " " + apMat : "");
+                    return Map.<String, Object>of(
+                            "id", id,
+                            "nombre", nombreCompleto,
+                            "username", username
+                    );
+                })
+                .toList();
+        return new ApiResponse(true, "Usuarios obtenidos", lista);
+    }
+
     // ── Helper ────────────────────────────────────────────────────────────────
 
     private User usuarioActual() {

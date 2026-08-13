@@ -32,6 +32,15 @@ public interface CorrespondenciaRepository extends JpaRepository<Correspondencia
     @Query("SELECT MAX(c.id) FROM Correspondencia c WHERE YEAR(c.createdAt) = :anio")
     Long maxIdDelAnio(int anio);
 
+    // ── Usuarios registradores ────────────────────────────────────────────────
+    @Query("""
+        SELECT DISTINCT u.id, u.nombre, u.apPaterno, u.apMaterno, u.username
+        FROM Correspondencia c
+        JOIN c.registradoPor u
+        ORDER BY u.nombre ASC
+    """)
+    List<Object[]> findRegistradoreDistintos();
+
     // ── Estadísticas ──────────────────────────────────────────────────────────
     @Query("SELECT COUNT(c) FROM Correspondencia c WHERE YEAR(c.createdAt) = :anio")
     long contarPorAnio(int anio);

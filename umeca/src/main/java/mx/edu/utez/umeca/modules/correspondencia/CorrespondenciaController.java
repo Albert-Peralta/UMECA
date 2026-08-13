@@ -98,6 +98,13 @@ public class CorrespondenciaController {
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
     }
 
+    /** Admin: usuarios que han registrado correspondencia (para filtro) */
+    @GetMapping("/registradores")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
+    public ResponseEntity<ApiResponse> registradores() {
+        return ResponseEntity.ok(service.getRegistradores());
+    }
+
     /** Admin: obtener lista de personal asignable */
     @GetMapping("/personal-asignable")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
