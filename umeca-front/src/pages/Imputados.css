@@ -1172,6 +1172,38 @@
     font-weight: 500;
 }
 
+/* ── Tooltip rápido badge cierre ─────────────────────────────────────────── */
+.cumpl-badge-cierre-wrap {
+    position: relative;
+    display: inline-block;
+}
+.cumpl-tooltip-cierre {
+    display: none;
+    position: fixed;
+    background: #1e293b;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 5px 10px;
+    border-radius: 5px;
+    white-space: normal;
+    max-width: 180px;
+    text-align: center;
+    z-index: 9999;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    transform: translateX(-50%);
+}
+.cumpl-tooltip-cierre::after {
+    content: '';
+    position: absolute;
+    bottom: 100%; left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-bottom-color: #1e293b;
+}
+/* tooltip se muestra por JS con getBoundingClientRect */
+
 /* ── Banner cierre en expediente ─────────────────────────────────────────── */
 .exp-banner-cierre {
     display: flex;

@@ -572,18 +572,37 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                         )}
                                     </td>
                                     <td style={{ textAlign: 'center' }}>
-                                        {item.tipoMedidaActiva && item.cumplimientoMedidaActiva === 'CUMPLIMIENTO'
-                                            ? <span className="cumpl-badge-tabla cumpl-cumplimiento">
-                                                <i className="bi bi-check-circle-fill" /> Cumplimiento
-                                              </span>
-                                            : item.tipoMedidaActiva && item.cumplimientoMedidaActiva === 'INCUMPLIMIENTO'
-                                                ? <span className="cumpl-badge-tabla cumpl-incumplimiento">
-                                                    <i className="bi bi-x-circle-fill" /> Incumplimiento
-                                                  </span>
-                                            : item.tipoMedidaActiva
-                                                ? <span className="cumpl-badge-tabla cumpl-sin-asignar">Sin estatus</span>
-                                                : <span style={{ color: '#d1d5db', fontSize: 13 }}>—</span>
-                                        }
+                                        {(() => {
+                                            if (item.carpetaCerrada) {
+                                                if (!item.estatusCumplimientoCierre)
+                                                    return <span className="cumpl-badge-tabla cumpl-sin-asignar">Sin estatus</span>;
+                                                const label = ESTATUS_CIERRE_LABEL[item.estatusCumplimientoCierre] ?? item.estatusCumplimientoCierre;
+                                                return <span className="cumpl-badge-cierre-wrap"
+                                                    onMouseEnter={e => {
+                                                        const t = e.currentTarget.querySelector('.cumpl-tooltip-cierre');
+                                                        const r = e.currentTarget.getBoundingClientRect();
+                                                        t.style.display = 'block';
+                                                        t.style.top = (r.bottom + 6) + 'px';
+                                                        t.style.left = (r.left + r.width / 2) + 'px';
+                                                    }}
+                                                    onMouseLeave={e => {
+                                                        e.currentTarget.querySelector('.cumpl-tooltip-cierre').style.display = 'none';
+                                                    }}>
+                                                    <span className="cumpl-badge-tabla cumpl-cumplimiento cumpl-badge-cierre"
+                                                        style={{ fontSize: 10, padding: '4px 8px', maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block' }}>
+                                                        {label}
+                                                    </span>
+                                                    <span className="cumpl-tooltip-cierre">{label}</span>
+                                                </span>;
+                                            }
+                                            if (item.cumplimientoMedidaActiva === 'CUMPLIMIENTO')
+                                                return <span className="cumpl-badge-tabla cumpl-cumplimiento"><i className="bi bi-check-circle-fill" /> Cumplimiento</span>;
+                                            if (item.cumplimientoMedidaActiva === 'INCUMPLIMIENTO')
+                                                return <span className="cumpl-badge-tabla cumpl-incumplimiento"><i className="bi bi-x-circle-fill" /> Incumplimiento</span>;
+                                            if (item.tipoMedidaActiva)
+                                                return <span className="cumpl-badge-tabla cumpl-sin-asignar">Sin estatus</span>;
+                                            return <span style={{ color: '#d1d5db', fontSize: 13 }}>—</span>;
+                                        })()}
                                     </td>
                                     <td style={{ textAlign: 'center' }}>
                                         <div className="imp-tooltip-wrap">

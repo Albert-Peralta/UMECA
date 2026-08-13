@@ -539,6 +539,27 @@ const SeguimientoCasos = () => {
                                             ? <span className="cumpl-badge-tabla cumpl-incumplimiento">
                                                 <i className="bi bi-x-circle-fill" /> Incumplimiento
                                               </span>
+                                            : item.imputadoCarpetaCerrada && item.imputadoEstatusCierre
+                                            ? (() => {
+                                                const label = ESTATUS_CIERRE_LABEL[item.imputadoEstatusCierre] ?? item.imputadoEstatusCierre;
+                                                return <span className="cumpl-badge-cierre-wrap"
+                                                    onMouseEnter={e => {
+                                                        const t = e.currentTarget.querySelector('.cumpl-tooltip-cierre');
+                                                        const r = e.currentTarget.getBoundingClientRect();
+                                                        t.style.display = 'block';
+                                                        t.style.top = (r.bottom + 6) + 'px';
+                                                        t.style.left = (r.left + r.width / 2) + 'px';
+                                                    }}
+                                                    onMouseLeave={e => {
+                                                        e.currentTarget.querySelector('.cumpl-tooltip-cierre').style.display = 'none';
+                                                    }}>
+                                                    <span className="cumpl-badge-tabla cumpl-cumplimiento cumpl-badge-cierre"
+                                                        style={{ fontSize: 10, padding: '4px 8px', maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block' }}>
+                                                        {label}
+                                                    </span>
+                                                    <span className="cumpl-tooltip-cierre">{label}</span>
+                                                </span>;
+                                              })()
                                             : <span className="cumpl-badge-tabla cumpl-sin-asignar">Sin estatus</span>
                                         }
                                     </td>

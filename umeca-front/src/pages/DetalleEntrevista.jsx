@@ -171,24 +171,47 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
     };
 
     const handleGuardar = async () => {
+        // Validar estatura antes de enviar
+        if (form.estatura !== '' && form.estatura !== null && form.estatura !== undefined) {
+            const est = Number(form.estatura);
+            if (isNaN(est) || String(form.estatura).includes('.') || est < 50 || est > 250) {
+                setError('La estatura debe ser en centímetros sin punto decimal (ej. 170, no 1.70).');
+                return;
+            }
+        }
         setLoading(true);
         setError('');
         try {
             const payload = Object.fromEntries(
                 Object.entries({
                     ...form,
+                    estatura: form.estatura !== '' && form.estatura !== null && form.estatura !== undefined
+                        ? Math.round(Number(form.estatura)) : null,
                     tatuajesJson: form.tieneTatuajes && tatuajes.some(t => t.parteCuerpo || t.descripcion)
                         ? JSON.stringify(tatuajes.filter(t => t.parteCuerpo || t.descripcion))
                         : null,
                     domicilios, personasHabita, referencias, consumoSustancias
                 }).map(([k, v]) => [k, v === '' ? null : v])
             );
-            await actualizarEntrevista(entrevista.id, payload);
-            setEditando(false);
-            showToast('Entrevista actualizada correctamente');
-            document.querySelector('.dashboard-content')?.scrollTo({ top: 0, behavior: 'smooth' });
+            const res = await actualizarEntrevista(entrevista.id, payload);
+            if (res.data.ok) {
+                setEditando(false);
+                showToast('Entrevista actualizada correctamente');
+                document.querySelector('.dashboard-content')?.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                setError(res.data.message || 'Error al actualizar la entrevista');
+            }
         } catch (e) {
-            setError(e.response?.data?.message || 'Error al actualizar');
+            const status = e.response?.status;
+            const msg = e.response?.data?.message || e.response?.data?.error || e.message;
+            if (status === 403)
+                setError('No tienes permiso para realizar esta acción. Verifica que tu sesión esté activa y que tengas el rol correcto.');
+            else if (status === 400)
+                setError(msg || 'Datos inválidos. Revisa los campos del formulario.');
+            else if (status === 500)
+                setError('Error interno del servidor. Inténtalo de nuevo o contacta al administrador.');
+            else
+                setError(msg || 'Error al actualizar la entrevista. Inténtalo de nuevo.');
         }
         setLoading(false);
     };
@@ -410,7 +433,11 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
                             ['Masculino', 'Femenino', 'No binario', 'Prefiero no decir'])}
                         {campoSelectEdit('Complexión', form.complexion, v => set('complexion', v),
                             ['Delgada', 'Regular', 'Robusta', 'Obesa'])}
-                        {campoEdit('Estatura (cm)', form.estatura, v => set('estatura', v), 'number')}
+                        <div className="de-campo-edit">
+                            <label>Estatura (cm) — solo enteros</label>
+                            <input type="number" step="1" min="50" max="250" value={form.estatura || ''} placeholder="ej. 170"
+                                onChange={e => set('estatura', e.target.value)} />
+                        </div>
                         {campoEdit('Color y Tamaño de Ojos', form.colorOjos, v => set('colorOjos', v))}
                         {campoSelectEdit('Cejas', form.cejas, v => set('cejas', v),
                             ['Delgadas', 'Medianas', 'Gruesas', 'Arqueadas', 'Rectas'])}

@@ -117,11 +117,11 @@ const seccionTitulo = (titulo) => (
     </div>
 );
 
-const campo = (label, children, err = false) => (
+const campo = (label, children, err = false, errMsg = null) => (
     <div className={`fe-campo${err ? ' fe-campo-error' : ''}`}>
         <label>{label}</label>
         {children}
-        {err && <span className="fe-campo-error-msg">Este campo es obligatorio</span>}
+        {err && <span className="fe-campo-error-msg">{errMsg || 'Este campo es obligatorio'}</span>}
     </div>
 );
 
@@ -334,18 +334,70 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
      * construye el payload convirtiendo strings vacíos a null (Spring no puede deserializar
      * "" como LocalDate) y envía la entrevista. Borra el draft al guardar exitosamente.
      */
-    const handleGuardar = async () => {
-        // Validación con resaltado de campos
-        const nuevosErrores = {
-            causaPenal: !form.causaPenal,
-            nombre: !form.nombre,
-            apPaterno: !form.apPaterno,
+    // ── Validación reutilizable ────────────────────────────────────────────
+    const validarFormulario = () => {
+        const soloDigitos = v => !v || /^[\d\s\-\+()]+$/.test(v);
+        const emailValido  = v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+        const estaVacio    = v => !v || (typeof v === 'string' && !v.trim());
+        const tieneDecimal = v => v !== '' && v !== null && v !== undefined && String(v).includes('.');
+        const fueraRango   = (v, min, max) => v !== '' && v !== null && v !== undefined && !isNaN(Number(v)) && (Number(v) < min || Number(v) > max);
+
+        // Calcular edad desde fechaNacimiento si existe
+        let edadCalculada = null;
+        if (form.fechaNacimiento) {
+            edadCalculada = new Date().getFullYear() - new Date(form.fechaNacimiento).getFullYear();
+            const m = new Date() - new Date(new Date(form.fechaNacimiento).setFullYear(new Date().getFullYear()));
+            if (m < 0) edadCalculada--;
+        }
+
+        return {
+            // Obligatorios
+            causaPenal:      estaVacio(form.causaPenal),
+            nombre:          estaVacio(form.nombre),
+            apPaterno:       estaVacio(form.apPaterno),
+            apMaterno:       estaVacio(form.apMaterno),
             tipoSeguimiento: !form.tipoSeguimiento,
+            // Numéricos
+            estatura:        (tieneDecimal(form.estatura)) || fueraRango(form.estatura, 50, 250),
+            salarioMensual:  form.salarioMensual !== '' && form.salarioMensual !== null && !isNaN(Number(form.salarioMensual)) && Number(form.salarioMensual) < 0,
+            // Edad mínima 18
+            fechaNacimiento: edadCalculada !== null && edadCalculada < 18,
+            // Formato email
+            email:           !emailValido(form.email),
+            // CURP: no se valida longitud porque se genera automáticamente sin los últimos 3 dígitos
+            curp:            false,
+            // Teléfonos: solo dígitos/espacios/guiones
+            telefonoCasa:    !soloDigitos(form.telefonoCasa),
+            celular:         !soloDigitos(form.celular),
+            telVictima:      !soloDigitos(form.telVictima),
+            telEmpresa:      !soloDigitos(form.telEmpresa),
         };
+    };
+
+    const MENSAJES_ERROR = {
+        causaPenal:      'La causa penal es obligatoria.',
+        nombre:          'El nombre es obligatorio.',
+        apPaterno:       'El apellido paterno es obligatorio.',
+        apMaterno:       'El apellido materno es obligatorio.',
+        tipoSeguimiento: 'Debes seleccionar un tipo de seguimiento (MC o SCP).',
+        estatura:        'La estatura debe ser en centímetros sin punto decimal (ej. 170, no 1.70).',
+        salarioMensual:  'El salario mensual no puede ser negativo.',
+        fechaNacimiento: 'El imputado debe ser mayor de 18 años.',
+        email:           'El formato del correo electrónico no es válido.',
+        curp:            'La CURP debe tener exactamente 18 caracteres.',
+        telefonoCasa:    'El teléfono de casa solo debe contener dígitos.',
+        celular:         'El celular solo debe contener dígitos.',
+        telVictima:      'El teléfono de la víctima solo debe contener dígitos.',
+        telEmpresa:      'El teléfono de la empresa solo debe contener dígitos.',
+    };
+
+    const handleGuardar = async () => {
+        // ── Validación frontend ────────────────────────────────────────────
+        const nuevosErrores = validarFormulario();
         setErrores(nuevosErrores);
         const primerError = Object.keys(nuevosErrores).find(k => nuevosErrores[k]);
         if (primerError) {
-            setError('Por favor completa todos los campos obligatorios marcados en rojo');
+            setError(MENSAJES_ERROR[primerError] || 'Por favor corrige los campos marcados en rojo.');
             const el = document.getElementById(`fe-${primerError}`);
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
@@ -357,6 +409,10 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
             const payload = Object.fromEntries(
                 Object.entries({
                     ...form,
+                    // Asegurar que estatura sea entero o null
+                    estatura: form.estatura !== '' && form.estatura !== null && form.estatura !== undefined
+                        ? Math.round(Number(form.estatura))
+                        : null,
                     imputadoId: impSelId || null,
                     documentosMigratorios: form.documentosMigratorios.join(', ') || null,
                     tatuajesJson: form.tieneTatuajes && tatuajes.some(t => t.parteCuerpo || t.descripcion)
@@ -378,7 +434,18 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                 setError(res.data.message || 'Error al guardar la entrevista');
             }
         } catch (e) {
-            setError(e.response?.data?.message || e.message || 'Error al guardar la entrevista');
+            const status = e.response?.status;
+            const msg = e.response?.data?.message || e.response?.data?.error || e.message;
+            if (status === 403)
+                setError('No tienes permiso para realizar esta acción. Verifica que tu sesión esté activa y que tengas el rol correcto.');
+            else if (status === 400)
+                setError(msg || 'Datos inválidos. Revisa los campos del formulario.');
+            else if (status === 500)
+                setError('Error interno del servidor. Inténtalo de nuevo o contacta al administrador.');
+            else if (!navigator.onLine)
+                setError('Sin conexión a internet. Verifica tu red e intenta de nuevo.');
+            else
+                setError(msg || 'Error al guardar la entrevista. Inténtalo de nuevo.');
         }
         setLoading(false);
     };
@@ -527,7 +594,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
             {seccionTitulo('DATOS GENERALES')}
             <div className="fe-grid-2">
                 {campo('Fecha de Registro', <input type="date" value={form.fechaRegistro} max={hoy} onChange={e => set('fechaRegistro', e.target.value)} />)}
-                {campo('Causa Penal *', <input id="fe-causaPenal" value={form.causaPenal} onChange={e => { set('causaPenal', e.target.value); setErrores(p => ({...p, causaPenal: false})); }} placeholder="Causa penal" />, errores.causaPenal)}
+                {campo('Causa Penal *', <input id="fe-causaPenal" maxLength={100} value={form.causaPenal} onChange={e => { set('causaPenal', e.target.value); setErrores(p => ({...p, causaPenal: false})); }} placeholder="Causa penal" />, errores.causaPenal)}
             </div>
 
             {/* Foto del imputado */}
@@ -565,14 +632,14 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
             )}
 
             <div className="fe-grid-3">
-                {campo('Nombre(s) *', <input id="fe-nombre" value={form.nombre} onChange={e => { set('nombre', e.target.value); setErrores(p => ({...p, nombre: false})); }} />, errores.nombre)}
-                {campo('Apellido Paterno *', <input id="fe-apPaterno" value={form.apPaterno} onChange={e => { set('apPaterno', e.target.value); setErrores(p => ({...p, apPaterno: false})); }} />, errores.apPaterno)}
-                {campo('Apellido Materno', <input value={form.apMaterno} onChange={e => set('apMaterno', e.target.value)} />)}
+                {campo('Nombre(s) *', <input id="fe-nombre" maxLength={100} value={form.nombre} onChange={e => { set('nombre', e.target.value); setErrores(p => ({...p, nombre: false})); }} />, errores.nombre)}
+                {campo('Apellido Paterno *', <input id="fe-apPaterno" maxLength={100} value={form.apPaterno} onChange={e => { set('apPaterno', e.target.value); setErrores(p => ({...p, apPaterno: false})); }} />, errores.apPaterno)}
+                {campo('Apellido Materno *', <input id="fe-apMaterno" maxLength={100} value={form.apMaterno} onChange={e => { set('apMaterno', e.target.value); setErrores(p => ({...p, apMaterno: false})); }} />, errores.apMaterno)}
             </div>
             <div className="fe-grid-4" style={{marginTop: '14px'}}>
-                {campo('Fecha de Nacimiento', <input type="date" value={form.fechaNacimiento} max={maxFechaNac} onChange={e => handleFechaNacimiento(e.target.value)} />)}
+                {campo('Fecha de Nacimiento', <input id="fe-fechaNacimiento" type="date" value={form.fechaNacimiento} max={maxFechaNac} onChange={e => { handleFechaNacimiento(e.target.value); setErrores(p => ({...p, fechaNacimiento: false})); }} />, errores.fechaNacimiento, 'El imputado debe ser mayor de 18 años.')}
                 {campo('Edad', <input type="number" value={form.edad} readOnly style={{background:'#f5f5f5', cursor:'not-allowed'}} title="Se calcula automáticamente" />)}
-                {campo('Municipio', <input value={form.municipio} onChange={e => set('municipio', e.target.value)} />)}
+                {campo('Municipio', <input maxLength={100} value={form.municipio} onChange={e => set('municipio', e.target.value)} />)}
                 {campo('Estado', (
                     <select value={form.estadoNacimiento} onChange={e => { set('estadoNacimiento', e.target.value); setCurpManual(false); }}>
                         <option value="">Seleccionar...</option>
@@ -590,8 +657,9 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                 {campo('CURP',
                     <div style={{position:'relative'}}>
                         <input
+                            id="fe-curp"
                             value={form.curp}
-                            onChange={e => { setCurpManual(true); set('curp', e.target.value.toUpperCase()); }}
+                            onChange={e => { setCurpManual(true); set('curp', e.target.value.toUpperCase()); setErrores(p => ({...p, curp: false})); }}
                             className="fe-input-full"
                             placeholder="Se genera automáticamente"
                             maxLength={18}
@@ -605,18 +673,18 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                             >↺ Regenerar</button>
                         )}
                     </div>
-                )}
+                , errores.curp, 'La CURP debe tener exactamente 18 caracteres.')}
             </div>
             <div className="fe-grid-2" style={{marginTop: '14px'}}>
-                {campo('Teléfono Casa', <input value={form.telefonoCasa} onChange={e => set('telefonoCasa', e.target.value)} />)}
-                {campo('Celular', <input value={form.celular} onChange={e => set('celular', e.target.value)} />)}
+                {campo('Teléfono Casa', <input id="fe-telefonoCasa" maxLength={20} value={form.telefonoCasa} onChange={e => { set('telefonoCasa', e.target.value); setErrores(p => ({...p, telefonoCasa: false})); }} />, errores.telefonoCasa, 'Solo dígitos, espacios o guiones (ej. 777 123 4567).')}
+                {campo('Celular', <input id="fe-celular" maxLength={20} value={form.celular} onChange={e => { set('celular', e.target.value); setErrores(p => ({...p, celular: false})); }} />, errores.celular, 'Solo dígitos, espacios o guiones (ej. 777 123 4567).')}
             </div>
             <div style={{marginTop: '14px'}}>
-                {campo('E-mail', <input type="email" value={form.email} onChange={e => set('email', e.target.value)} className="fe-input-full" />)}
+                {campo('E-mail', <input id="fe-email" type="email" maxLength={150} value={form.email} onChange={e => { set('email', e.target.value); setErrores(p => ({...p, email: false})); }} className="fe-input-full" />, errores.email, 'El formato del correo no es válido (ej. nombre@dominio.com).')}
             </div>
             <div className="fe-grid-3" style={{marginTop: '14px'}}>
-                {campo('País', <input value={form.pais} onChange={e => set('pais', e.target.value)} />)}
-                {campo('Enfermedad', <input value={form.enfermedad} onChange={e => set('enfermedad', e.target.value)} />)}
+                {campo('País', <input maxLength={100} value={form.pais} onChange={e => set('pais', e.target.value)} />)}
+                {campo('Enfermedad', <input maxLength={200} value={form.enfermedad} onChange={e => set('enfermedad', e.target.value)} />)}
                 {campo('Grado de Estudios', (
                     <select value={form.gradoEstudios} onChange={e => set('gradoEstudios', e.target.value)}>
                         <option value="">Seleccionar...</option>
@@ -654,8 +722,8 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                 ))}
             </div>
             <div className="fe-grid-2">
-                {campo('Estatura (cm)', <input type="number" step="0.01" min="0" value={form.estatura} onChange={e => set('estatura', e.target.value)} placeholder="ej. 170 o 1.70" />)}
-                {campo('Tamaño y Color de Ojos', <input value={form.colorOjos} onChange={e => set('colorOjos', e.target.value)} />)}
+                {campo('Estatura (cm)', <input id="fe-estatura" type="number" step="1" min="50" max="250" value={form.estatura} onChange={e => { set('estatura', e.target.value); setErrores(p => ({...p, estatura: false})); }} placeholder="ej. 170" />, errores.estatura, 'Sin punto decimal, en centímetros (ej. 170, no 1.70). Rango válido: 50–250.')}
+                {campo('Tamaño y Color de Ojos', <input maxLength={50} value={form.colorOjos} onChange={e => set('colorOjos', e.target.value)} />)}
             </div>
             <div className="fe-grid-3">
                 {campo('Cejas', (
@@ -678,7 +746,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                         <option>Negra</option>
                     </select>
                 ))}
-                {campo('Color y Tamaño de Cabello', <input value={form.colorCabello} onChange={e => set('colorCabello', e.target.value)} />)}
+                {campo('Color y Tamaño de Cabello', <input maxLength={50} value={form.colorCabello} onChange={e => set('colorCabello', e.target.value)} />)}
             </div>
             <div className="fe-grid-2">
                 {campo('Tamaño de Labios', (
@@ -689,7 +757,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                         <option>Gruesos</option>
                     </select>
                 ))}
-                {campo('Señas en la Cara', <input value={form.senasCara} onChange={e => set('senasCara', e.target.value)} />)}
+                {campo('Señas en la Cara', <input maxLength={200} value={form.senasCara} onChange={e => set('senasCara', e.target.value)} />)}
             </div>
 
             <div className="fe-radio-grupo">
@@ -731,7 +799,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
             )}
 
             <div className="fe-grid-2">
-                {campo('Alias', <input value={form.alias} onChange={e => set('alias', e.target.value)} />)}
+                {campo('Alias', <input maxLength={100} value={form.alias} onChange={e => set('alias', e.target.value)} />)}
                 {campo('Documentos Migratorios', (
                     <div className="fe-checkbox-grupo">
                         {['Visa', 'Pasaporte', 'Residencia'].map(doc => (
@@ -811,8 +879,8 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
             {form.conoceVictima && (
                 <>
                     <div className="fe-grid-2">
-                        {campo('Nombre de la víctima', <input value={form.nombreVictima} onChange={e => set('nombreVictima', e.target.value)} />)}
-                        {campo('Tel', <input value={form.telVictima} onChange={e => set('telVictima', e.target.value)} />)}
+                        {campo('Nombre de la víctima', <input maxLength={200} value={form.nombreVictima} onChange={e => set('nombreVictima', e.target.value)} />)}
+                        {campo('Tel', <input id="fe-telVictima" maxLength={20} value={form.telVictima} onChange={e => { set('telVictima', e.target.value); setErrores(p => ({...p, telVictima: false})); }} />, errores.telVictima, 'Solo dígitos, espacios o guiones.')}
                     </div>
                     {campo('Domicilio y Referencias', <textarea value={form.domicilioVictima} onChange={e => set('domicilioVictima', e.target.value)} className="fe-textarea" />)}
                     <div style={{ marginTop: '14px' }}>
@@ -971,16 +1039,16 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
 
             {seccionTitulo('INFORMACIÓN LABORAL')}
             <div className="fe-grid-3">
-                {campo('Actividad laboral / Empresa', <input value={form.empresa} onChange={e => set('empresa', e.target.value)} />)}
-                {campo('Teléfono', <input value={form.telEmpresa} onChange={e => set('telEmpresa', e.target.value)} />)}
-                {campo('Salario Mensual', <input type="number" value={form.salarioMensual} onChange={e => set('salarioMensual', e.target.value)} />)}
+                {campo('Actividad laboral / Empresa', <input maxLength={200} value={form.empresa} onChange={e => set('empresa', e.target.value)} />)}
+                {campo('Teléfono', <input id="fe-telEmpresa" maxLength={20} value={form.telEmpresa} onChange={e => { set('telEmpresa', e.target.value); setErrores(p => ({...p, telEmpresa: false})); }} />, errores.telEmpresa, 'Solo dígitos, espacios o guiones.')}
+                {campo('Salario Mensual', <input id="fe-salarioMensual" type="number" min="0" value={form.salarioMensual} onChange={e => { set('salarioMensual', e.target.value); setErrores(p => ({...p, salarioMensual: false})); }} />, errores.salarioMensual, 'El salario no puede ser negativo.')}
             </div>
             <div className="fe-grid-3">
-                {campo('Puesto', <input value={form.puesto} onChange={e => set('puesto', e.target.value)} />)}
-                {campo('Nombre del Jefe', <input value={form.nombreJefe} onChange={e => set('nombreJefe', e.target.value)} />)}
-                {campo('Horario', <input value={form.horarioTrabajo} onChange={e => set('horarioTrabajo', e.target.value)} />)}
+                {campo('Puesto', <input maxLength={100} value={form.puesto} onChange={e => set('puesto', e.target.value)} />)}
+                {campo('Nombre del Jefe', <input maxLength={200} value={form.nombreJefe} onChange={e => set('nombreJefe', e.target.value)} />)}
+                {campo('Horario', <input maxLength={50} value={form.horarioTrabajo} onChange={e => set('horarioTrabajo', e.target.value)} />)}
             </div>
-            {campo('Domicilio', <input value={form.domicilioTrabajo} onChange={e => set('domicilioTrabajo', e.target.value)} className="fe-input-full" />)}
+            {campo('Domicilio', <input maxLength={300} value={form.domicilioTrabajo} onChange={e => set('domicilioTrabajo', e.target.value)} className="fe-input-full" />)}
             {campo('En caso de no contar con empleo, mencionar el último empleo', <textarea value={form.ultimoEmpleo} onChange={e => set('ultimoEmpleo', e.target.value)} className="fe-textarea" />)}
 
             {seccionTitulo('CONSUMO DE SUSTANCIAS')}
@@ -1061,17 +1129,11 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
             <div className="fe-botones">
                 <button className="fe-btn-cancelar" onClick={onCancelar}>← Cancelar y Volver</button>
                 <button className="fe-btn-guardar" onClick={() => {
-                    // Validar antes de mostrar confirmación
-                    const nuevosErrores = {
-                        causaPenal: !form.causaPenal,
-                        nombre: !form.nombre,
-                        apPaterno: !form.apPaterno,
-                        tipoSeguimiento: !form.tipoSeguimiento,
-                    };
+                    const nuevosErrores = validarFormulario();
                     setErrores(nuevosErrores);
                     const primerError = Object.keys(nuevosErrores).find(k => nuevosErrores[k]);
                     if (primerError) {
-                        setError('Por favor completa todos los campos obligatorios marcados en rojo');
+                        setError(MENSAJES_ERROR[primerError] || 'Por favor corrige los campos marcados en rojo.');
                         const el = document.getElementById(`fe-${primerError}`);
                         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         return;
