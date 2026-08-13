@@ -60,6 +60,24 @@
     box-sizing: border-box;
     line-height: 1.4;
     position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Negación usa hoja legal — footer siempre al fondo */
+.ped-documento.ped-legal {
+    min-height: 1280px; /* área usable de hoja legal con márgenes del PDF */
+}
+.ped-documento.ped-legal .ped-body {
+    flex: 1;
+}
+
+/* Informe/Opinión usa hoja carta */
+.ped-documento.ped-carta {
+    min-height: 940px;
+}
+.ped-documento.ped-carta .ped-body {
+    flex: 1;
 }
 
 /* ── Encabezado ──────────────────────────────────────────────── */
@@ -69,6 +87,8 @@
     justify-content: space-between;
     gap: 12px;
     margin-bottom: 14px;
+    page-break-inside: avoid;
+    break-inside: avoid;
 }
 .ped-logo {
     width: 220px; height: auto; max-height: 65px;
@@ -101,7 +121,7 @@
 .ped-editor-wrap .tiptap {
     outline: none;
     font-family: Arial, sans-serif;
-    font-size: 10pt;
+    font-size: inherit;
     line-height: 1.4;
     color: #000;
     min-height: 40px;
@@ -203,7 +223,7 @@
 
 /* ── Print ───────────────────────────────────────────────────── */
 @media print {
-    @page { size: letter portrait; margin: 8mm 16mm 0 18mm; }
+    @page { size: legal portrait; margin: 8mm 16mm 8mm 18mm; }
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 
     body > *:not(.ped-overlay) { display: none !important; }
@@ -220,22 +240,23 @@
         width: 100% !important;
         max-width: 100% !important;
         margin: 0 !important;
-        padding: 0 0 28mm 0 !important;
+        padding: 0 !important;
         box-shadow: none !important;
         background: white !important;
+        min-height: unset !important;
+        display: block !important;
     }
+    .ped-body { display: block !important; }
     .ped-footer {
-        position: fixed !important;
-        bottom: 0 !important;
-        left: -18mm !important;
-        right: -16mm !important;
-        margin: 0 !important;
-        border-top: none !important;
+        position: static !important;
+        margin-top: 10mm !important;
         padding: 0 !important;
-        background: white !important;
+        border-top: none !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
     }
     .ped-footer-img {
-        width: 100vw !important;
+        width: 100% !important;
         height: 24px !important;
         object-fit: cover !important;
         display: block !important;

@@ -693,7 +693,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
             </div>
 
             <div className="fe-radio-grupo">
-                <label>¿Tiene tatuajes y/o cicatrices?</label>
+                <label>¿Tiene tatuajes?</label>
                 <div className="fe-radio-opciones">
                     <label><input type="radio" checked={form.tieneTatuajes === true} onChange={() => set('tieneTatuajes', true)} /> Sí</label>
                     <label><input type="radio" checked={form.tieneTatuajes === false} onChange={() => set('tieneTatuajes', false)} /> No</label>

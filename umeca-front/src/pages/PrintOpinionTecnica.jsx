@@ -248,19 +248,17 @@ ${tablaSocio}
                 return { orig, snap };
             });
 
-            if (footerEl) {
-                el.getBoundingClientRect();
-                const gap = Math.max(20, 1320 - el.scrollHeight);
-                footerEl.style.marginTop = gap + 'px';
-            }
+            // Ocultar texto de fecha (html2canvas no respeta @media print)
+            const fechaEl = el.querySelector('.ped-footer-fecha');
+            if (fechaEl) fechaEl.style.display = 'none';
 
             const blobUrl = await html2pdf()
                 .set({
-                    margin:      [6, 14, 10, 14],
+                    margin:      [16, 14, 22, 14],
                     image:       { type: 'jpeg', quality: 0.98 },
                     html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 720 },
                     jsPDF:       { unit: 'mm', format: 'legal', orientation: 'portrait' },
-                    pagebreak:   { mode: ['css', 'legacy'], avoid: ['.ped-header', '.ped-firma', '.ped-elab-row', 'tr'] },
+                    pagebreak:   { mode: 'avoid-all' },
                 })
                 .from(el)
                 .output('bloburl');
@@ -271,7 +269,7 @@ ${tablaSocio}
                 snap.parentNode.removeChild(snap);
             });
 
-            if (footerEl) footerEl.style.marginTop = '';
+            if (fechaEl) fechaEl.style.display = '';
             el.style.width     = '';
             el.style.margin    = '';
             el.style.boxShadow = '';
@@ -349,15 +347,11 @@ ${tablaSocio}
 
             <EditorToolbar editor={editor} />
 
-            <div className="ped-documento" ref={docRef}>
+            <div className="ped-documento ped-legal" ref={docRef}>
 
                 <div className="ped-header">
                     <img src={logoMorelos} alt="Morelos" className="ped-logo" />
-                    <div
-                        className="ped-header-deps ped-editable-deps"
-                        contentEditable
-                        suppressContentEditableWarning
-                    >
+                    <div className="ped-header-deps ped-editable-deps" contentEditable suppressContentEditableWarning>
                         <p>Secretaría de Seguridad y Protección Ciudadana</p>
                         <p>Coordinación del Sistema Penitenciario</p>
                         <p>Dirección General de Reinserción Social</p>
@@ -367,31 +361,33 @@ ${tablaSocio}
                     </div>
                 </div>
 
-                <EditorContent editor={editor} className="ped-editor-wrap" />
+                <div className="ped-body">
+                    <EditorContent editor={editor} className="ped-editor-wrap" />
 
-                <div className="ped-firma ped-editable-deps" contentEditable suppressContentEditableWarning>
-                    <div className="ped-firma-linea" />
-                    <p className="ped-firma-nombre">LIC. REY GIOVANNI RIVAS SANDOVAL</p>
-                    <p className="ped-firma-cargo">DIRECTOR DE LA UNIDAD DE MEDIDAS CAUTELARES</p>
-                    <p className="ped-firma-cargo">Y SALIDAS ALTERNAS PARA ADULTOS.</p>
+                    <div className="ped-firma ped-editable-deps" contentEditable suppressContentEditableWarning>
+                        <div className="ped-firma-linea" />
+                        <p className="ped-firma-nombre">LIC. REY GIOVANNI RIVAS SANDOVAL</p>
+                        <p className="ped-firma-cargo">DIRECTOR DE LA UNIDAD DE MEDIDAS CAUTELARES</p>
+                        <p className="ped-firma-cargo">Y SALIDAS ALTERNAS PARA ADULTOS.</p>
+                    </div>
+
+                    <div className="ped-elab-row ped-editable-deps" contentEditable suppressContentEditableWarning>
+                        <div className="ped-elab-item">
+                            <p className="ped-elab-label">ELABORÓ:</p>
+                            <p className="ped-elab-nombre">LIC. M.A.A.</p>
+                        </div>
+                        <div className="ped-elab-item">
+                            <p className="ped-elab-label">REVISÓ:</p>
+                            <p className="ped-elab-nombre">LIC. A.P.A.</p>
+                        </div>
+                        <div className="ped-elab-item">
+                            <p className="ped-elab-label">AUTORIZÓ:</p>
+                            <p className="ped-elab-nombre">LIC. M.A.A.</p>
+                        </div>
+                    </div>
+
+                    <p className="ped-ccp ped-editable-deps" contentEditable suppressContentEditableWarning>c.c.p.- Instituto de la Defensoría Pública del Estado de Morelos. Para su conocimiento.</p>
                 </div>
-
-                <div className="ped-elab-row ped-editable-deps" contentEditable suppressContentEditableWarning>
-                    <div className="ped-elab-item">
-                        <p className="ped-elab-label">ELABORÓ:</p>
-                        <p className="ped-elab-nombre">LIC. M.A.A.</p>
-                    </div>
-                    <div className="ped-elab-item">
-                        <p className="ped-elab-label">REVISÓ:</p>
-                        <p className="ped-elab-nombre">LIC. A.P.A.</p>
-                    </div>
-                    <div className="ped-elab-item">
-                        <p className="ped-elab-label">AUTORIZÓ:</p>
-                        <p className="ped-elab-nombre">LIC. M.A.A.</p>
-                    </div>
-                </div>
-
-                <p className="ped-ccp ped-editable-deps" contentEditable suppressContentEditableWarning>c.c.p.- Instituto de la Defensoría Pública del Estado de Morelos. Para su conocimiento.</p>
 
                 <div className="ped-footer">
                     <img src={footerDorado} alt="" className="ped-footer-img" />

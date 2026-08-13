@@ -67,41 +67,52 @@ const EvaluacionRiesgos = () => {
     const [showModalNegacion, setShowModalNegacion] = useState(false);
     const [showPrintNegacion, setShowPrintNegacion] = useState(false);
     const [negacionParaImprimir, setNegacionParaImprimir] = useState(null);
-    const negacionVacio = { nombreImputado: '', apPaternoImputado: '', apMaternoImputado: '', edad: '',
-        causaPenal: '', dependencia: '', cargo: '',
-        nombreSolicitante: '', fechaSolicitud: '', horaInicio: '', lugarEntrevista: '', imputadoId: null };
+    const impVacio = () => ({ nombreImputado: '', apPaternoImputado: '', apMaternoImputado: '', edad: '', imputadoId: null });
+    const negacionVacio = {
+        causaPenal: '',
+        imputados: [impVacio()],
+        dependencia: '', cargo: '',
+        nombreSolicitante: '', fechaSolicitud: '', horaInicio: '', lugarEntrevista: ''
+    };
     const [negacionData, setNegacionData] = useState(negacionVacio);
     const [negacionErrores, setNegacionErrores] = useState({});
 
-    // Sugerencias inline de imputados con la misma causa penal
-    const [imputadosCausaPenal, setImputadosCausaPenal] = useState([]);
+    // Sugerencias inline por índice de imputado
+    const [sugerenciasPorIdx, setSugerenciasPorIdx] = useState({});
 
-    /** Busca imputados por causa penal; si hay más de uno muestra modal de selección. */
-    const handleCausaPenalNegacionBlur = async (causaPenal) => {
+    const handleCausaPenalBlur = async (causaPenal) => {
         if (!causaPenal?.trim()) return;
         try {
             const res = await getImputadosPorCausaPenal(causaPenal.trim());
             const lista = res.data?.data || [];
-            if (lista.length >= 1) {
-                // Mostrar sugerencias inline
-                setImputadosCausaPenal(lista);
-            }
-        } catch { /* si falla la búsqueda, el usuario captura manualmente */ }
+            if (lista.length >= 1) setSugerenciasPorIdx(p => ({ ...p, causa: lista }));
+        } catch { /* el usuario captura manualmente */ }
     };
+
+    const setImputado = (idx, campo, valor) => {
+        setNegacionData(p => {
+            const imps = [...p.imputados];
+            imps[idx] = { ...imps[idx], [campo]: valor };
+            return { ...p, imputados: imps };
+        });
+    };
+
+    const agregarImputado = () =>
+        setNegacionData(p => ({ ...p, imputados: [...p.imputados, impVacio()] }));
+
+    const eliminarImputado = (idx) =>
+        setNegacionData(p => ({ ...p, imputados: p.imputados.filter((_, i) => i !== idx) }));
 
     // Valida campos obligatorios del formulario de negación antes de generar el documento.
     const validarNegacion = () => {
-        const requeridos = {
-            nombreImputado:    'Nombre(s)',
-            apPaternoImputado: 'Apellido paterno',
-            causaPenal:        'Carpeta / Causa penal',
-            nombreSolicitante: 'Nombre del solicitante',
-            fechaSolicitud:    'Fecha',
-        };
         const errs = {};
-        Object.entries(requeridos).forEach(([k, label]) => {
-            if (!negacionData[k]?.trim()) errs[k] = `${label} es requerido`;
+        if (!negacionData.causaPenal?.trim()) errs.causaPenal = 'Carpeta / Causa penal es requerida';
+        negacionData.imputados.forEach((imp, idx) => {
+            if (!imp.nombreImputado?.trim())    errs[`imp_${idx}_nombreImputado`]    = 'Requerido';
+            if (!imp.apPaternoImputado?.trim()) errs[`imp_${idx}_apPaternoImputado`] = 'Requerido';
         });
+        if (!negacionData.nombreSolicitante?.trim()) errs.nombreSolicitante = 'Nombre del solicitante es requerido';
+        if (!negacionData.fechaSolicitud?.trim())    errs.fechaSolicitud    = 'Fecha es requerida';
         setNegacionErrores(errs);
         return Object.keys(errs).length === 0;
     };
@@ -522,7 +533,7 @@ const EvaluacionRiesgos = () => {
                             <h3 style={{ margin: 0, color: '#fff', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
                                 <i className="bi bi-file-earmark-x" /> Negación de Información
                             </h3>
-                            <button onClick={() => { setShowModalNegacion(false); setNegacionData(negacionVacio); setNegacionErrores({}); }}
+                            <button onClick={() => { setShowModalNegacion(false); setNegacionData(negacionVacio); setNegacionErrores({}); setSugerenciasPorIdx({}); }}
                                 style={{ background: 'rgba(255,255,255,.2)', border: 'none', color: '#fff', width: 30, height: 30, borderRadius: 6, cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 ×
                             </button>
@@ -534,72 +545,91 @@ const EvaluacionRiesgos = () => {
                                 <i className="bi bi-info-circle" style={{ color: '#c0392b' }} /> El imputado se negó a proporcionar información. Completa los datos mínimos para generar el documento.
                             </p>
 
-                            {/* Sección imputado */}
+                            {/* Sección imputados */}
                             <p style={{ fontSize: 11, fontWeight: 700, color: '#c0392b', textTransform: 'uppercase', letterSpacing: 1, margin: '0 0 10px', borderBottom: '1px solid #f0d9c8', paddingBottom: 6 }}>Datos del imputado</p>
 
-                            {/* 1. Causa penal */}
-                            <div style={{ marginBottom: 12 }}>
-                                <label style={{ fontSize: 11, fontWeight: 600, color: negacionErrores.causaPenal ? '#c0392b' : '#444', display: 'block', marginBottom: 4 }}>Carpeta / Causa penal *</label>
+                            {/* Causa penal — compartida por todos */}
+                            <div style={{ marginBottom: 8 }}>
+                                <label style={{ fontSize: 11, fontWeight: 600, color: negacionErrores.causaPenal ? '#c0392b' : '#444', display: 'block', marginBottom: 3 }}>Carpeta / Causa penal *</label>
                                 <input value={negacionData.causaPenal}
-                                    onChange={e => { setNegacionData(p => ({ ...p, causaPenal: e.target.value, imputadoId: null })); setNegacionErrores(p => ({ ...p, causaPenal: '' })); setImputadosCausaPenal([]); }}
-                                    onBlur={e => handleCausaPenalNegacionBlur(e.target.value)}
+                                    onChange={e => { setNegacionData(p => ({ ...p, causaPenal: e.target.value })); setSugerenciasPorIdx(p => ({ ...p, causa: [] })); setNegacionErrores(p => ({ ...p, causaPenal: '' })); }}
+                                    onBlur={e => handleCausaPenalBlur(e.target.value)}
                                     style={{ width: '100%', boxSizing: 'border-box', border: `1px solid ${negacionErrores.causaPenal ? '#c0392b' : '#ddd'}`, borderRadius: 6, padding: '7px 10px', fontSize: 13, outline: 'none' }} />
                                 {negacionErrores.causaPenal && <span style={{ fontSize: 10, color: '#c0392b' }}>{negacionErrores.causaPenal}</span>}
                             </div>
 
-                            {/* Sugerencias inline debajo de causa penal */}
-                            {imputadosCausaPenal.length > 0 && (
-                                <div style={{ border: '1px solid #b6d4fe', borderRadius: 8, marginBottom: 12, overflow: 'hidden', background: '#eef4ff' }}>
-                                    <p style={{ margin: 0, padding: '7px 12px', fontSize: 11, fontWeight: 600, color: '#2c4fa3', background: '#ddeaff', borderBottom: '1px solid #b6d4fe' }}>
+                            {/* Sugerencias por causa penal */}
+                            {(sugerenciasPorIdx.causa || []).length > 0 && (
+                                <div style={{ border: '1px solid #b6d4fe', borderRadius: 8, marginBottom: 10, overflow: 'hidden', background: '#eef4ff' }}>
+                                    <p style={{ margin: 0, padding: '6px 10px', fontSize: 11, fontWeight: 600, color: '#2c4fa3', background: '#ddeaff', borderBottom: '1px solid #b6d4fe' }}>
                                         ℹ Esta causa penal ya existe. ¿Es alguno de estos?
                                     </p>
-                                    {imputadosCausaPenal.map(imp => (
-                                        <div key={imp.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid #d0e4ff', background: '#f5f9ff' }}>
-                                            <span style={{ fontSize: 13 }}>
-                                                <strong style={{ color: '#1a1a1a' }}>{imp.nombre} {imp.apPaterno} {imp.apMaterno || ''}</strong>
-                                                <span style={{ marginLeft: 8, color: '#777', fontSize: 12 }}>{imp.delito || '—'}</span>
-                                            </span>
+                                    {(sugerenciasPorIdx.causa || []).map((s, si) => (
+                                        <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderBottom: '1px solid #d0e4ff', background: '#f5f9ff' }}>
+                                            <span style={{ fontSize: 12 }}><strong>{s.nombre} {s.apPaterno} {s.apMaterno || ''}</strong></span>
                                             <button onClick={() => {
-                                                setNegacionData(p => ({ ...p, imputadoId: imp.id, nombreImputado: imp.nombre || '', apPaternoImputado: imp.apPaterno || '', apMaternoImputado: imp.apMaterno || '' }));
-                                                setImputadosCausaPenal([]);
-                                            }} style={{ background: '#2d6a4f', color: '#fff', border: 'none', borderRadius: 5, padding: '5px 12px', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>
+                                                setNegacionData(p => {
+                                                    const imps = [...p.imputados];
+                                                    imps[si] = { ...imps[si], imputadoId: s.id, nombreImputado: s.nombre || '', apPaternoImputado: s.apPaterno || '', apMaternoImputado: s.apMaterno || '' };
+                                                    return { ...p, imputados: imps };
+                                                });
+                                                setSugerenciasPorIdx(p => ({ ...p, causa: [] }));
+                                            }} style={{ background: '#2d6a4f', color: '#fff', border: 'none', borderRadius: 5, padding: '4px 10px', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>
                                                 Seleccionar
                                             </button>
                                         </div>
                                     ))}
-                                    <div style={{ padding: '8px 12px', background: '#eef4ff' }}>
-                                        <button onClick={() => { setNegacionData(p => ({ ...p, imputadoId: null, nombreImputado: '', apPaternoImputado: '', apMaternoImputado: '' })); setImputadosCausaPenal([]); }}
-                                            style={{ background: '#fff', border: '1px solid #aac4f0', borderRadius: 5, fontSize: 12, cursor: 'pointer', color: '#2c4fa3', padding: '4px 12px', fontWeight: 600 }}>
-                                            + Es una persona diferente
+                                    <div style={{ padding: '6px 10px', background: '#eef4ff' }}>
+                                        <button onClick={() => setSugerenciasPorIdx(p => ({ ...p, causa: [] }))}
+                                            style={{ background: '#fff', border: '1px solid #aac4f0', borderRadius: 5, fontSize: 12, cursor: 'pointer', color: '#2c4fa3', padding: '3px 10px', fontWeight: 600 }}>
+                                            + Son personas diferentes
                                         </button>
                                     </div>
                                 </div>
                             )}
 
-                            {/* 2. Nombre y apellidos */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '10px', marginBottom: 12 }}>
-                                {[
-                                    ['nombreImputado',    'Nombre(s) *'],
-                                    ['apPaternoImputado', 'Apellido paterno *'],
-                                    ['apMaternoImputado', 'Apellido materno'],
-                                ].map(([key, label]) => (
-                                    <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                        <label style={{ fontSize: 11, fontWeight: 600, color: negacionErrores[key] ? '#c0392b' : '#444' }}>{label}</label>
-                                        <input value={negacionData[key]}
-                                            readOnly={!!negacionData.imputadoId}
-                                            onChange={e => { if (!negacionData.imputadoId) { setNegacionData(p => ({ ...p, [key]: e.target.value })); setNegacionErrores(p => ({ ...p, [key]: '' })); } }}
-                                            style={{ border: `1px solid ${negacionErrores[key] ? '#c0392b' : '#ddd'}`, borderRadius: 6, padding: '7px 10px', fontSize: 13, outline: 'none', background: negacionData.imputadoId ? '#f5f5f5' : negacionErrores[key] ? '#fff5f5' : '#fff', cursor: negacionData.imputadoId ? 'not-allowed' : 'text' }} />
-                                        {negacionErrores[key] && <span style={{ fontSize: 10, color: '#c0392b' }}>{negacionErrores[key]}</span>}
+                            {/* Una tarjeta por imputado — solo nombre, apellidos, edad */}
+                            {negacionData.imputados.map((imp, idx) => (
+                                <div key={idx} style={{ border: '1px solid #f0d9c8', borderRadius: 8, padding: '12px', marginBottom: 10, background: idx % 2 === 0 ? '#fff' : '#fffaf9' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                        <span style={{ fontSize: 11, fontWeight: 700, color: '#c0392b' }}>Imputado {idx + 1}</span>
+                                        {negacionData.imputados.length > 1 && (
+                                            <button onClick={() => eliminarImputado(idx)}
+                                                style={{ background: 'none', border: '1px solid #e0b0aa', borderRadius: 5, color: '#c0392b', fontSize: 11, cursor: 'pointer', padding: '2px 8px' }}>
+                                                ✕ Quitar
+                                            </button>
+                                        )}
                                     </div>
-                                ))}
-                            </div>
 
-                            {/* 3. Edad */}
-                            <div style={{ marginBottom: 16, width: '48%' }}>
-                                <label style={{ fontSize: 11, fontWeight: 600, color: '#444', display: 'block', marginBottom: 4 }}>Edad</label>
-                                <input value={negacionData.edad} onChange={e => { setNegacionData(p => ({ ...p, edad: e.target.value })); }}
-                                    style={{ width: '100%', boxSizing: 'border-box', border: '1px solid #ddd', borderRadius: 6, padding: '7px 10px', fontSize: 13, outline: 'none' }} />
-                            </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 8, marginBottom: 8 }}>
+                                        {[
+                                            ['nombreImputado',    `imp_${idx}_nombreImputado`,    'Nombre(s) *'],
+                                            ['apPaternoImputado', `imp_${idx}_apPaternoImputado`, 'Apellido paterno *'],
+                                            ['apMaternoImputado', null,                           'Apellido materno'],
+                                        ].map(([campo, errKey, label]) => (
+                                            <div key={campo} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                                <label style={{ fontSize: 11, fontWeight: 600, color: errKey && negacionErrores[errKey] ? '#c0392b' : '#444' }}>{label}</label>
+                                                <input value={imp[campo]}
+                                                    readOnly={!!imp.imputadoId}
+                                                    onChange={e => { if (!imp.imputadoId) { setImputado(idx, campo, e.target.value); if (errKey) setNegacionErrores(p => ({ ...p, [errKey]: '' })); } }}
+                                                    style={{ border: `1px solid ${errKey && negacionErrores[errKey] ? '#c0392b' : '#ddd'}`, borderRadius: 6, padding: '7px 10px', fontSize: 13, outline: 'none', background: imp.imputadoId ? '#f5f5f5' : '#fff', cursor: imp.imputadoId ? 'not-allowed' : 'text' }} />
+                                                {errKey && negacionErrores[errKey] && <span style={{ fontSize: 10, color: '#c0392b' }}>{negacionErrores[errKey]}</span>}
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div style={{ width: '30%' }}>
+                                        <label style={{ fontSize: 11, fontWeight: 600, color: '#444', display: 'block', marginBottom: 3 }}>Edad</label>
+                                        <input value={imp.edad} onChange={e => setImputado(idx, 'edad', e.target.value)}
+                                            style={{ width: '100%', boxSizing: 'border-box', border: '1px solid #ddd', borderRadius: 6, padding: '7px 10px', fontSize: 13, outline: 'none' }} />
+                                    </div>
+                                </div>
+                            ))}
+
+                            <button onClick={agregarImputado}
+                                style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: '1.5px dashed #c0392b', color: '#c0392b', borderRadius: 7, padding: '7px 14px', fontSize: 12, cursor: 'pointer', fontWeight: 600, marginBottom: 16, width: '100%', justifyContent: 'center' }}>
+                                <i className="bi bi-person-plus" /> Agregar imputado
+                            </button>
 
                             {/* Sección solicitante */}
                             <p style={{ fontSize: 11, fontWeight: 700, color: '#c0392b', textTransform: 'uppercase', letterSpacing: 1, margin: '0 0 10px', borderBottom: '1px solid #f0d9c8', paddingBottom: 6 }}>Datos del solicitante</p>
@@ -642,26 +672,28 @@ const EvaluacionRiesgos = () => {
 
                         {/* Footer */}
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '14px 24px', borderTop: '1px solid #eee', background: '#fafafa', borderRadius: '0 0 12px 12px' }}>
-                            <button onClick={() => { setShowModalNegacion(false); setNegacionData(negacionVacio); setNegacionErrores({}); }}
+                            <button onClick={() => { setShowModalNegacion(false); setNegacionData(negacionVacio); setNegacionErrores({}); setSugerenciasPorIdx({}); }}
                                 style={{ background: 'none', border: '1px solid #ccc', borderRadius: 8, padding: '8px 20px', cursor: 'pointer', fontSize: 13, color: '#555' }}>
                                 Cancelar
                             </button>
                             <button onClick={async () => {
                                 if (!validarNegacion()) return;
                                 try {
+                                    // Crear un registro con el primer imputado como principal
+                                    const primero = negacionData.imputados[0];
                                     const payload = {
-                                        nombreImputado: negacionData.nombreImputado,
-                                        apPaternoImputado: negacionData.apPaternoImputado,
-                                        apMaternoImputado: negacionData.apMaternoImputado || '',
-                                        edad: negacionData.edad ? parseInt(negacionData.edad) : null,
-                                        causaPenal: negacionData.causaPenal,
-                                        dependencia: negacionData.dependencia,
-                                        cargo: negacionData.cargo,
+                                        nombreImputado:    primero.nombreImputado,
+                                        apPaternoImputado: primero.apPaternoImputado,
+                                        apMaternoImputado: primero.apMaternoImputado || '',
+                                        edad:              primero.edad ? parseInt(primero.edad) : null,
+                                        causaPenal:        negacionData.causaPenal,
+                                        dependencia:       negacionData.dependencia,
+                                        cargo:             negacionData.cargo,
                                         nombreSolicitante: negacionData.nombreSolicitante,
-                                        fechaSolicitud: negacionData.fechaSolicitud || new Date().toISOString().split('T')[0],
-                                        horaInicio: negacionData.horaInicio,
-                                        lugarEntrevista: negacionData.lugarEntrevista,
-                                        imputadoId: negacionData.imputadoId || null,
+                                        fechaSolicitud:    negacionData.fechaSolicitud || new Date().toISOString().split('T')[0],
+                                        horaInicio:        negacionData.horaInicio,
+                                        lugarEntrevista:   negacionData.lugarEntrevista,
+                                        imputadoId:        primero.imputadoId || null,
                                     };
                                     await crearNegacion(payload);
                                     showToast('Negación registrada en el sistema', 'success');
@@ -669,11 +701,13 @@ const EvaluacionRiesgos = () => {
                                     setNegacionParaImprimir({ ...negacionData });
                                     setShowModalNegacion(false);
                                     setNegacionData(negacionVacio);
+                                    setSugerenciasPorIdx({});
                                     setShowPrintNegacion(true);
                                 } catch (e) {
                                     showToast('No se pudo guardar el registro de negación', 'error');
                                     setShowModalNegacion(false);
                                     setNegacionData(negacionVacio);
+                                    setSugerenciasPorIdx({});
                                 }
                             }}
                                 style={{ background: '#c0392b', border: 'none', color: '#fff', borderRadius: 8, padding: '8px 20px', cursor: 'pointer', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>

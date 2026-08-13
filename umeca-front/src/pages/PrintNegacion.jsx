@@ -66,23 +66,43 @@ const PrintNegacion = ({ evaluacion: d, onCerrar }) => {
     const fecha = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
     const numOficio = `SSyPC/CSP/DGRS/DUMCySA/[NUM]/${mes}/${anio}`;
 
-    const nombreImp = [d.nombreImputado, d.apPaternoImputado, d.apMaternoImputado]
-                        .filter(Boolean).join(' ') || d.nombreCompletoImputado || '';
+    // Soporta tanto el nuevo formato (imputados[]) como el legado (campos planos de BD)
+    const imputados = d.imputados && d.imputados.length > 0
+        ? d.imputados
+        : [{
+            nombreImputado:    d.nombreImputado,
+            apPaternoImputado: d.apPaternoImputado,
+            apMaternoImputado: d.apMaternoImputado,
+            edad:              d.edad,
+            causaPenal:        d.causaPenal,
+          }];
+
+    // Causa penal compartida (nuevo formato) o del primer imputado (legado)
+    const causaPenal = d.causaPenal || imputados[0]?.causaPenal || '—';
+
+    const filasImputados = imputados.map((imp, i) => {
+        const nombre = [imp.nombreImputado, imp.apPaternoImputado, imp.apMaternoImputado]
+                         .filter(Boolean).join(' ') || imp.nombreCompletoImputado || '—';
+        return `
+    <tr>
+      <th>NOMBRE DEL ENTREVISTADO${imputados.length > 1 ? ` (${i + 1})` : ''}</th>
+      <td>${val(nombre).toUpperCase()}</td>
+      <th>EDAD</th>
+      <td>${val(imp.edad)} AÑOS.</td>
+    </tr>`;
+    }).join('');
 
     const tablaIdent = `
 <table>
   <tbody>
-    <tr>
-      <th>NOMBRE DEL ENTREVISTADO</th>
-      <td>${val(nombreImp).toUpperCase()}</td>
-      <th>EDAD</th>
-      <td>${val(d.edad)} AÑOS.</td>
-    </tr>
+    ${filasImputados}
     <tr>
       <th>CARPETA DE INVESTIGACIÓN</th>
-      <td>${val(d.causaPenal)}</td>
-      <th>FISCALÍA</th>
-      <td>${val(d.dependencia || d.cargo)}</td>
+      <td colspan="3">${val(causaPenal)}</td>
+    </tr>
+    <tr>
+      <th>FISCALÍA / DEPENDENCIA</th>
+      <td colspan="3">${val(d.dependencia || d.cargo)}</td>
     </tr>
     <tr>
       <th>FECHA DE LA ENTREVISTA</th>
@@ -136,24 +156,22 @@ ${tablaIdent}
             el.style.boxShadow = 'none';
             el.style.padding   = '14px 22px';
 
-            if (footerEl) {
-                el.getBoundingClientRect();
-                const gap = Math.max(20, 1010 - el.scrollHeight);
-                footerEl.style.marginTop = gap + 'px';
-            }
+            // Ocultar texto de fecha (html2canvas no respeta @media print)
+            const fechaEl = el.querySelector('.ped-footer-fecha');
+            if (fechaEl) fechaEl.style.display = 'none';
 
             const blobUrl = await html2pdf()
                 .set({
                     margin:      [6, 14, 10, 14],
                     image:       { type: 'jpeg', quality: 0.98 },
                     html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 720 },
-                    jsPDF:       { unit: 'mm', format: 'letter', orientation: 'portrait' },
+                    jsPDF:       { unit: 'mm', format: 'legal', orientation: 'portrait' },
                     pagebreak:   { mode: 'avoid-all' },
                 })
                 .from(el)
                 .output('bloburl');
 
-            if (footerEl) footerEl.style.marginTop = '';
+            if (fechaEl) fechaEl.style.display = '';
             el.style.width     = prevWidth;
             el.style.margin    = prevMargin;
             el.style.boxShadow = prevBoxShadow;
@@ -267,7 +285,7 @@ ${tablaIdent}
 
             <EditorToolbar editor={editor} />
 
-            <div className="ped-documento" ref={docRef}>
+            <div className="ped-documento ped-legal" ref={docRef}>
 
                 <div className="ped-header">
                     <img src={logoMorelos} alt="Morelos" className="ped-logo" />
@@ -285,27 +303,30 @@ ${tablaIdent}
                     </div>
                 </div>
 
-                <EditorContent editor={editor} className="ped-editor-wrap" />
+                {/* ped-body crece para empujar el footer al fondo */}
+                <div className="ped-body">
+                    <EditorContent editor={editor} className="ped-editor-wrap" />
 
-                <div className="ped-firma ped-editable-deps" contentEditable suppressContentEditableWarning>
-                    <div className="ped-firma-linea" />
-                    <p className="ped-firma-nombre">LIC. REY GIOVANNI RIVAS SANDOVAL</p>
-                    <p className="ped-firma-cargo">DIRECTOR DE LA UNIDAD DE MEDIDAS CAUTELARES</p>
-                    <p className="ped-firma-cargo">Y SALIDAS ALTERNAS PARA ADULTOS.</p>
-                </div>
+                    <div className="ped-firma ped-editable-deps" contentEditable suppressContentEditableWarning>
+                        <div className="ped-firma-linea" />
+                        <p className="ped-firma-nombre">LIC. REY GIOVANNI RIVAS SANDOVAL</p>
+                        <p className="ped-firma-cargo">DIRECTOR DE LA UNIDAD DE MEDIDAS CAUTELARES</p>
+                        <p className="ped-firma-cargo">Y SALIDAS ALTERNAS PARA ADULTOS.</p>
+                    </div>
 
-                <div className="ped-elab-row ped-editable-deps" contentEditable suppressContentEditableWarning>
-                    <div className="ped-elab-item">
-                        <p className="ped-elab-label">ELABORÓ:</p>
-                        <p className="ped-elab-nombre">LIC. M.A.A.</p>
-                    </div>
-                    <div className="ped-elab-item">
-                        <p className="ped-elab-label">REVISÓ:</p>
-                        <p className="ped-elab-nombre">LIC. A.P.A.</p>
-                    </div>
-                    <div className="ped-elab-item">
-                        <p className="ped-elab-label">AUTORIZÓ:</p>
-                        <p className="ped-elab-nombre">LIC. M.A.A.</p>
+                    <div className="ped-elab-row ped-editable-deps" contentEditable suppressContentEditableWarning>
+                        <div className="ped-elab-item">
+                            <p className="ped-elab-label">ELABORÓ:</p>
+                            <p className="ped-elab-nombre">LIC. M.A.A.</p>
+                        </div>
+                        <div className="ped-elab-item">
+                            <p className="ped-elab-label">REVISÓ:</p>
+                            <p className="ped-elab-nombre">LIC. A.P.A.</p>
+                        </div>
+                        <div className="ped-elab-item">
+                            <p className="ped-elab-label">AUTORIZÓ:</p>
+                            <p className="ped-elab-nombre">LIC. M.A.A.</p>
+                        </div>
                     </div>
                 </div>
 

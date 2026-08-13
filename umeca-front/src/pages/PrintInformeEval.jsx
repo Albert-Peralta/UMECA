@@ -449,7 +449,7 @@ ${tablaSocio}
             <EditorToolbar editor={editor} />
 
             {/* Documento */}
-            <div className="ped-documento" ref={docRef}>
+            <div className="ped-documento" ref={docRef} style={{ fontSize: '8pt' }}>
 
                 {/* Encabezado */}
                 <div className="ped-header">
