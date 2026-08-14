@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Usa el mismo host desde donde se cargó la página para funcionar
 // en cualquier red sin cambiar configuración (desarrollo local o IP de red local)
-const apiBase = `http://${window.location.hostname}:8080/api`;
+const apiBase = `http://${window.location.hostname}:8089/api`;
 
 const api = axios.create({
     baseURL: apiBase,

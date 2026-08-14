@@ -535,7 +535,7 @@ export default function Correspondencia() {
         setLoadingPdf(true);
         try {
             const token = localStorage.getItem('token');
-            const base = `http://${window.location.hostname}:8080/api`;
+            const base = `http://${window.location.hostname}:8089/api`;
             const url = `${base}/correspondencia/pdf?ruta=${encodeURIComponent(ruta)}`;
             const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
             if (!res.ok) { showToast('No se pudo cargar el PDF', 'error'); return; }
