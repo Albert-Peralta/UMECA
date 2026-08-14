@@ -67,6 +67,7 @@ public class SeguimientoResponseDTO {
             case EVALUACION_RIESGO_FC    -> "Evaluación de riesgo F.C.";
             case EVALUACION_RIESGO_FF    -> "Evaluación de riesgo F.F.";
             case OTRO                    -> "Otro";
+            case OTRO_SUPERVISION        -> "Otro";
         };
     }
 }
