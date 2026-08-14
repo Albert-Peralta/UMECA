@@ -52,8 +52,11 @@ api.interceptors.response.use(
         // 401: sesión inválida/expirada
         // 403 con token expirado: Spring Security devuelve 403 en lugar de 401
         //     cuando no hay AuthenticationEntryPoint configurado
-        if (!isLoginRoute && (status === 401 || (status === 403 && tokenExpirado()))) {
-            localStorage.clear();
+        // Solo cerrar sesión si HAY token pero es inválido/expirado
+        const tieneToken = !!localStorage.getItem('token');
+        if (!isLoginRoute && tieneToken && (status === 401 || (status === 403 && tokenExpirado()))) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
             window.location.replace('/');
         }
 
