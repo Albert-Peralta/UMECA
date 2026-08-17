@@ -349,23 +349,11 @@ ${tablaSocio}
     const savedContent = d.htmlInforme || localStorage.getItem(storageKey);
     const savedMeta    = localStorage.getItem(storageKey + '-meta');
 
-    /* ── Auto-guardado en BD con debounce ── */
+    /* ── Guardado en BD ── */
     const debounceRef = useRef(null);
-    const guardarEnBD = useCallback((html) => {
-        if (!d?.id) return;
-        clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(async () => {
-            try {
-                await import('../api/axios').then(({ default: api }) =>
-                    api.patch(`/evaluaciones/${d.id}/html-documento?tipo=informe`, html, {
-                        headers: { 'Content-Type': 'text/plain' },
-                    })
-                );
-            } catch (err) {
-                console.error('Error al guardar informe en BD:', err);
-            }
-        }, 2000);
-    }, [d?.id]);
+    const [guardando, setGuardando] = useState(false);
+    const editorRef = useRef(null);
+    const dirtyRef = useRef(false); // true si hubo cambios desde que se abrió
 
     const editor = useEditor({
         extensions: [
@@ -380,13 +368,50 @@ ${tablaSocio}
         content: savedContent || contenidoInicial,
         onUpdate: ({ editor }) => {
             const html = editor.getHTML();
+            editorRef.current = editor;
+            dirtyRef.current = true;
             localStorage.setItem(storageKey, html);
             const ahora = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
             localStorage.setItem(storageKey + '-meta', ahora);
             setGuardadoEn(ahora);
-            guardarEnBD(html);
+            // Autoguardado en BD con debounce
+            if (d?.id) {
+                clearTimeout(debounceRef.current);
+                debounceRef.current = setTimeout(async () => {
+                    try {
+                        const { default: api } = await import('../api/axios');
+                        await api.patch(`/evaluaciones/${d.id}/html-documento?tipo=informe`, html, {
+                            headers: { 'Content-Type': 'text/plain' },
+                        });
+                    } catch (err) {
+                        console.error('Error al guardar informe en BD:', err);
+                    }
+                }, 2000);
+            }
         },
+        onCreate: ({ editor }) => { editorRef.current = editor; },
     });
+
+    // Función de guardado inmediato usada por el botón y al cerrar
+    const guardarEnBDInmediato = useCallback(async () => {
+        if (!d?.id) return;
+        const html = editorRef.current?.getHTML();
+        if (!html) return;
+        clearTimeout(debounceRef.current);
+        setGuardando(true);
+        try {
+            const { default: api } = await import('../api/axios');
+            await api.patch(`/evaluaciones/${d.id}/html-documento?tipo=informe`, html, {
+                headers: { 'Content-Type': 'text/plain' },
+            });
+            const ahora = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+            setGuardadoEn(ahora);
+        } catch (err) {
+            console.error('Error al guardar informe en BD:', err);
+        } finally {
+            setGuardando(false);
+        }
+    }, [d?.id]);
 
     useEffect(() => {
         if (savedMeta) setGuardadoEn(savedMeta);
@@ -434,7 +459,22 @@ ${tablaSocio}
                     <button className="ped-btn-cerrar" style={{ background: 'rgba(255,255,255,.12)', fontSize: 12 }} onClick={handleRestaurar} title="Restaurar texto original">
                         <i className="bi bi-arrow-counterclockwise" /> Restaurar
                     </button>
-                    <button className="ped-btn-cerrar" onClick={onCerrar}>
+                    <button
+                        className="ped-btn-cerrar"
+                        style={{ background: '#2d6a4f' }}
+                        onClick={() => guardarEnBDInmediato()}
+                        disabled={guardando}
+                        title="Guardar cambios en el servidor"
+                    >
+                        <i className={`bi bi-${guardando ? 'arrow-repeat' : 'floppy-fill'}`} /> {guardando ? 'Guardando...' : 'Guardar'}
+                    </button>
+                    <button className="ped-btn-cerrar" onClick={async () => {
+                        if (dirtyRef.current) {
+                            clearTimeout(debounceRef.current);
+                            await guardarEnBDInmediato();
+                        }
+                        onCerrar();
+                    }}>
                         <i className="bi bi-x-lg" /> Cerrar
                     </button>
                     <button className="ped-btn-imprimir" onClick={handleImprimir} disabled={imprimiendo}>
