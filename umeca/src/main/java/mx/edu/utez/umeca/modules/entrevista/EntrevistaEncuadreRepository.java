@@ -13,6 +13,10 @@ import java.util.Optional;
 public interface EntrevistaEncuadreRepository extends JpaRepository<EntrevistaEncuadre, Long> {
     Optional<EntrevistaEncuadre> findByFolio(String folio);
     long countByFolioStartingWith(String prefix);
+
+    /** Devuelve el número secuencial más alto del folio para un prefijo dado, o 0 si no hay ninguno. */
+    @Query("SELECT COALESCE(MAX(CAST(SUBSTRING(e.folio, LENGTH(:prefix) + 1) AS integer)), 0) FROM EntrevistaEncuadre e WHERE e.folio LIKE CONCAT(:prefix, '%')")
+    long findMaxSecuencialByPrefix(@Param("prefix") String prefix);
     @Query("SELECT e FROM EntrevistaEncuadre e WHERE e.imputado.id = :imputadoId")
     List<EntrevistaEncuadre> findByImputadoId(@Param("imputadoId") Long imputadoId);
 

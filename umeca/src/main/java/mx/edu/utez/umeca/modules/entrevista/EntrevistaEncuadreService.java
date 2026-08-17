@@ -132,8 +132,8 @@ public class EntrevistaEncuadreService {
 
         String anio = String.valueOf(LocalDate.now().getYear());
         String prefix = "ENT-" + anio + "-";
-        long count = repository.countByFolioStartingWith(prefix) + 1;
-        entrevista.setFolio(prefix + String.format("%03d", count));
+        long siguiente = repository.findMaxSecuencialByPrefix(prefix) + 1;
+        entrevista.setFolio(prefix + String.format("%03d", siguiente));
 
         entrevista.setFechaRegistro(LocalDate.now());
 
