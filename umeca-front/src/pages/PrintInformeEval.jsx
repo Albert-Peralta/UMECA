@@ -72,7 +72,7 @@ const PrintInformeEval = ({ evaluacion: d, onCerrar }) => {
     const anio   = new Date().getFullYear();
     const mes    = String(new Date().getMonth() + 1).padStart(2, '0');
     const fecha  = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
-    const numOficio = `SSyPC/CSP/DGRS/DUMCySA/[NUM]/${mes}/${anio}`;
+    const numOficio = `SSyPC/CSP/DGRS/DUMCySA/${d.numOficio || '[NUM]'}/${mes}/${anio}`;
 
     const nombreImp = [d.nombreImputado, d.apPaternoImputado, d.apMaternoImputado]
                         .filter(Boolean).join(' ') || d.nombreCompletoImputado || '';
@@ -346,14 +346,28 @@ ${tablaSocio}
         }
     };
 
-    const savedContent = d.htmlInforme || localStorage.getItem(storageKey);
-    const savedMeta    = localStorage.getItem(storageKey + '-meta');
-
     /* ── Guardado en BD ── */
     const debounceRef = useRef(null);
     const [guardando, setGuardando] = useState(false);
-    const editorRef = useRef(null);
-    const dirtyRef = useRef(false); // true si hubo cambios desde que se abrió
+    const editorRef    = useRef(null);
+    const headerRef    = useRef(null);
+    const firmaRef     = useRef(null);
+    const elaboroRef   = useRef(null);
+    const dirtyRef     = useRef(false);
+
+    // Parsear el html_informe guardado (puede ser JSON v2 o HTML plano legacy)
+    const parseSaved = (raw) => {
+        if (!raw) return null;
+        try {
+            const obj = JSON.parse(raw);
+            if (obj.v === 2) return obj;
+        } catch {}
+        // Legacy: era HTML plano del body
+        return { v: 2, header: null, body: raw, firma: null, elaboro: null };
+    };
+
+    const savedParsed = parseSaved(d.htmlInforme || localStorage.getItem(storageKey));
+    const savedMeta   = localStorage.getItem(storageKey + '-meta');
 
     const editor = useEditor({
         extensions: [
@@ -365,28 +379,17 @@ ${tablaSocio}
             TableHeader,
             TableCell,
         ],
-        content: savedContent || contenidoInicial,
+        content: savedParsed?.body || contenidoInicial,
         onUpdate: ({ editor }) => {
-            const html = editor.getHTML();
             editorRef.current = editor;
             dirtyRef.current = true;
-            localStorage.setItem(storageKey, html);
             const ahora = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
             localStorage.setItem(storageKey + '-meta', ahora);
             setGuardadoEn(ahora);
             // Autoguardado en BD con debounce
             if (d?.id) {
                 clearTimeout(debounceRef.current);
-                debounceRef.current = setTimeout(async () => {
-                    try {
-                        const { default: api } = await import('../api/axios');
-                        await api.patch(`/evaluaciones/${d.id}/html-documento?tipo=informe`, html, {
-                            headers: { 'Content-Type': 'text/plain' },
-                        });
-                    } catch (err) {
-                        console.error('Error al guardar informe en BD:', err);
-                    }
-                }, 2000);
+                debounceRef.current = setTimeout(() => guardarEnBDInmediato(), 2000);
             }
         },
         onCreate: ({ editor }) => { editorRef.current = editor; },
@@ -395,13 +398,22 @@ ${tablaSocio}
     // Función de guardado inmediato usada por el botón y al cerrar
     const guardarEnBDInmediato = useCallback(async () => {
         if (!d?.id) return;
-        const html = editorRef.current?.getHTML();
-        if (!html) return;
+        const body = editorRef.current?.getHTML();
+        if (!body) return;
         clearTimeout(debounceRef.current);
+        const payload = JSON.stringify({
+            v: 2,
+            header:  headerRef.current?.innerHTML  || null,
+            body,
+            firma:   firmaRef.current?.innerHTML   || null,
+            elaboro: elaboroRef.current?.innerHTML || null,
+        });
+        // Guardar en localStorage también
+        localStorage.setItem(storageKey, payload);
         setGuardando(true);
         try {
             const { default: api } = await import('../api/axios');
-            await api.patch(`/evaluaciones/${d.id}/html-documento?tipo=informe`, html, {
+            await api.patch(`/evaluaciones/${d.id}/html-documento?tipo=informe`, payload, {
                 headers: { 'Content-Type': 'text/plain' },
             });
             const ahora = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
@@ -411,16 +423,24 @@ ${tablaSocio}
         } finally {
             setGuardando(false);
         }
-    }, [d?.id]);
+    }, [d?.id, storageKey]);
 
     useEffect(() => {
         if (savedMeta) setGuardadoEn(savedMeta);
+        if (!savedParsed) return;
+        if (savedParsed.header  && headerRef.current)  headerRef.current.innerHTML  = savedParsed.header;
+        if (savedParsed.firma   && firmaRef.current)   firmaRef.current.innerHTML   = savedParsed.firma;
+        if (savedParsed.elaboro && elaboroRef.current) elaboroRef.current.innerHTML = savedParsed.elaboro;
     }, []);
 
     const handleRestaurar = useCallback(() => {
         if (!window.confirm('¿Restaurar el documento original? Se perderán los cambios editados.')) return;
         localStorage.removeItem(storageKey);
         localStorage.removeItem(storageKey + '-meta');
+        // Restaurar secciones fuera del editor a su estado original
+        if (headerRef.current)  headerRef.current.innerHTML  = `<p>Secretaría de Seguridad y Protección Ciudadana</p><p>Coordinación del Sistema Penitenciario</p><p>Dirección General de Reinserción Social</p><p>Dirección de la Unidad de Medidas Cautelares</p><p>y Salidas Alternas para Adultos</p><p class="ped-num-oficio">SSyPC/CSP/DGRS/DUMCySA/${d.numOficio || '[NUM]'}/${mes}/${anio}</p>`;
+        if (firmaRef.current)   firmaRef.current.innerHTML   = `<div class="ped-firma-linea"></div><p class="ped-firma-nombre">LIC. REY GIOVANNI RIVAS SANDOVAL</p><p class="ped-firma-cargo">DIRECTOR DE LA UNIDAD DE MEDIDAS CAUTELARES</p><p class="ped-firma-cargo">Y SALIDAS ALTERNAS PARA ADULTOS.</p>`;
+        if (elaboroRef.current) elaboroRef.current.innerHTML = `<div class="ped-elab-item"><p class="ped-elab-label">ELABORÓ:</p><p class="ped-elab-nombre">LIC. M.A.A.</p></div><div class="ped-elab-item"><p class="ped-elab-label">REVISÓ:</p><p class="ped-elab-nombre">LIC. A.P.A.</p></div><div class="ped-elab-item"><p class="ped-elab-label">AUTORIZÓ:</p><p class="ped-elab-nombre">LIC. M.A.A.</p></div>`;
         editor?.commands.setContent(contenidoInicial);
         setGuardadoEn(null);
         // Limpiar también en BD
@@ -495,9 +515,11 @@ ${tablaSocio}
                 <div className="ped-header">
                     <img src={logoMorelos} alt="Morelos" className="ped-logo" />
                     <div
+                        ref={headerRef}
                         className="ped-header-deps ped-editable-deps"
                         contentEditable
                         suppressContentEditableWarning
+                        onInput={() => { dirtyRef.current = true; }}
                     >
                         <p>Secretaría de Seguridad y Protección Ciudadana</p>
                         <p>Coordinación del Sistema Penitenciario</p>
@@ -512,7 +534,7 @@ ${tablaSocio}
                 <EditorContent editor={editor} className="ped-editor-wrap" />
 
                 {/* Firma */}
-                <div className="ped-firma ped-editable-deps" contentEditable suppressContentEditableWarning>
+                <div ref={firmaRef} className="ped-firma ped-editable-deps" contentEditable suppressContentEditableWarning onInput={() => { dirtyRef.current = true; }}>
                     <div className="ped-firma-linea" />
                     <p className="ped-firma-nombre">LIC. REY GIOVANNI RIVAS SANDOVAL</p>
                     <p className="ped-firma-cargo">DIRECTOR DE LA UNIDAD DE MEDIDAS CAUTELARES</p>
@@ -520,7 +542,7 @@ ${tablaSocio}
                 </div>
 
                 {/* Elaboró / Revisó / Autorizó */}
-                <div className="ped-elab-row ped-editable-deps" contentEditable suppressContentEditableWarning>
+                <div ref={elaboroRef} className="ped-elab-row ped-editable-deps" contentEditable suppressContentEditableWarning onInput={() => { dirtyRef.current = true; }}>
                     <div className="ped-elab-item">
                         <p className="ped-elab-label">ELABORÓ:</p>
                         <p className="ped-elab-nombre">LIC. M.A.A.</p>
