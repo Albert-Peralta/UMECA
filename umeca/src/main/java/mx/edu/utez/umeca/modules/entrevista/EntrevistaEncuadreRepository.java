@@ -108,11 +108,20 @@ public interface EntrevistaEncuadreRepository extends JpaRepository<EntrevistaEn
     @Query("SELECT COUNT(e) FROM EntrevistaEncuadre e WHERE e.createdAt >= :inicio AND e.createdAt < :fin")
     long countByRango(@Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin);
 
+    @Query("SELECT COUNT(e) FROM EntrevistaEncuadre e WHERE e.createdAt >= :inicio AND e.createdAt < :fin AND CAST(e.registradoPor.zona AS string) = :zona")
+    long countByRangoYZona(@Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin, @Param("zona") String zona);
+
     @Query("SELECT COUNT(e) FROM EntrevistaEncuadre e WHERE CAST(e.tipoSeguimiento AS string) = :tipo AND e.createdAt >= :inicio AND e.createdAt < :fin")
     long countByTipoYRango(@Param("tipo") String tipo, @Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin);
 
+    @Query("SELECT COUNT(e) FROM EntrevistaEncuadre e WHERE CAST(e.tipoSeguimiento AS string) = :tipo AND e.createdAt >= :inicio AND e.createdAt < :fin AND CAST(e.registradoPor.zona AS string) = :zona")
+    long countByTipoYRangoYZona(@Param("tipo") String tipo, @Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin, @Param("zona") String zona);
+
     @Query("SELECT COUNT(e) FROM EntrevistaEncuadre e WHERE e.tipoSeguimiento IS NULL AND e.createdAt >= :inicio AND e.createdAt < :fin")
     long countByTipoNullYRango(@Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin);
+
+    @Query("SELECT COUNT(e) FROM EntrevistaEncuadre e WHERE e.tipoSeguimiento IS NULL AND e.createdAt >= :inicio AND e.createdAt < :fin AND CAST(e.registradoPor.zona AS string) = :zona")
+    long countByTipoNullYRangoYZona(@Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin, @Param("zona") String zona);
 
     @Modifying
     @Query("UPDATE EntrevistaEncuadre e SET e.tipoSeguimiento = :nuevoTipo WHERE e.imputado.id = :imputadoId")

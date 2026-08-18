@@ -19,17 +19,20 @@ public class EstadisticasController {
     @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO','CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> getEstadisticas(
             @RequestParam(defaultValue = "") String desde,
-            @RequestParam(defaultValue = "") String hasta) {
-        return ResponseEntity.ok(service.getEstadisticas(desde, hasta));
+            @RequestParam(defaultValue = "") String hasta,
+            @RequestParam(defaultValue = "") String zona) {
+        return ResponseEntity.ok(service.getEstadisticas(desde, hasta, zona));
     }
 
     @GetMapping("/exportar")
     @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO','CORRESPONDENCIA')")
     public ResponseEntity<byte[]> exportarExcel(
             @RequestParam(defaultValue = "") String desde,
-            @RequestParam(defaultValue = "") String hasta) throws Exception {
-        byte[] excel = service.exportarExcel(desde, hasta);
-        String nombre = "estadisticas_" + (desde.isBlank() ? "completo" : desde + "_" + hasta) + ".xlsx";
+            @RequestParam(defaultValue = "") String hasta,
+            @RequestParam(defaultValue = "") String zona) throws Exception {
+        byte[] excel = service.exportarExcel(desde, hasta, zona);
+        String zonaLabel = (zona != null && !zona.isBlank() && !zona.equals("TODAS")) ? "_" + zona.toLowerCase() : "";
+        String nombre = "estadisticas" + zonaLabel + "_" + (desde.isBlank() ? "completo" : desde + "_" + hasta) + ".xlsx";
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + nombre + "\"")
                 .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))

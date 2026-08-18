@@ -9,3 +9,6 @@ export const getSemanaActual     = ()             => api.get('/reportes-diarios/
 export const getCumplimiento     = (params)       => api.get('/reportes-diarios/cumplimiento', { params });
 export const actualizarOficiosRegistro = (fecha, valor) =>
     api.patch('/reportes-diarios/oficios-registro', null, { params: { fecha, valor } });
+
+export const actualizarCampoManual = (fecha, campo, valor) =>
+    api.patch('/reportes-diarios/campo-manual', null, { params: { fecha, campo, valor } });

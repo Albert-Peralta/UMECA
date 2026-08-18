@@ -82,6 +82,35 @@ public class ReporteDiarioService {
         return new ApiResponse(true, "Oficios de registro actualizados", ReporteDiarioResponseDTO.from(r));
     }
 
+    @Transactional
+    public ApiResponse actualizarCampoManual(LocalDate fecha, String campo, int valor) {
+        User user = usuarioActual();
+        Optional<ReporteDiario> existente = repo.findByFechaAndZonaAndUsuarioId(fecha, user.getZona(), user.getId());
+        ReporteDiario r = existente.orElse(new ReporteDiario());
+        if (existente.isEmpty()) {
+            r.setFecha(fecha);
+            r.setZona(user.getZona());
+            r.setUsuario(user);
+        }
+        switch (campo) {
+            case "firmasRecabadasSuper"     -> r.setFirmasRecabadasSuper(valor);
+            case "entrevistaEncuadreSuper"  -> r.setEntrevistaEncuadreSuper(valor);
+            case "calendarioSuper"          -> r.setCalendarioSuper(valor);
+            case "firmasRecabadasEval"      -> r.setFirmasRecabadasEval(valor);
+            case "entrevistaEncuadreEval"   -> r.setEntrevistaEncuadreEval(valor);
+            case "entrevistaEvaluacionEval" -> r.setEntrevistaEvaluacionEval(valor);
+            case "totalOficiosRecibidos"    -> r.setTotalOficiosRecibidos(valor);
+            case "nuevosCasosMC"            -> r.setNuevosCasosMC(valor);
+            case "nuevosCasosSCP"           -> r.setNuevosCasosSCP(valor);
+            case "sobreseimientos"          -> r.setSobreseimientos(valor);
+            case "levantamientoMedida"      -> r.setLevantamientoMedida(valor);
+            case "oficiosDiversosCorr"      -> r.setOficiosDiversosCorr(valor);
+            default -> { return new ApiResponse(false, "Campo desconocido: " + campo); }
+        }
+        repo.save(r);
+        return new ApiResponse(true, "Campo actualizado", ReporteDiarioResponseDTO.from(r));
+    }
+
     // ── Obtener reporte del día actual del usuario ────────────────────────────
     @Transactional(readOnly = true)
     public ApiResponse getMiReporteHoy() {
@@ -171,6 +200,13 @@ public class ReporteDiarioService {
         total.setSobreseimientos(         lista.stream().mapToInt(ReporteDiario::getSobreseimientos).sum());
         total.setCierreCarpetas(          lista.stream().mapToInt(ReporteDiario::getCierreCarpetas).sum());
         total.setLevantamientoMedida(     lista.stream().mapToInt(ReporteDiario::getLevantamientoMedida).sum());
+        total.setFirmasRecabadasSuper(    lista.stream().mapToInt(ReporteDiario::getFirmasRecabadasSuper).sum());
+        total.setEntrevistaEncuadreSuper( lista.stream().mapToInt(ReporteDiario::getEntrevistaEncuadreSuper).sum());
+        total.setCalendarioSuper(         lista.stream().mapToInt(ReporteDiario::getCalendarioSuper).sum());
+        total.setFirmasRecabadasEval(     lista.stream().mapToInt(ReporteDiario::getFirmasRecabadasEval).sum());
+        total.setEntrevistaEncuadreEval(  lista.stream().mapToInt(ReporteDiario::getEntrevistaEncuadreEval).sum());
+        total.setEntrevistaEvaluacionEval(lista.stream().mapToInt(ReporteDiario::getEntrevistaEvaluacionEval).sum());
+        total.setOficiosDiversosCorr(     lista.stream().mapToInt(ReporteDiario::getOficiosDiversosCorr).sum());
 
         return total;
     }
@@ -247,5 +283,12 @@ public class ReporteDiarioService {
         r.setSobreseimientos(dto.getSobreseimientos());
         r.setCierreCarpetas(dto.getCierreCarpetas());
         r.setLevantamientoMedida(dto.getLevantamientoMedida());
+        r.setFirmasRecabadasSuper(dto.getFirmasRecabadasSuper());
+        r.setEntrevistaEncuadreSuper(dto.getEntrevistaEncuadreSuper());
+        r.setCalendarioSuper(dto.getCalendarioSuper());
+        r.setFirmasRecabadasEval(dto.getFirmasRecabadasEval());
+        r.setEntrevistaEncuadreEval(dto.getEntrevistaEncuadreEval());
+        r.setEntrevistaEvaluacionEval(dto.getEntrevistaEvaluacionEval());
+        r.setOficiosDiversosCorr(dto.getOficiosDiversosCorr());
     }
 }

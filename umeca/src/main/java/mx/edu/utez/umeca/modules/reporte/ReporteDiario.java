@@ -63,4 +63,17 @@ public class ReporteDiario extends BaseEntity {
     @Column(name = "sobreseimientos")               private int sobreseimientos;
     @Column(name = "cierre_carpetas")               private int cierreCarpetas;
     @Column(name = "levantamiento_medida")          private int levantamientoMedida;
+
+    // ── Campos manuales SUPERVISIÓN ───────────────────────────────────────────
+    @Column(name = "firmas_recabadas_super")        private int firmasRecabadasSuper;
+    @Column(name = "entrevista_encuadre_super")     private int entrevistaEncuadreSuper;
+    @Column(name = "calendario_super")              private int calendarioSuper;
+
+    // ── Campos manuales EVALUACIÓN ────────────────────────────────────────────
+    @Column(name = "firmas_recabadas_eval")         private int firmasRecabadasEval;
+    @Column(name = "entrevista_encuadre_eval")      private int entrevistaEncuadreEval;
+    @Column(name = "entrevista_evaluacion_eval")    private int entrevistaEvaluacionEval;
+
+    // ── Campos manuales CORRESPONDENCIA ──────────────────────────────────────
+    @Column(name = "oficios_diversos_corr")         private int oficiosDiversosCorr;
 }

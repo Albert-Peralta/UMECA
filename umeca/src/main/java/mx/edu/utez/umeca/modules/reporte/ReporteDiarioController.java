@@ -20,21 +20,21 @@ public class ReporteDiarioController {
 
     /** Guardar o actualizar el reporte del usuario autenticado */
     @PostMapping
-    @PreAuthorize("hasAnyRole('SUPERADMIN','SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR','CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> guardar(@RequestBody ReporteDiarioDTO dto) {
         return ResponseEntity.ok(service.guardar(dto));
     }
 
     /** Reporte de hoy del usuario actual (para pre-llenar el formulario) */
     @GetMapping("/mi-reporte-hoy")
-    @PreAuthorize("hasAnyRole('SUPERADMIN','SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR','CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> getMiReporteHoy() {
         return ResponseEntity.ok(service.getMiReporteHoy());
     }
 
     /** Reporte de una fecha específica del usuario actual */
     @GetMapping("/mi-reporte")
-    @PreAuthorize("hasAnyRole('SUPERADMIN','SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR','CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> getMiReportePorFecha(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
         return ResponseEntity.ok(service.getMiReportePorFecha(fecha));
@@ -42,7 +42,7 @@ public class ReporteDiarioController {
 
     /** Lista de reportes individuales por rango de fechas */
     @GetMapping
-    @PreAuthorize("hasAnyRole('SUPERADMIN','SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR','CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> getLista(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
@@ -54,7 +54,7 @@ public class ReporteDiarioController {
 
     /** Consolidado por zona para la tabla resumen */
     @GetMapping("/consolidado")
-    @PreAuthorize("hasAnyRole('SUPERADMIN','SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR','CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> getConsolidado(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
@@ -82,6 +82,16 @@ public class ReporteDiarioController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
             @RequestParam int valor) {
         return ResponseEntity.ok(service.actualizarOficiosRegistro(fecha, valor));
+    }
+
+    /** Actualiza cualquier campo manual del reporte diario */
+    @PatchMapping("/campo-manual")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR','CORRESPONDENCIA')")
+    public ResponseEntity<ApiResponse> actualizarCampoManual(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+            @RequestParam String campo,
+            @RequestParam int valor) {
+        return ResponseEntity.ok(service.actualizarCampoManual(fecha, campo, valor));
     }
 
     /** Semana actual: lunes a hoy */

@@ -99,25 +99,48 @@ public interface MedidaCautelarRepository extends JpaRepository<MedidaCautelar, 
     @Query("SELECT COUNT(m) FROM MedidaCautelar m WHERE m.createdAt >= :inicio AND m.createdAt < :fin")
     long countByRango(@Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin);
 
+    @Query("SELECT COUNT(m) FROM MedidaCautelar m WHERE m.createdAt >= :inicio AND m.createdAt < :fin AND CAST(m.registradoPor.zona AS string) = :zona")
+    long countByRangoYZona(@Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin, @Param("zona") String zona);
+
     @Query("SELECT COUNT(m) FROM MedidaCautelar m WHERE CAST(m.tipo AS string) = :tipo AND m.createdAt >= :inicio AND m.createdAt < :fin")
     long countByTipoYRango(@Param("tipo") String tipo, @Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin);
+
+    @Query("SELECT COUNT(m) FROM MedidaCautelar m WHERE CAST(m.tipo AS string) = :tipo AND m.createdAt >= :inicio AND m.createdAt < :fin AND CAST(m.registradoPor.zona AS string) = :zona")
+    long countByTipoYRangoYZona(@Param("tipo") String tipo, @Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin, @Param("zona") String zona);
 
     @Query("SELECT COUNT(m) FROM MedidaCautelar m WHERE CAST(m.estado AS string) = :estado AND m.createdAt >= :inicio AND m.createdAt < :fin")
     long countByEstadoYRango(@Param("estado") String estado, @Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin);
 
+    @Query("SELECT COUNT(m) FROM MedidaCautelar m WHERE CAST(m.estado AS string) = :estado AND m.createdAt >= :inicio AND m.createdAt < :fin AND CAST(m.registradoPor.zona AS string) = :zona")
+    long countByEstadoYRangoYZona(@Param("estado") String estado, @Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin, @Param("zona") String zona);
+
     @Query("SELECT COUNT(m) FROM MedidaCautelar m WHERE m.cumpliendoIncumpliendo = :val AND CAST(m.tipo AS string) = :tipo AND m.createdAt >= :inicio AND m.createdAt < :fin")
     long countByCumplimientoYTipoYRango(@Param("val") String val, @Param("tipo") String tipo, @Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin);
+
+    @Query("SELECT COUNT(m) FROM MedidaCautelar m WHERE m.cumpliendoIncumpliendo = :val AND CAST(m.tipo AS string) = :tipo AND m.createdAt >= :inicio AND m.createdAt < :fin AND CAST(m.registradoPor.zona AS string) = :zona")
+    long countByCumplimientoYTipoYRangoYZona(@Param("val") String val, @Param("tipo") String tipo, @Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin, @Param("zona") String zona);
 
     @Query("SELECT m.entrevista.genero, COUNT(m) FROM MedidaCautelar m " +
            "WHERE CAST(m.tipo AS string) = :tipo AND m.entrevista IS NOT NULL AND m.createdAt >= :inicio AND m.createdAt < :fin " +
            "GROUP BY m.entrevista.genero")
     List<Object[]> countPorGeneroYTipoYRango(@Param("tipo") String tipo, @Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin);
 
+    @Query("SELECT m.entrevista.genero, COUNT(m) FROM MedidaCautelar m " +
+           "WHERE CAST(m.tipo AS string) = :tipo AND m.entrevista IS NOT NULL AND m.createdAt >= :inicio AND m.createdAt < :fin AND CAST(m.registradoPor.zona AS string) = :zona " +
+           "GROUP BY m.entrevista.genero")
+    List<Object[]> countPorGeneroYTipoYRangoYZona(@Param("tipo") String tipo, @Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin, @Param("zona") String zona);
+
     @Query("SELECT COUNT(m) FROM MedidaCautelar m WHERE m.cambiadoAScp = true AND m.createdAt >= :inicio AND m.createdAt < :fin")
     long countByCambiadoAScpYRango(@Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin);
 
+    @Query("SELECT COUNT(m) FROM MedidaCautelar m WHERE m.cambiadoAScp = true AND m.createdAt >= :inicio AND m.createdAt < :fin AND CAST(m.registradoPor.zona AS string) = :zona")
+    long countByCambiadoAScpYRangoYZona(@Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin, @Param("zona") String zona);
+
     @Query("SELECT COUNT(m) FROM MedidaCautelar m WHERE m.cambiadoAMc = true AND m.createdAt >= :inicio AND m.createdAt < :fin")
     long countByCambiadoAMcYRango(@Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin);
+
+    @Query("SELECT COUNT(m) FROM MedidaCautelar m WHERE m.cambiadoAMc = true AND m.createdAt >= :inicio AND m.createdAt < :fin AND CAST(m.registradoPor.zona AS string) = :zona")
+    long countByCambiadoAMcYRangoYZona(@Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin, @Param("zona") String zona);
 
     // ── TTA ───────────────────────────────────────────────────────────────────
     @Query(value = "SELECT COUNT(*) FROM medidas_cautelares WHERE detalles_fracciones LIKE '%\"esTTA\":true%' AND estado = 'ACTIVO'", nativeQuery = true)

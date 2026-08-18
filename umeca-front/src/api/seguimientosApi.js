@@ -49,6 +49,13 @@ export const TIPOS_ACTIVIDAD = [
     { value: 'NEGACION_FF',             label: 'Negación F.F.',                    grupo: 'EVALUACIÓN' },
     { value: 'INFORME_FC',              label: 'Informe F.C.',                     grupo: 'EVALUACIÓN' },
     { value: 'INFORME_FF',              label: 'Informe F.F.',                     grupo: 'EVALUACIÓN' },
+    // Correspondencia
+    { value: 'OFICIO_RECIBIDO',         label: 'Total de oficios recibidos',       grupo: 'CORRESPONDENCIA' },
+    { value: 'NUEVO_CASO_MC',           label: 'Nuevos Casos M.C.',               grupo: 'CORRESPONDENCIA' },
+    { value: 'NUEVO_CASO_SCP',          label: 'Nuevos Casos S.C.P.',             grupo: 'CORRESPONDENCIA' },
+    { value: 'SOBRESEIMIENTO',          label: 'Sobreseimientos',                 grupo: 'CORRESPONDENCIA' },
+    { value: 'LEVANTAMIENTO_MEDIDA',    label: 'Levantamiento de medida',         grupo: 'CORRESPONDENCIA' },
+    { value: 'OFICIO_DIVERSO_CORR',     label: 'Oficios emitidos diversos',       grupo: 'CORRESPONDENCIA' },
     // Otro por rol
     { value: 'OTRO_SUPERVISION',        label: 'Otro',                             grupo: 'SUPERVISIÓN' },
     { value: 'OTRO',                    label: 'Otro',                             grupo: 'EVALUACIÓN' },

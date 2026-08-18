@@ -103,6 +103,7 @@ const menuPorRol = {
     ],
     CORRESPONDENCIA: [
         { separator: true,        label: 'General' },
+        { key: 'imputados',       label: 'Imputados',           icon: 'bi bi-people' },
         { key: 'graficas',        label: 'Estadísticas',        icon: 'bi bi-bar-chart' },
         { key: 'reporte',         label: 'Reporte Diario',      icon: 'bi bi-clipboard-data' },
         { separator: true,        label: 'Supervisión' },

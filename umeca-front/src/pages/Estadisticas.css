@@ -263,7 +263,7 @@ input[type="date"].est-mes-sel { min-width: 140px; }
 /* ── Grid de gráficas ── */
 .est-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 14px;
 }
 
@@ -279,12 +279,12 @@ input[type="date"].est-mes-sel { min-width: 140px; }
 }
 
 .est-card-wide {
-    grid-column: span 3;
+    grid-column: span 2;
 }
 
 /* ── Separador de sección ── */
 .est-seccion {
-    grid-column: span 3;
+    grid-column: span 2;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -342,7 +342,7 @@ input[type="date"].est-mes-sel { min-width: 140px; }
 
 /* ── Dona ── */
 .est-dona-wrap {
-    height: 220px;
+    height: 240px;
     position: relative;
 }
 
@@ -523,6 +523,30 @@ input[type="date"].est-mes-sel { min-width: 140px; }
     display: flex;
     gap: 0;
     padding: 20px 28px 28px;
+}
+
+/* Bloques full-width para supervisión / evaluación */
+.est-seg-bloque {
+    padding: 0 28px 8px;
+}
+
+.est-seg-bloque-titulo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 6px;
+}
+
+.est-seg-vacio {
+    color: #aaa;
+    font-size: 12px;
+    padding: 12px 0;
+    margin: 0;
 }
 
 .est-seg-grafica-col {

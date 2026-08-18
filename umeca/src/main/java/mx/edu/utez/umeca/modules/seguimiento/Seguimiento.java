@@ -29,6 +29,9 @@ public class Seguimiento extends BaseEntity {
         VISITA_DOMICILIARIA,
         AUDIENCIA_TTA,
         LLAMADA_TELEFONICA,
+        FIRMA_RECABADA,
+        ENTREVISTA_ENCUADRE_SUPER,
+        CALENDARIO,
         // Evaluación
         OFICIO_REGISTRO,
         OPINION_TECNICA_FC,
@@ -39,6 +42,16 @@ public class Seguimiento extends BaseEntity {
         INFORME_FF,
         EVALUACION_RIESGO_FC,
         EVALUACION_RIESGO_FF,
+        FIRMA_RECABADA_EVAL,
+        ENTREVISTA_ENCUADRE_EVAL,
+        ENTREVISTA_EVALUACION,
+        // Correspondencia
+        OFICIO_RECIBIDO,
+        NUEVO_CASO_MC,
+        NUEVO_CASO_SCP,
+        SOBRESEIMIENTO,
+        LEVANTAMIENTO_MEDIDA,
+        OFICIO_DIVERSO_CORR,
         // General
         OTRO,
         OTRO_SUPERVISION

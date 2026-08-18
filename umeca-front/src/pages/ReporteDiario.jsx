@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { getReporteAutomatico, getReporteConsolidado, getHistorialPorUsuario } from '../api/seguimientosApi';
-import { getMiReportePorFecha, actualizarOficiosRegistro } from '../api/reporteDiarioApi';
+import { getMiReportePorFecha, actualizarOficiosRegistro, actualizarCampoManual, getConsolidado as getConsolidadoRD, getListaReportes } from '../api/reporteDiarioApi';
 import './ReporteDiario.css';
 
 // ── Definición de campos por sección ─────────────────────────────────────────
@@ -20,28 +20,43 @@ const CAMPOS_SUPERVISION = [
     { key: 'visitasDomiciliarias',    label: 'Visitas domiciliarias',               tipo: 'VISITA_DOMICILIARIA' },
     { key: 'audienciasTTA',           label: 'Audiencias TTA',                      tipo: 'AUDIENCIA_TTA' },
     { key: 'llamadasTelefonicas',     label: 'Llamadas telefónicas',                tipo: 'LLAMADA_TELEFONICA' },
+    { key: 'firmasRecabadasSuper',    label: 'Firmas recabadas',                    tipo: null, manual: true },
+    { key: 'entrevistaEncuadreSuper', label: 'Entrevista de encuadre',              tipo: null, manual: true },
+    { key: 'calendarioSuper',         label: 'Calendario',                          tipo: null, manual: true },
     { key: 'otroSuper',               label: 'Otro',                                tipo: 'OTRO_SUPERVISION' },
 ];
 
 const CAMPOS_EVALUACION = [
-    { key: 'oficiosRegistros',      label: 'Oficios de registros',          tipo: 'OFICIO_REGISTRO' },
-    { key: 'opinionTecnicaFC',      label: 'Opinión técnica F.C.',           tipo: 'OPINION_TECNICA_FC' },
-    { key: 'opinionTecnicaFF',      label: 'Opinión técnica F.F.',           tipo: 'OPINION_TECNICA_FF' },
-    { key: 'negacionesFC',          label: 'Negaciones F.C.',                tipo: 'NEGACION_FC' },
-    { key: 'negacionesFF',          label: 'Negaciones F.F.',                tipo: 'NEGACION_FF' },
-    { key: 'informesFC',            label: 'Informes F.C.',                  tipo: 'INFORME_FC' },
-    { key: 'informesFF',            label: 'Informes F.F.',                  tipo: 'INFORME_FF' },
-    { key: 'otro',                  label: 'Otro',                           tipo: 'OTRO' },
+    { key: 'oficiosRegistros',        label: 'Oficios de registros',          tipo: 'OFICIO_REGISTRO',    manual: true },
+    { key: 'opinionTecnicaFC',        label: 'Opinión técnica F.C.',           tipo: 'OPINION_TECNICA_FC' },
+    { key: 'opinionTecnicaFF',        label: 'Opinión técnica F.F.',           tipo: 'OPINION_TECNICA_FF' },
+    { key: 'negacionesFC',            label: 'Negaciones F.C.',                tipo: 'NEGACION_FC' },
+    { key: 'negacionesFF',            label: 'Negaciones F.F.',                tipo: 'NEGACION_FF' },
+    { key: 'informesFC',              label: 'Informes F.C.',                  tipo: 'INFORME_FC' },
+    { key: 'informesFF',              label: 'Informes F.F.',                  tipo: 'INFORME_FF' },
+    { key: 'firmasRecabadasEval',     label: 'Firmas recabadas',               tipo: null, manual: true },
+    { key: 'entrevistaEncuadreEval',  label: 'Entrevista de encuadre',         tipo: null, manual: true },
+    { key: 'entrevistaEvaluacionEval',label: 'Entrevista de evaluación',       tipo: null, manual: true },
+    { key: 'otro',                    label: 'Otro',                           tipo: 'OTRO' },
 ];
 
-const TODOS_CAMPOS = [...CAMPOS_SUPERVISION, ...CAMPOS_EVALUACION];
+const CAMPOS_CORRESPONDENCIA = [
+    { key: 'totalOficiosRecibidos',   label: 'Total de oficios recibidos',     tipo: null, manual: true },
+    { key: 'nuevosCasosMC',           label: 'Nuevos Casos M.C.',              tipo: null, manual: true },
+    { key: 'nuevosCasosSCP',          label: 'Nuevos Casos S.C.P.',            tipo: null, manual: true },
+    { key: 'sobreseimientos',         label: 'Sobreseimientos',                tipo: null, manual: true },
+    { key: 'levantamientoMedida',     label: 'Levantamiento de medida',        tipo: null, manual: true },
+    { key: 'oficiosDiversosCorr',     label: 'Oficios emitidos diversos',      tipo: null, manual: true },
+];
+
+const TODOS_CAMPOS = [...CAMPOS_SUPERVISION, ...CAMPOS_EVALUACION, ...CAMPOS_CORRESPONDENCIA];
 
 const ZONAS = ['XOCHITEPEC', 'CUAUTLA', 'JOJUTLA'];
 
 // Convierte la respuesta del backend (Map<TipoActividad,Long>) a un objeto { key: count }
 const mapearCuentas = (data) => {
     const out = Object.fromEntries(TODOS_CAMPOS.map(c => [c.key, 0]));
-    TODOS_CAMPOS.forEach(c => { if (data[c.tipo] != null) out[c.key] = data[c.tipo]; });
+    TODOS_CAMPOS.forEach(c => { if (c.tipo && data[c.tipo] != null) out[c.key] = data[c.tipo]; });
     return out;
 };
 
@@ -60,7 +75,8 @@ export default function ReporteDiario() {
     const { showToast } = useToast();
     const rol = user?.rol;
 
-    const esAdmin = rol === 'ADMINISTRADOR' || rol === 'SUPERADMIN' || rol === 'CORRESPONDENCIA';
+    const esAdmin = rol === 'ADMINISTRADOR' || rol === 'SUPERADMIN';
+    const esCorr  = rol === 'CORRESPONDENCIA';
     const esSuper = rol === 'SUPERVISION';
     const esEval  = rol === 'EVALUADOR_RIESGO';
 
@@ -69,16 +85,26 @@ export default function ReporteDiario() {
     const [datosAuto,   setDatosAuto]     = useState({});
     const [cargandoAuto, setCargandoAuto] = useState(false);
 
-    // ── Estado: campo manual oficios de registro (solo evaluador) ────────────
-    // oficiosGuardados: valor confirmado (afecta el total)
-    // oficiosEditando:  valor en edición (solo afecta el input)
-    const [oficiosGuardados,  setOficiosGuardados]  = useState(0);
-    const [oficiosEditando,   setOficiosEditando]   = useState(0);
-    const [guardandoOficios,  setGuardandoOficios]  = useState(false);
-    const [oficiosCargados,   setOficiosCargados]   = useState(false);
+    // ── Estado: campos manuales (oficios de registro + nuevos campos manual) ──
+    // manualesGuardados: valores confirmados (afectan totales)
+    // manualesEditando:  valores en edición (solo afectan inputs)
+    const CAMPOS_MANUALES_KEYS = [
+        'oficiosRegistros',
+        'firmasRecabadasSuper', 'entrevistaEncuadreSuper', 'calendarioSuper',
+        'firmasRecabadasEval', 'entrevistaEncuadreEval', 'entrevistaEvaluacionEval',
+        'totalOficiosRecibidos', 'nuevosCasosMC', 'nuevosCasosSCP',
+        'sobreseimientos', 'levantamientoMedida', 'oficiosDiversosCorr',
+    ];
+    const initManuales = () => Object.fromEntries(CAMPOS_MANUALES_KEYS.map(k => [k, 0]));
+    const [manualesGuardados, setManualesGuardados] = useState(initManuales);
+    const [manualesEditando,  setManualesEditando]  = useState(initManuales);
+    const [guardandoManual,   setGuardandoManual]   = useState({});
+    const [manualesCargados,  setManualesCargados]  = useState(false);
+    // legacy alias para no romper referencias internas a oficiosGuardados
+    const oficiosGuardados = manualesGuardados['oficiosRegistros'] ?? 0;
 
     useEffect(() => {
-        if (esAdmin || !user?.zona) return;
+        if (esAdmin || esCorr || !user?.zona) return;
         setCargandoAuto(true);
         getReporteAutomatico(fechaPropia, user.zona)
             .then(res => {
@@ -89,35 +115,47 @@ export default function ReporteDiario() {
             .finally(() => setCargandoAuto(false));
     }, [esAdmin, fechaPropia, user?.zona]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Carga el valor guardado de oficiosRegistros al cambiar la fecha (solo evaluador)
+    // Carga valores manuales al cambiar la fecha (para evaluador, supervisión y correspondencia)
     useEffect(() => {
-        if (!esEval) return;
-        setOficiosCargados(false);
+        if (esAdmin) return;
+        setManualesCargados(false);
         getMiReportePorFecha(fechaPropia)
             .then(res => {
-                const val = res.data?.data?.oficiosRegistros ?? 0;
-                setOficiosGuardados(val);
-                setOficiosEditando(val);
+                const d = res.data?.data;
+                if (d) {
+                    const vals = {};
+                    CAMPOS_MANUALES_KEYS.forEach(k => { vals[k] = d[k] ?? 0; });
+                    setManualesGuardados(vals);
+                    setManualesEditando({ ...vals });
+                } else {
+                    setManualesGuardados(initManuales());
+                    setManualesEditando(initManuales());
+                }
             })
-            .catch(() => { setOficiosGuardados(0); setOficiosEditando(0); })
-            .finally(() => setOficiosCargados(true));
-    }, [esEval, fechaPropia]); // eslint-disable-line react-hooks/exhaustive-deps
+            .catch(() => { setManualesGuardados(initManuales()); setManualesEditando(initManuales()); })
+            .finally(() => setManualesCargados(true));
+    }, [esAdmin, fechaPropia]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const handleGuardarOficios = async () => {
-        setGuardandoOficios(true);
+    const handleGuardarCampoManual = async (campo) => {
+        setGuardandoManual(prev => ({ ...prev, [campo]: true }));
         try {
-            await actualizarOficiosRegistro(fechaPropia, oficiosEditando);
-            setOficiosGuardados(oficiosEditando); // solo aquí se actualiza el total
-            showToast('Oficios de registro guardados');
+            const valor = manualesEditando[campo] ?? 0;
+            if (campo === 'oficiosRegistros') {
+                await actualizarOficiosRegistro(fechaPropia, valor);
+            } else {
+                await actualizarCampoManual(fechaPropia, campo, valor);
+            }
+            setManualesGuardados(prev => ({ ...prev, [campo]: valor }));
+            showToast('Guardado correctamente');
         } catch {
-            showToast('Error al guardar oficios de registro', 'error');
+            showToast('Error al guardar', 'error');
         } finally {
-            setGuardandoOficios(false);
+            setGuardandoManual(prev => ({ ...prev, [campo]: false }));
         }
     };
 
     // ── Estado: pestaña admin ─────────────────────────────────────────────────
-    const [pestanaAdmin, setPestanaAdmin] = useState('resumen'); // 'resumen' | 'historial'
+    const [pestanaAdmin, setPestanaAdmin] = useState(esCorr ? 'mis-actividades' : 'resumen'); // 'mis-actividades' | 'resumen' | 'historial'
     const [expandidos, setExpandidos] = useState({}); // { 'zona-usuario': true }
     const toggleExpandido = (key) => setExpandidos(prev => ({ ...prev, [key]: !prev[key] }));
     const LIMITE_SEGS = 3;
@@ -129,11 +167,13 @@ export default function ReporteDiario() {
     const mesActual = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; };
     const [mesSel, setMesSel] = useState(mesActual());
     const [consolidado,   setConsolidado]   = useState({});
+    const [consolidadoRD, setConsolidadoRD] = useState({});
     const [cargandoTabla, setCargandoTabla] = useState(false);
 
     // ── Estado: historial por usuario ─────────────────────────────────────────
     const [historial,        setHistorial]        = useState({});
     const [cargandoHistorial, setCargandoHistorial] = useState(false);
+    const [reportesManuales, setReportesManuales] = useState([]); // ReporteDiarioResponseDTO[]
 
     // Calcula el rango de fechas según el filtro activo
     const cargarTabla = useCallback(async () => {
@@ -160,20 +200,33 @@ export default function ReporteDiario() {
                 desde = rangoDesde; hasta = rangoHasta;
             }
 
-            const res = await getReporteConsolidado(desde, hasta);
-            if (res.data.ok) {
-                const rawPorZona = res.data.data || {};
-                // rawPorZona: { XOCHITEPEC: { OFICIO_CSP: 2, ... }, SIN_ZONA: { ... }, ... }
+            const [resSeg, resRD] = await Promise.all([
+                getReporteConsolidado(desde, hasta),
+                getConsolidadoRD({ inicio: desde, fin: hasta }),
+            ]);
+            if (resSeg.data.ok) {
+                const rawPorZona = resSeg.data.data || {};
                 const nuevo = {};
-                // Inicializar todas las zonas conocidas con 0
                 ZONAS.forEach(z => { nuevo[z] = mapearCuentas(rawPorZona[z] || {}); });
-                // Agregar SIN_ZONA a la primera zona conocida como fallback visible
                 if (rawPorZona['SIN_ZONA']) {
-                    const sinZona = rawPorZona['SIN_ZONA'];
-                    // Acumularlo en la tabla sin zona propia — se muestra como zona extra
-                    nuevo['SIN_ZONA'] = mapearCuentas(sinZona);
+                    nuevo['SIN_ZONA'] = mapearCuentas(rawPorZona['SIN_ZONA']);
                 }
                 setConsolidado(nuevo);
+            }
+            if (resRD.data.ok) {
+                // resRD: { XOCHITEPEC: ReporteDiarioResponseDTO, ... }
+                const rawRD = resRD.data.data || {};
+                const nuevoRD = {};
+                const CAMPOS_MANUALES_TODOS = [
+                    ...CAMPOS_SUPERVISION.filter(c => c.manual),
+                    ...CAMPOS_EVALUACION.filter(c => c.manual),
+                    ...CAMPOS_CORRESPONDENCIA,
+                ];
+                Object.entries(rawRD).forEach(([zona, dto]) => {
+                    nuevoRD[zona] = {};
+                    CAMPOS_MANUALES_TODOS.forEach(c => { nuevoRD[zona][c.key] = dto[c.key] ?? 0; });
+                });
+                setConsolidadoRD(nuevoRD);
             }
         } catch { showToast('Error al cargar el reporte consolidado.', 'error'); }
         finally { setCargandoTabla(false); }
@@ -181,18 +234,18 @@ export default function ReporteDiario() {
 
     // Carga inicial y cuando cambia el filtro (excepto rango — espera el botón refrescar)
     useEffect(() => {
-        if (esAdmin && vistaAdmin !== 'rango') cargarTabla();
-    }, [esAdmin, vistaAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
+        if ((esAdmin || esCorr) && vistaAdmin !== 'rango') cargarTabla();
+    }, [esAdmin, esCorr, vistaAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Para rango: carga cuando cambian las fechas
     useEffect(() => {
-        if (esAdmin && vistaAdmin === 'rango') cargarTabla();
-    }, [esAdmin, rangoDesde, rangoHasta]); // eslint-disable-line react-hooks/exhaustive-deps
+        if ((esAdmin || esCorr) && vistaAdmin === 'rango') cargarTabla();
+    }, [esAdmin, esCorr, rangoDesde, rangoHasta]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Para mes: recarga cuando cambia el mes seleccionado
     useEffect(() => {
-        if (esAdmin && vistaAdmin === 'mes') cargarTabla();
-    }, [esAdmin, mesSel, cargarTabla]); // eslint-disable-line react-hooks/exhaustive-deps
+        if ((esAdmin || esCorr) && vistaAdmin === 'mes') cargarTabla();
+    }, [esAdmin, esCorr, mesSel, cargarTabla]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ── Cargar historial por usuario ──────────────────────────────────────────
     const cargarHistorial = useCallback(async () => {
@@ -217,31 +270,84 @@ export default function ReporteDiario() {
             } else {
                 desde = rangoDesde; hasta = rangoHasta;
             }
-            const res = await getHistorialPorUsuario(desde, hasta);
-            if (res.data.ok) setHistorial(res.data.data || {});
+            const [resHist, resRD] = await Promise.all([
+                getHistorialPorUsuario(desde, hasta),
+                getListaReportes({ inicio: desde, fin: hasta }),
+            ]);
+            if (resHist.data.ok) setHistorial(resHist.data.data || {});
+            if (resRD.data.ok) setReportesManuales(resRD.data.data || []);
         } catch { showToast('Error al cargar el historial por usuario.', 'error'); }
         finally { setCargandoHistorial(false); }
     }, [vistaAdmin, rangoDesde, rangoHasta, mesSel]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
-        if (esAdmin && pestanaAdmin === 'historial' && vistaAdmin !== 'rango') cargarHistorial();
-    }, [esAdmin, pestanaAdmin, vistaAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
+        if ((esAdmin || esCorr) && pestanaAdmin === 'historial' && vistaAdmin !== 'rango') cargarHistorial();
+    }, [esAdmin, esCorr, pestanaAdmin, vistaAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
-        if (esAdmin && pestanaAdmin === 'historial' && vistaAdmin === 'rango') cargarHistorial();
-    }, [esAdmin, pestanaAdmin, rangoDesde, rangoHasta]); // eslint-disable-line react-hooks/exhaustive-deps
+        if ((esAdmin || esCorr) && pestanaAdmin === 'historial' && vistaAdmin === 'rango') cargarHistorial();
+    }, [esAdmin, esCorr, pestanaAdmin, rangoDesde, rangoHasta]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
-        if (esAdmin && pestanaAdmin === 'historial' && vistaAdmin === 'mes') cargarHistorial();
-    }, [esAdmin, pestanaAdmin, mesSel, cargarHistorial]); // eslint-disable-line react-hooks/exhaustive-deps
+        if ((esAdmin || esCorr) && pestanaAdmin === 'historial' && vistaAdmin === 'mes') cargarHistorial();
+    }, [esAdmin, esCorr, pestanaAdmin, mesSel, cargarHistorial]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // ── Render sección (modo solo lectura) ────────────────────────────────────
-    const renderSeccion = (titulo, campos, color) => {
-        // Para evaluación: el total incluye oficiosRegistros (manual) + seguimientos automáticos
-        const totalAuto = campos
-            .filter(c => c.key !== 'oficiosRegistros')
-            .reduce((s, c) => s + (datosAuto[c.key] || 0), 0);
-        const total = totalAuto + (esEval ? oficiosGuardados : 0);
+    // ── Detección de cambios sin guardar ────────────────────────────────────
+    const hayCambiosSinGuardar = manualesCargados && CAMPOS_MANUALES_KEYS.some(
+        k => (manualesEditando[k] ?? 0) !== (manualesGuardados[k] ?? 0)
+    );
+
+    // ── Guardar todos los campos manuales de una vez ─────────────────────────
+    const [guardandoTodo, setGuardandoTodo] = useState(false);
+    const handleGuardarTodo = async () => {
+        setGuardandoTodo(true);
+        try {
+            const changedKeys = CAMPOS_MANUALES_KEYS.filter(
+                k => (manualesEditando[k] ?? 0) !== (manualesGuardados[k] ?? 0)
+            );
+            await Promise.all(changedKeys.map(k => {
+                const valor = manualesEditando[k] ?? 0;
+                if (k === 'oficiosRegistros') return actualizarOficiosRegistro(fechaPropia, valor);
+                return actualizarCampoManual(fechaPropia, k, valor);
+            }));
+            setManualesGuardados({ ...manualesEditando });
+            showToast('Reporte guardado correctamente');
+            // Refrescar tabla consolidada solo para roles con acceso
+            if (esAdmin || esCorr) cargarTabla();
+        } catch {
+            showToast('Error al guardar', 'error');
+        } finally {
+            setGuardandoTodo(false);
+        }
+    };
+
+    // ── Render campo manual genérico (solo input directo) ────────────────────
+    const renderCampoManual = (c) => {
+        const valGuardado = manualesGuardados[c.key] ?? 0;
+        const valEditando = manualesEditando[c.key] ?? 0;
+        const cambiado    = valEditando !== valGuardado;
+        return (
+            <div key={c.key} className={`rd-campo ${cambiado ? 'rd-campo-editado' : ''}`}>
+                <label>{c.label}</label>
+                <input
+                    type="number"
+                    min={0}
+                    value={valEditando}
+                    onFocus={e => e.target.select()}
+                    onChange={e => setManualesEditando(prev => ({ ...prev, [c.key]: Math.max(0, parseInt(e.target.value) || 0) }))}
+                    className="rd-campo-input-manual"
+                    disabled={!manualesCargados}
+                    placeholder="0"
+                />
+            </div>
+        );
+    };
+
+    // ── Render sección ────────────────────────────────────────────────────────
+    const renderSeccion = (titulo, campos, color, esSoloManual = false) => {
+        const totalAuto   = campos.filter(c => !c.manual).reduce((s, c) => s + (datosAuto[c.key] || 0), 0);
+        const totalManual = campos.filter(c => c.manual).reduce((s, c) => s + (manualesGuardados[c.key] || 0), 0);
+        const total = totalAuto + totalManual;
         return (
             <div className="rd-seccion" style={{ '--rd-color': color }}>
                 <div className="rd-seccion-titulo">
@@ -250,44 +356,7 @@ export default function ReporteDiario() {
                     <span className="rd-seccion-total-badge">{total} registros</span>
                 </div>
                 <div className="rd-campos-grid">
-                    {campos.map(c => {
-                        // Campo manual editable solo para oficiosRegistros en la vista del evaluador
-                        if (c.key === 'oficiosRegistros' && esEval) {
-                            return (
-                                <div key={c.key} className={`rd-campo ${oficiosGuardados > 0 ? 'rd-campo-activo' : ''}`}>
-                                    <label>{c.label}</label>
-                                    <div className="rd-oficios-manual">
-                                        <div className="rd-oficios-controles">
-                                            <button
-                                                className="rd-oficios-btn"
-                                                onClick={() => setOficiosEditando(v => Math.max(0, v - 1))}
-                                                disabled={oficiosEditando <= 0 || !oficiosCargados}
-                                            >−</button>
-                                            <input
-                                                type="number"
-                                                min={0}
-                                                value={oficiosEditando}
-                                                onChange={e => setOficiosEditando(Math.max(0, parseInt(e.target.value) || 0))}
-                                                className="rd-oficios-input"
-                                                disabled={!oficiosCargados}
-                                            />
-                                            <button
-                                                className="rd-oficios-btn"
-                                                onClick={() => setOficiosEditando(v => v + 1)}
-                                                disabled={!oficiosCargados}
-                                            >+</button>
-                                        </div>
-                                        <button
-                                            className="rd-oficios-guardar"
-                                            onClick={handleGuardarOficios}
-                                            disabled={guardandoOficios || !oficiosCargados}
-                                        >
-                                            {guardandoOficios ? '…' : <><i className="bi bi-floppy" /> Guardar</>}
-                                        </button>
-                                    </div>
-                                </div>
-                            );
-                        }
+                    {campos.filter(c => !c.manual).map(c => {
                         const val = datosAuto[c.key] || 0;
                         return (
                             <div key={c.key} className={`rd-campo rd-campo-readonly ${val > 0 ? 'rd-campo-activo' : ''}`}>
@@ -299,17 +368,43 @@ export default function ReporteDiario() {
                         );
                     })}
                 </div>
+                {campos.some(c => c.manual) && (
+                    <div className="rd-campos-manuales-fila">
+                        {campos.filter(c => c.manual).map(c => renderCampoManual(c))}
+                    </div>
+                )}
             </div>
         );
     };
 
+    // ── Render banner + botón guardar general ─────────────────────────────────
+    const renderGuardarGeneral = () => (
+        <div className="rd-guardar-general-wrap">
+            {hayCambiosSinGuardar && (
+                <div className="rd-aviso-cambios">
+                    <i className="bi bi-exclamation-triangle-fill" />
+                    Tienes cambios sin guardar. Presiona Guardar para aplicarlos.
+                </div>
+            )}
+            <button
+                className="rd-btn-guardar-general"
+                onClick={handleGuardarTodo}
+                disabled={guardandoTodo || !manualesCargados || !hayCambiosSinGuardar}
+            >
+                {guardandoTodo
+                    ? <><i className="bi bi-hourglass-split" /> Guardando...</>
+                    : <><i className="bi bi-floppy-fill" /> Guardar reporte</>}
+            </button>
+        </div>
+    );
+
     // ── Chips resumen ─────────────────────────────────────────────────────────
-    const resumenEvalChips = (datos) => {
+    const resumenEvalChips = (datos, manuales = {}) => {
         const v = k => datos[k] || 0;
         const fc = v('opinionTecnicaFC') + v('negacionesFC') + v('informesFC');
         const ff = v('opinionTecnicaFF') + v('negacionesFF') + v('informesFF');
-        const camposRol = esSuper ? CAMPOS_SUPERVISION : esEval ? CAMPOS_EVALUACION : TODOS_CAMPOS;
-        const total = camposRol.reduce((s, c) => s + (c.key === 'oficiosRegistros' ? oficiosGuardados : (datos[c.key] || 0)), 0);
+        const camposRol = esSuper ? CAMPOS_SUPERVISION : esEval ? CAMPOS_EVALUACION : esCorr ? CAMPOS_CORRESPONDENCIA : TODOS_CAMPOS;
+        const total = camposRol.reduce((s, c) => s + (c.manual ? (manuales[c.key] || 0) : (datos[c.key] || 0)), 0);
         return (
             <div className="rd-eval-resumen">
                 <div className="rd-eval-chip rd-eval-chip-total">
@@ -344,8 +439,8 @@ export default function ReporteDiario() {
                 </div>
             </div>
 
-            {/* ── Vista propia: resumen automático por fecha ───────────────── */}
-            {!esAdmin && (
+            {/* ── Vista propia: SUPERVISION / EVALUADOR_RIESGO ─────────────── */}
+            {(esSuper || esEval) && (
                 <div className="rd-card rd-card-form">
                     <div className="rd-card-titulo">
                         <i className="bi bi-bar-chart-fill" />
@@ -372,19 +467,29 @@ export default function ReporteDiario() {
                         </p>
                     </div>
 
-                    {resumenEvalChips(datosAuto)}
+                    {resumenEvalChips(datosAuto, manualesGuardados)}
 
-                    {esSuper  && renderSeccion('Supervisión',          CAMPOS_SUPERVISION, '#1565c0')}
-                    {esEval   && renderSeccion('Evaluación de Riesgos', CAMPOS_EVALUACION,  '#e65100')}
+                    {esSuper && renderSeccion('Supervisión',           CAMPOS_SUPERVISION, '#1565c0')}
+                    {esEval  && renderSeccion('Evaluación de Riesgos', CAMPOS_EVALUACION,  '#e65100')}
+
+                    {renderGuardarGeneral()}
                 </div>
             )}
 
-            {/* ── Vista admin: pestañas ─────────────────────────────────────── */}
-            {esAdmin && (
+            {/* ── Vista admin / correspondencia: pestañas ───────────────────── */}
+            {(esAdmin || esCorr) && (
                 <div className="rd-card">
                     {/* Pestañas + filtros en la misma fila */}
                     <div className="rd-pestanas-bar">
                         <div className="rd-pestanas">
+                            {esCorr && (
+                                <button
+                                    className={`rd-pestana ${pestanaAdmin === 'mis-actividades' ? 'rd-pestana-activa' : ''}`}
+                                    onClick={() => setPestanaAdmin('mis-actividades')}
+                                >
+                                    <i className="bi bi-bar-chart-fill" /> Mis actividades
+                                </button>
+                            )}
                             <button
                                 className={`rd-pestana ${pestanaAdmin === 'resumen' ? 'rd-pestana-activa' : ''}`}
                                 onClick={() => setPestanaAdmin('resumen')}
@@ -399,6 +504,7 @@ export default function ReporteDiario() {
                             </button>
                         </div>
 
+                        {pestanaAdmin !== 'mis-actividades' && (
                         <div className="rd-filtros">
                             <div className="rd-filtros-tabs">
                                 {[
@@ -420,9 +526,10 @@ export default function ReporteDiario() {
                                 <i className={`bi bi-arrow-clockwise ${(cargandoTabla || cargandoHistorial) ? 'rd-spin' : ''}`} />
                             </button>
                         </div>
+                        )}
                     </div>
 
-                    {(vistaAdmin === 'mes' || vistaAdmin === 'rango') && (
+                    {pestanaAdmin !== 'mis-actividades' && (vistaAdmin === 'mes' || vistaAdmin === 'rango') && (
                         <div className="rd-rango-bar">
                             {vistaAdmin === 'mes' && (
                                 <input
@@ -446,22 +553,71 @@ export default function ReporteDiario() {
                         </div>
                     )}
 
+                    {/* ── Pestaña: Mis actividades (solo CORRESPONDENCIA) ── */}
+                    {pestanaAdmin === 'mis-actividades' && esCorr && (
+                        <div className="rd-pestana-contenido">
+                            <div className="rd-fecha-resumen" style={{ paddingTop: 16 }}>
+                                <div className="rd-fecha-wrap">
+                                    <label>Fecha</label>
+                                    <input
+                                        type="date"
+                                        value={fechaPropia}
+                                        onChange={e => setFechaPropia(e.target.value)}
+                                        className="rd-fecha-input"
+                                    />
+                                </div>
+                            </div>
+                            {resumenEvalChips({}, manualesGuardados)}
+                            {renderSeccion('Correspondencia', CAMPOS_CORRESPONDENCIA, '#2d6a4f')}
+                            {renderGuardarGeneral()}
+                        </div>
+                    )}
+
                     {/* ── Pestaña: Historial por usuario ── */}
                     {pestanaAdmin === 'historial' && (
                         <div className="rd-pestana-contenido">
                         <div className="rd-historial-wrap" style={{ opacity: cargandoHistorial ? 0.45 : 1, transition: 'opacity .25s', pointerEvents: cargandoHistorial ? 'none' : 'auto' }}>
-                            {Object.keys(historial).length === 0 && !cargandoHistorial ? (
-                                <div className="rd-sin-datos"><i className="bi bi-inbox" /> Sin seguimientos en el periodo seleccionado</div>
-                            ) : (
-                                Object.entries(historial).map(([zona, usuarios]) => (
+                            {(() => {
+                                // Construir estructura combinada: seguimientos + entradas manuales
+                                const CM = [
+                                    ...CAMPOS_SUPERVISION.filter(c => c.manual),
+                                    ...CAMPOS_EVALUACION.filter(c => c.manual),
+                                    ...CAMPOS_CORRESPONDENCIA,
+                                ];
+                                // zonaData: { ZONA: { nombreUsuario: { segs: [], manuales: [] } } }
+                                const zonaData = {};
+                                // Agregar seguimientos
+                                Object.entries(historial).forEach(([zona, usuarios]) => {
+                                    if (!zonaData[zona]) zonaData[zona] = {};
+                                    Object.entries(usuarios).forEach(([nombre, segs]) => {
+                                        if (!zonaData[zona][nombre]) zonaData[zona][nombre] = { segs: [], manuales: [] };
+                                        zonaData[zona][nombre].segs = segs;
+                                    });
+                                });
+                                // Agregar entradas manuales
+                                reportesManuales.forEach(r => {
+                                    const zona = r.zona || 'SIN_ZONA';
+                                    const nombre = r.usuarioNombre;
+                                    if (!nombre) return;
+                                    if (!zonaData[zona]) zonaData[zona] = {};
+                                    if (!zonaData[zona][nombre]) zonaData[zona][nombre] = { segs: [], manuales: [] };
+                                    const entradas = CM.filter(c => (r[c.key] ?? 0) > 0).map(c => ({ label: c.label, valor: r[c.key], fecha: r.fecha }));
+                                    zonaData[zona][nombre].manuales.push(...entradas);
+                                });
+
+                                if (Object.keys(zonaData).length === 0 && !cargandoHistorial) {
+                                    return <div className="rd-sin-datos"><i className="bi bi-inbox" /> Sin registros en el periodo seleccionado</div>;
+                                }
+
+                                return Object.entries(zonaData).map(([zona, usuarios]) => (
                                     <div key={zona} className="rd-hist-zona">
                                         <div className="rd-hist-zona-titulo">
                                             <i className="bi bi-geo-alt-fill" /> {zona}
                                             <span className="rd-hist-zona-count">
-                                                {Object.values(usuarios).reduce((s, v) => s + v.length, 0)} registros
+                                                {Object.values(usuarios).reduce((s, v) => s + v.segs.length, 0)} seguimientos
                                             </span>
                                         </div>
-                                        {Object.entries(usuarios).map(([nombreUsuario, seguimientos]) => {
+                                        {Object.entries(usuarios).map(([nombreUsuario, { segs, manuales }]) => {
                                             const initials = nombreUsuario.split(' ').slice(0,2).map(p => p[0]).join('').toUpperCase();
                                             return (
                                             <div key={nombreUsuario} className="rd-hist-usuario">
@@ -471,10 +627,11 @@ export default function ReporteDiario() {
                                                         <div className="rd-hist-usuario-nombre">{nombreUsuario}</div>
                                                         <div className="rd-hist-usuario-meta">{zona}</div>
                                                     </div>
-                                                    <span className="rd-hist-usuario-count">{seguimientos.length} seguimiento{seguimientos.length !== 1 ? 's' : ''}</span>
+                                                    <span className="rd-hist-usuario-count">{segs.length} seguimiento{segs.length !== 1 ? 's' : ''}</span>
                                                 </div>
+                                                {segs.length > 0 && (
                                                 <div className="rd-hist-segs">
-                                                    {(expandidos[`${zona}-${nombreUsuario}`] ? seguimientos : seguimientos.slice(0, LIMITE_SEGS)).map(seg => (
+                                                    {(expandidos[`${zona}-${nombreUsuario}`] ? segs : segs.slice(0, LIMITE_SEGS)).map(seg => (
                                                         <div key={seg.id} className="rd-hist-seg-item">
                                                             <span className="rd-hist-seg-dot" />
                                                             <div className="rd-hist-seg-body">
@@ -498,24 +655,42 @@ export default function ReporteDiario() {
                                                             </div>
                                                         </div>
                                                     ))}
-                                                    {seguimientos.length > LIMITE_SEGS && (
+                                                    {segs.length > LIMITE_SEGS && (
                                                         <button
                                                             className="rd-hist-ver-mas"
                                                             onClick={() => toggleExpandido(`${zona}-${nombreUsuario}`)}
                                                         >
                                                             {expandidos[`${zona}-${nombreUsuario}`]
                                                                 ? <><i className="bi bi-chevron-up" /> Ver menos</>
-                                                                : <><i className="bi bi-chevron-down" /> Ver {seguimientos.length - LIMITE_SEGS} más</>
+                                                                : <><i className="bi bi-chevron-down" /> Ver {segs.length - LIMITE_SEGS} más</>
                                                             }
                                                         </button>
                                                     )}
                                                 </div>
+                                                )}
+                                                {manuales.length > 0 && (
+                                                    <div className="rd-hist-manual-wrap">
+                                                        <div className="rd-hist-manual-titulo"><i className="bi bi-pencil-square" /> Registros manuales</div>
+                                                        {manuales.map((e, i) => (
+                                                            <div key={i} className="rd-hist-seg-item">
+                                                                <span className="rd-hist-seg-dot rd-hist-dot-manual" />
+                                                                <div className="rd-hist-seg-body">
+                                                                    <div className="rd-hist-seg-tipo">{e.label}</div>
+                                                                    <div className="rd-hist-seg-info">
+                                                                        <span className="rd-hist-seg-cantidad"><i className="bi bi-hash" /> {e.valor}</span>
+                                                                        <span className="rd-hist-seg-fecha"><i className="bi bi-calendar3" /> {e.fecha}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
                                             );
                                         })}
                                     </div>
-                                ))
-                            )}
+                                ));
+                            })()}
                         </div>
                         </div>
                     )}
@@ -525,11 +700,13 @@ export default function ReporteDiario() {
                     {/* Chips resumen global */}
                     {(() => {
                         const todasZonas = [...ZONAS, ...(consolidado['SIN_ZONA'] ? ['SIN_ZONA'] : [])];
-                        const suma = {};
+                        const sumaAuto = {};
+                        const sumaManual = {};
                         TODOS_CAMPOS.forEach(c => {
-                            suma[c.key] = todasZonas.reduce((s, z) => s + (consolidado[z]?.[c.key] || 0), 0);
+                            sumaAuto[c.key]   = todasZonas.reduce((s, z) => s + (consolidado[z]?.[c.key] || 0), 0);
+                            sumaManual[c.key] = todasZonas.reduce((s, z) => s + (consolidadoRD[z]?.[c.key] || 0), 0);
                         });
-                        return resumenEvalChips(suma);
+                        return resumenEvalChips(sumaAuto, sumaManual);
                     })()}
 
                     <div className="rd-tabla-wrap">
@@ -545,45 +722,53 @@ export default function ReporteDiario() {
                             <tbody>
                                 {false ? null : (
                                     <>
-                                        {[
-                                            { titulo: 'Supervisión',           campos: CAMPOS_SUPERVISION, cls: 'rd-sec-super' },
-                                            { titulo: 'Evaluación de Riesgos', campos: CAMPOS_EVALUACION,  cls: 'rd-sec-eval'  },
-                                        ].map(({ titulo, campos, cls }) => {
-                                            // Incluir SIN_ZONA en el conteo total
+                                        {(() => {
                                             const todasZonas = [...ZONAS, ...(consolidado['SIN_ZONA'] ? ['SIN_ZONA'] : [])];
-                                            const conValor = campos.filter(c => todasZonas.reduce((s, z) => s + (consolidado[z]?.[c.key] || 0), 0) > 0);
-                                            const sinValor = campos.filter(c => todasZonas.reduce((s, z) => s + (consolidado[z]?.[c.key] || 0), 0) === 0);
-                                            return (
-                                                <React.Fragment key={titulo}>
-                                                    <tr className={`rd-seccion-row ${cls}`}><td colSpan={6}>{titulo}</td></tr>
-                                                    {[...conValor, ...sinValor].map(c => {
-                                                        const total = todasZonas.reduce((s, z) => s + (consolidado[z]?.[c.key] || 0), 0);
-                                                        return (
-                                                            <tr key={c.key} className={total === 0 ? 'rd-fila-cero' : ''}>
-                                                                <td className="rd-td-actividad">{c.label}</td>
-                                                                {ZONAS.map(z => <td key={z} className="rd-td-num">{consolidado[z]?.[c.key] ?? 0}</td>)}
-                                                                {consolidado['SIN_ZONA'] && <td className="rd-td-num" style={{ color: '#9ca3af' }}>{consolidado['SIN_ZONA']?.[c.key] ?? 0}</td>}
-                                                                <td className="rd-td-total">{total}</td>
-                                                            </tr>
-                                                        );
-                                                    })}
-                                                </React.Fragment>
-                                            );
-                                        })}
+                                            // Obtiene el valor de un campo en una zona (manual → consolidadoRD, auto → consolidado)
+                                            const getVal = (c, z) => c.manual
+                                                ? (consolidadoRD[z]?.[c.key] ?? 0)
+                                                : (consolidado[z]?.[c.key] ?? 0);
+                                            const getTotal = (c) => todasZonas.reduce((s, z) => s + getVal(c, z), 0);
+                                            const colSpan = 1 + ZONAS.length + (consolidado['SIN_ZONA'] ? 1 : 0) + 1;
+                                            return [
+                                                { titulo: 'Supervisión',           campos: CAMPOS_SUPERVISION,    cls: 'rd-sec-super' },
+                                                { titulo: 'Evaluación de Riesgos', campos: CAMPOS_EVALUACION,    cls: 'rd-sec-eval'  },
+                                                { titulo: 'Correspondencia',       campos: CAMPOS_CORRESPONDENCIA, cls: 'rd-sec-corr' },
+                                            ].map(({ titulo, campos, cls }) => {
+                                                const conValor = campos.filter(c => getTotal(c) > 0);
+                                                const sinValor = campos.filter(c => getTotal(c) === 0);
+                                                return (
+                                                    <React.Fragment key={titulo}>
+                                                        <tr className={`rd-seccion-row ${cls}`}><td colSpan={colSpan}>{titulo}</td></tr>
+                                                        {[...conValor, ...sinValor].map(c => {
+                                                            const total = getTotal(c);
+                                                            return (
+                                                                <tr key={c.key} className={total === 0 ? 'rd-fila-cero' : ''}>
+                                                                    <td className="rd-td-actividad">{c.label}</td>
+                                                                    {ZONAS.map(z => <td key={z} className="rd-td-num">{getVal(c, z)}</td>)}
+                                                                    {consolidado['SIN_ZONA'] && <td className="rd-td-num" style={{ color: '#9ca3af' }}>{getVal(c, 'SIN_ZONA')}</td>}
+                                                                    <td className="rd-td-total">{total}</td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </React.Fragment>
+                                                );
+                                            });
+                                        })()}
                                         <tr className="rd-fila-gran-total">
                                             <td>TOTAL GENERAL</td>
                                             {ZONAS.map(z => (
                                                 <td key={z} className="rd-td-total">
-                                                    {TODOS_CAMPOS.reduce((s, c) => s + (consolidado[z]?.[c.key] || 0), 0)}
+                                                    {TODOS_CAMPOS.reduce((s, c) => s + (c.manual ? (consolidadoRD[z]?.[c.key] || 0) : (consolidado[z]?.[c.key] || 0)), 0)}
                                                 </td>
                                             ))}
                                             {consolidado['SIN_ZONA'] && (
                                                 <td className="rd-td-total" style={{ color: '#9ca3af' }}>
-                                                    {TODOS_CAMPOS.reduce((s, c) => s + (consolidado['SIN_ZONA']?.[c.key] || 0), 0)}
+                                                    {TODOS_CAMPOS.reduce((s, c) => s + (c.manual ? (consolidadoRD['SIN_ZONA']?.[c.key] || 0) : (consolidado['SIN_ZONA']?.[c.key] || 0)), 0)}
                                                 </td>
                                             )}
                                             <td className="rd-td-total">
-                                                {TODOS_CAMPOS.reduce((a, c) => a + [...ZONAS, ...(consolidado['SIN_ZONA'] ? ['SIN_ZONA'] : [])].reduce((s, z) => s + (consolidado[z]?.[c.key] || 0), 0), 0)}
+                                                {TODOS_CAMPOS.reduce((a, c) => a + [...ZONAS, ...(consolidado['SIN_ZONA'] ? ['SIN_ZONA'] : [])].reduce((s, z) => s + (c.manual ? (consolidadoRD[z]?.[c.key] || 0) : (consolidado[z]?.[c.key] || 0)), 0), 0)}
                                             </td>
                                         </tr>
                                     </>

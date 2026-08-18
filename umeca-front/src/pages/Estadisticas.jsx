@@ -5,6 +5,7 @@ import {
     Title, Tooltip, Legend, LineElement, PointElement, Filler,
 } from 'chart.js';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { getEstadisticas, exportarEstadisticasExcel } from '../api/estadisticasApi';
 import { getConsultas } from '../api/consultasApi';
 import { getEstadisticasCorrespondencia } from '../api/correspondenciaApi';
@@ -13,7 +14,8 @@ import './Estadisticas.css';
 
 ChartJS.register(
     CategoryScale, LinearScale, BarElement, ArcElement,
-    Title, Tooltip, Legend, LineElement, PointElement, Filler
+    Title, Tooltip, Legend, LineElement, PointElement, Filler,
+    ChartDataLabels
 );
 
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -52,6 +54,7 @@ const barOpts = () => ({
         legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } },
         title:  { display: false },
         tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}` } },
+        datalabels: { display: false },
     },
     scales: {
         x: { grid: { display: false }, ticks: { font: { size: 10 } } },
@@ -68,6 +71,7 @@ const barHorizOpts = () => ({
         legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } },
         title:  { display: false },
         tooltip: { mode: 'y', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.x}` } },
+        datalabels: { display: false },
     },
     scales: {
         x: { beginAtZero: true, ticks: { font: { size: 10 }, stepSize: 1 } },
@@ -81,6 +85,7 @@ const doughnutOpts = {
     cutout: '62%',
     plugins: {
         legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } },
+        datalabels: { display: false },
     },
     elements: {
         arc: { borderWidth: 0, hoverOffset: 8 },
@@ -89,6 +94,39 @@ const doughnutOpts = {
 
 const dDataset = (data, backgroundColor) => ({
     data, backgroundColor, borderWidth: 0, spacing: 2, borderRadius: 4,
+});
+
+// Opciones para barras verticales categóricas con etiquetas encima
+const barCatOpts = () => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    barPercentage: 0.42,
+    categoryPercentage: 0.65,
+    layout: { padding: { top: 28 } },
+    plugins: {
+        legend: { display: false },
+        tooltip: { enabled: false },
+        datalabels: {
+            anchor: 'end',
+            align: 'end',
+            offset: -2,
+            font: { size: 13, weight: 'bold', family: "'Segoe UI', sans-serif" },
+            color: '#374151',
+            formatter: v => (v == null || v === 0) ? '' : v,
+        },
+    },
+    scales: {
+        x: {
+            grid: { display: false },
+            border: { display: false },
+            ticks: { font: { size: 11, weight: '500' }, color: '#6b7280', maxRotation: 15, minRotation: 0 },
+        },
+        y: {
+            display: false,
+            beginAtZero: true,
+            grace: '20%',
+        },
+    },
 });
 
 // ── Tarjeta de resumen ──
@@ -149,6 +187,7 @@ const Estadisticas = () => {
     const [consultas,  setConsultas]  = useState([]);
     const [corrStats,  setCorrStats]  = useState(null);
     const [segConsolidado, setSegConsolidado] = useState({});
+    const [zonaFiltro, setZonaFiltro]  = useState('TODAS'); // 'TODAS' | 'XOCHITEPEC' | 'CUAUTLA' | 'JOJUTLA'
 
     // ── Calcula desde/hasta según el modo activo ──────────────────────────────
     const { desde, hasta } = useMemo(() => {
@@ -167,7 +206,7 @@ const Estadisticas = () => {
     const handleExportar = async () => {
         setExportando(true);
         try {
-            const res = await exportarEstadisticasExcel(desde, hasta);
+            const res = await exportarEstadisticasExcel(desde, hasta, zonaFiltro);
             const url = window.URL.createObjectURL(new Blob([res.data]));
             const a = document.createElement('a');
             a.href = url;
@@ -185,7 +224,7 @@ const Estadisticas = () => {
     useEffect(() => {
         setCargando(true);
         Promise.all([
-            getEstadisticas(desde, hasta),
+            getEstadisticas(desde, hasta, zonaFiltro),
             getReporteConsolidado(desde, hasta),
         ])
             .then(([rEst, rSeg]) => {
@@ -194,7 +233,7 @@ const Estadisticas = () => {
             })
             .catch(console.error)
             .finally(() => setCargando(false));
-    }, [desde, hasta]);
+    }, [desde, hasta, zonaFiltro]);
 
     useEffect(() => {
         getConsultas()
@@ -297,6 +336,18 @@ const Estadisticas = () => {
 
                     <div className="est-filtros-sep" />
 
+                    <div className="est-filtro-grupo">
+                        <label className="est-filtro-label"><i className="bi bi-geo-alt-fill" /> Zona</label>
+                        <select className="est-mes-sel" value={zonaFiltro} onChange={e => setZonaFiltro(e.target.value)}>
+                            <option value="TODAS">Todas</option>
+                            <option value="XOCHITEPEC">Xochitepec</option>
+                            <option value="CUAUTLA">Cuautla</option>
+                            <option value="JOJUTLA">Jojutla</option>
+                        </select>
+                    </div>
+
+                    <div className="est-filtros-sep" />
+
                     {modoFiltro === 'anio' ? (
                         <div className="est-filtros-inputs">
                             <div className="est-filtro-grupo">
@@ -357,54 +408,30 @@ const Estadisticas = () => {
                 {/* Medidas por tipo  — azul oscuro / azul claro */}
                 <GraficaCard id="chart-medidas-tipo" titulo="Medidas y S.C.P." subtitulo={`Distribución por tipo · ${subtituloFiltro}`}>
                     <div className="est-dona-wrap">
-                        <Doughnut options={doughnutOpts} data={{
+                        <Bar options={barCatOpts()} data={{
                             labels: ['Medida Cautelar', 'Susp. Condicional'],
-                            datasets: [dDataset(
-                                [datos.medidasPorTipo?.MEDIDA_CAUTELAR, datos.medidasPorTipo?.SUSPENSION_CONDICIONAL],
-                                [COLORES.azul, COLORES.azulClaro]
-                            )],
+                            datasets: [{ data: [datos.medidasPorTipo?.MEDIDA_CAUTELAR, datos.medidasPorTipo?.SUSPENSION_CONDICIONAL], backgroundColor: [COLORES.azul, COLORES.azulClaro], borderRadius: 8, borderWidth: 0 }],
                         }} />
-                    </div>
-                    <div className="est-dona-stats">
-                        <span style={{ color: COLORES.azul }}><strong>{datos.medidasPorTipo?.MEDIDA_CAUTELAR}</strong> M.C.</span>
-                        <span style={{ color: COLORES.azulClaro }}><strong>{datos.medidasPorTipo?.SUSPENSION_CONDICIONAL}</strong> S.C.P.</span>
                     </div>
                 </GraficaCard>
 
                 {/* 2. Estado de medidas — semáforo: verde · ámbar · gris · azulClaro · rojo */}
                 <GraficaCard id="chart-medidas-estado" titulo="Estado de Medidas" subtitulo={`Medidas en curso · ${subtituloFiltro}`}>
                     <div className="est-dona-wrap">
-                        <Doughnut options={doughnutOpts} data={{
+                        <Bar options={barCatOpts()} data={{
                             labels: ['Activo', 'Suspendido', 'Finalizado'],
-                            datasets: [dDataset(
-                                [datos.medidasPorEstado?.ACTIVO, datos.medidasPorEstado?.SUSPENDIDO, datos.medidasPorEstado?.FINALIZADO],
-                                [COLORES.verdeClaro, COLORES.amarillo, COLORES.gris]
-                            )],
+                            datasets: [{ data: [datos.medidasPorEstado?.ACTIVO, datos.medidasPorEstado?.SUSPENDIDO, datos.medidasPorEstado?.FINALIZADO], backgroundColor: [COLORES.verdeClaro, COLORES.amarillo, COLORES.gris], borderRadius: 8, borderWidth: 0 }],
                         }} />
-                    </div>
-                    <div className="est-dona-stats">
-                        <span style={{ color: COLORES.verdeClaro }}><strong>{datos.medidasPorEstado?.ACTIVO}</strong> Activo</span>
-                        <span style={{ color: COLORES.amarillo }}><strong>{datos.medidasPorEstado?.SUSPENDIDO}</strong> Susp.</span>
-                        <span style={{ color: COLORES.gris }}><strong>{datos.medidasPorEstado?.FINALIZADO}</strong> Final.</span>
                     </div>
                 </GraficaCard>
 
                 {/* 3. Resoluciones — azulClaro (MC→SCP) · naranja (SCP→MC) · verde oscuro (levantados) · rojo (revocados) */}
                 <GraficaCard id="chart-resoluciones" titulo="Resoluciones de Medidas" subtitulo={`MC→SCP · SCP→MC · Levantamientos · Revocados · ${subtituloFiltro}`}>
                     <div className="est-dona-wrap">
-                        <Doughnut options={doughnutOpts} data={{
+                        <Bar options={barCatOpts()} data={{
                             labels: ['MC → SCP', 'SCP → MC', 'Levantados', 'Revocados'],
-                            datasets: [dDataset(
-                                [datos.cambiadoAScp, datos.cambiadoAMc, datos.levantamientos, datos.revocados],
-                                [COLORES.azulClaro, '#f97316', COLORES.verde, COLORES.rojo]
-                            )],
+                            datasets: [{ data: [datos.cambiadoAScp, datos.cambiadoAMc, datos.levantamientos, datos.revocados], backgroundColor: [COLORES.azulClaro, '#f97316', COLORES.verde, COLORES.rojo], borderRadius: 8, borderWidth: 0 }],
                         }} />
-                    </div>
-                    <div className="est-dona-stats">
-                        <span style={{ color: COLORES.azulClaro }}><strong>{datos.cambiadoAScp ?? 0}</strong> MC→SCP</span>
-                        <span style={{ color: '#f97316' }}><strong>{datos.cambiadoAMc ?? 0}</strong> SCP→MC</span>
-                        <span style={{ color: COLORES.verde }}><strong>{datos.levantamientos ?? 0}</strong> Levantados</span>
-                        <span style={{ color: COLORES.rojo }}><strong>{datos.revocados ?? 0}</strong> Revocados</span>
                     </div>
                 </GraficaCard>
 
@@ -413,52 +440,30 @@ const Estadisticas = () => {
                 {/* Cumplimiento MC — verde (cumpliendo) · rojo (incumpliendo) */}
                 <GraficaCard id="chart-cumplimiento-mc" titulo="Cumplimiento M.C." subtitulo={`Medidas Cautelares · ${subtituloFiltro}`}>
                     <div className="est-dona-wrap">
-                        <Doughnut options={doughnutOpts} data={{
+                        <Bar options={barCatOpts()} data={{
                             labels: ['Cumpliendo', 'Incumpliendo'],
-                            datasets: [dDataset(
-                                [datos.cumplimientoMC?.CUMPLIENDO, datos.cumplimientoMC?.INCUMPLIENDO],
-                                [COLORES.verde, COLORES.rojo]
-                            )],
+                            datasets: [{ data: [datos.cumplimientoMC?.CUMPLIENDO, datos.cumplimientoMC?.INCUMPLIENDO], backgroundColor: [COLORES.verde, COLORES.rojo], borderRadius: 8, borderWidth: 0 }],
                         }} />
-                    </div>
-                    <div className="est-dona-stats">
-                        <span style={{ color: COLORES.verde }}><strong>{datos.cumplimientoMC?.CUMPLIENDO}</strong> Cumpliendo</span>
-                        <span style={{ color: COLORES.rojo }}><strong>{datos.cumplimientoMC?.INCUMPLIENDO}</strong> Incumpliendo</span>
                     </div>
                 </GraficaCard>
 
-                {/* 5. Cumplimiento SCP — verde (cumpliendo) · rojo (incumpliendo) — misma escala que MC */}
+                {/* 5. Cumplimiento SCP — verde (cumpliendo) · rojo (incumpliendo) */}
                 <GraficaCard id="chart-cumplimiento-scp" titulo="Cumplimiento S.C.P." subtitulo={`Suspensión Condicional · ${subtituloFiltro}`}>
                     <div className="est-dona-wrap">
-                        <Doughnut options={doughnutOpts} data={{
+                        <Bar options={barCatOpts()} data={{
                             labels: ['Cumpliendo', 'Incumpliendo'],
-                            datasets: [dDataset(
-                                [datos.cumplimientoSCP?.CUMPLIENDO, datos.cumplimientoSCP?.INCUMPLIENDO],
-                                [COLORES.verde, COLORES.rojo]
-                            )],
+                            datasets: [{ data: [datos.cumplimientoSCP?.CUMPLIENDO, datos.cumplimientoSCP?.INCUMPLIENDO], backgroundColor: [COLORES.verde, COLORES.rojo], borderRadius: 8, borderWidth: 0 }],
                         }} />
-                    </div>
-                    <div className="est-dona-stats">
-                        <span style={{ color: COLORES.verde }}><strong>{datos.cumplimientoSCP?.CUMPLIENDO}</strong> Cumpliendo</span>
-                        <span style={{ color: COLORES.rojo }}><strong>{datos.cumplimientoSCP?.INCUMPLIENDO}</strong> Incumpliendo</span>
                     </div>
                 </GraficaCard>
 
-                {/* 6. Entrevistas por tipo — azul · azulClaro · gris (misma paleta medidas) */}
+                {/* 6. Entrevistas por tipo — azul · azulClaro · gris */}
                 <GraficaCard id="chart-entrevistas" titulo="Entrevistas de Encuadre" subtitulo={`Tipo de seguimiento · ${subtituloFiltro}`}>
                     <div className="est-dona-wrap">
-                        <Doughnut options={doughnutOpts} data={{
-                            labels: ['Medida Cautelar','S.C.P.','Sin asignar'],
-                            datasets: [dDataset(
-                                [datos.entrevistasPorTipo?.MC, datos.entrevistasPorTipo?.SCP, datos.entrevistasPorTipo?.SIN_ASIGNAR],
-                                [COLORES.azul, COLORES.azulClaro, COLORES.gris]
-                            )],
+                        <Bar options={barCatOpts()} data={{
+                            labels: ['Medida Cautelar', 'S.C.P.', 'Sin asignar'],
+                            datasets: [{ data: [datos.entrevistasPorTipo?.MC, datos.entrevistasPorTipo?.SCP, datos.entrevistasPorTipo?.SIN_ASIGNAR], backgroundColor: [COLORES.azul, COLORES.azulClaro, COLORES.gris], borderRadius: 8, borderWidth: 0 }],
                         }} />
-                    </div>
-                    <div className="est-dona-stats">
-                        <span style={{ color: COLORES.azul }}><strong>{datos.entrevistasPorTipo?.MC}</strong> MC</span>
-                        <span style={{ color: COLORES.azulClaro }}><strong>{datos.entrevistasPorTipo?.SCP}</strong> SCP</span>
-                        <span style={{ color: COLORES.gris }}><strong>{datos.entrevistasPorTipo?.SIN_ASIGNAR}</strong> Sin asig.</span>
                     </div>
                 </GraficaCard>
 
@@ -467,36 +472,20 @@ const Estadisticas = () => {
                 {/* Tipo supervisión — morado (llamadas) · naranja (visitas) */}
                 <GraficaCard id="chart-sup-tipo" titulo="Tipo de Supervisión" subtitulo={`Llamadas vs Visitas · ${subtituloFiltro}`}>
                     <div className="est-dona-wrap">
-                        <Doughnut options={doughnutOpts} data={{
+                        <Bar options={barCatOpts()} data={{
                             labels: ['Llamadas', 'Visitas domiciliarias'],
-                            datasets: [dDataset(
-                                [datos.supervisionesPorTipo?.LLAMADA, datos.supervisionesPorTipo?.VISITA_DOMICILIARIA],
-                                [COLORES.morado, COLORES.naranja]
-                            )],
+                            datasets: [{ data: [datos.supervisionesPorTipo?.LLAMADA, datos.supervisionesPorTipo?.VISITA_DOMICILIARIA], backgroundColor: [COLORES.morado, COLORES.naranja], borderRadius: 8, borderWidth: 0 }],
                         }} />
-                    </div>
-                    <div className="est-dona-stats">
-                        <span style={{ color: COLORES.morado }}><strong>{datos.supervisionesPorTipo?.LLAMADA}</strong> Llamadas</span>
-                        <span style={{ color: COLORES.naranja }}><strong>{datos.supervisionesPorTipo?.VISITA_DOMICILIARIA}</strong> Visitas</span>
                     </div>
                 </GraficaCard>
 
                 {/* 8. Estado supervisiones — ámbar · verde · gris · rojo */}
                 <GraficaCard id="chart-sup-estado" titulo="Estado de Supervisiones" subtitulo={`Distribución por estado · ${subtituloFiltro}`}>
                     <div className="est-dona-wrap">
-                        <Doughnut options={doughnutOpts} data={{
-                            labels: ['Pendiente','Realizada','No contactado','Cancelada'],
-                            datasets: [dDataset(
-                                [datos.supervisionesPorEstado?.PENDIENTE, datos.supervisionesPorEstado?.REALIZADA, datos.supervisionesPorEstado?.NO_CONTACTADO, datos.supervisionesPorEstado?.CANCELADA],
-                                [COLORES.amarillo, COLORES.verdeClaro, COLORES.gris, COLORES.rojo]
-                            )],
+                        <Bar options={barCatOpts()} data={{
+                            labels: ['Pendiente', 'Realizada', 'No contactado', 'Cancelada'],
+                            datasets: [{ data: [datos.supervisionesPorEstado?.PENDIENTE, datos.supervisionesPorEstado?.REALIZADA, datos.supervisionesPorEstado?.NO_CONTACTADO, datos.supervisionesPorEstado?.CANCELADA], backgroundColor: [COLORES.amarillo, COLORES.verdeClaro, COLORES.gris, COLORES.rojo], borderRadius: 8, borderWidth: 0 }],
                         }} />
-                    </div>
-                    <div className="est-dona-stats">
-                        <span style={{ color: COLORES.amarillo }}><strong>{datos.supervisionesPorEstado?.PENDIENTE}</strong> Pend.</span>
-                        <span style={{ color: COLORES.verdeClaro }}><strong>{datos.supervisionesPorEstado?.REALIZADA}</strong> Real.</span>
-                        <span style={{ color: COLORES.gris }}><strong>{datos.supervisionesPorEstado?.NO_CONTACTADO}</strong> N/C</span>
-                        <span style={{ color: COLORES.rojo }}><strong>{datos.supervisionesPorEstado?.CANCELADA}</strong> Canc.</span>
                     </div>
                 </GraficaCard>
 
@@ -505,36 +494,20 @@ const Estadisticas = () => {
                 {/* Género MC — azul · naranja · morado · gris */}
                 <GraficaCard id="chart-genero-mc" titulo="Género — M.C." subtitulo={`Medidas Cautelares por género · ${subtituloFiltro}`}>
                     <div className="est-dona-wrap">
-                        <Doughnut options={doughnutOpts} data={{
+                        <Bar options={barCatOpts()} data={{
                             labels: ['Masculino', 'Femenino', 'No binario', 'Sin dato'],
-                            datasets: [dDataset(
-                                [datos.generoPorMC?.Masculino, datos.generoPorMC?.Femenino, datos.generoPorMC?.['No binario'], datos.generoPorMC?.['Sin dato']],
-                                [COLORES.azul, COLORES.naranja, COLORES.morado, COLORES.gris]
-                            )],
+                            datasets: [{ data: [datos.generoPorMC?.Masculino, datos.generoPorMC?.Femenino, datos.generoPorMC?.['No binario'], datos.generoPorMC?.['Sin dato']], backgroundColor: [COLORES.azul, COLORES.naranja, COLORES.morado, COLORES.gris], borderRadius: 8, borderWidth: 0 }],
                         }} />
-                    </div>
-                    <div className="est-dona-stats">
-                        <span style={{ color: COLORES.azul }}><strong>{datos.generoPorMC?.Masculino ?? 0}</strong> Masc.</span>
-                        <span style={{ color: COLORES.naranja }}><strong>{datos.generoPorMC?.Femenino ?? 0}</strong> Fem.</span>
-                        <span style={{ color: COLORES.morado }}><strong>{datos.generoPorMC?.['No binario'] ?? 0}</strong> N.B.</span>
                     </div>
                 </GraficaCard>
 
                 {/* 10. Género SCP — misma paleta que MC */}
                 <GraficaCard id="chart-genero-scp" titulo="Género — S.C.P." subtitulo={`Suspensión Condicional por género · ${subtituloFiltro}`}>
                     <div className="est-dona-wrap">
-                        <Doughnut options={doughnutOpts} data={{
+                        <Bar options={barCatOpts()} data={{
                             labels: ['Masculino', 'Femenino', 'No binario', 'Sin dato'],
-                            datasets: [dDataset(
-                                [datos.generoPorSCP?.Masculino, datos.generoPorSCP?.Femenino, datos.generoPorSCP?.['No binario'], datos.generoPorSCP?.['Sin dato']],
-                                [COLORES.azul, COLORES.naranja, COLORES.morado, COLORES.gris]
-                            )],
+                            datasets: [{ data: [datos.generoPorSCP?.Masculino, datos.generoPorSCP?.Femenino, datos.generoPorSCP?.['No binario'], datos.generoPorSCP?.['Sin dato']], backgroundColor: [COLORES.azul, COLORES.naranja, COLORES.morado, COLORES.gris], borderRadius: 8, borderWidth: 0 }],
                         }} />
-                    </div>
-                    <div className="est-dona-stats">
-                        <span style={{ color: COLORES.azul }}><strong>{datos.generoPorSCP?.Masculino ?? 0}</strong> Masc.</span>
-                        <span style={{ color: COLORES.naranja }}><strong>{datos.generoPorSCP?.Femenino ?? 0}</strong> Fem.</span>
-                        <span style={{ color: COLORES.morado }}><strong>{datos.generoPorSCP?.['No binario'] ?? 0}</strong> N.B.</span>
                     </div>
                 </GraficaCard>
 
@@ -543,17 +516,10 @@ const Estadisticas = () => {
                 {/* Consultas Positivas vs Negativas */}
                 <GraficaCard id="chart-consultas" titulo="Consultas de Antecedentes" subtitulo={`Positivas vs Negativas · ${subtituloFiltro}`}>
                     <div className="est-dona-wrap">
-                        <Doughnut options={doughnutOpts} data={{
+                        <Bar options={barCatOpts()} data={{
                             labels: ['Positivas', 'Negativas'],
-                            datasets: [dDataset(
-                                [consultasPos, consultasNeg],
-                                [COLORES.verde, COLORES.rojo]
-                            )],
+                            datasets: [{ data: [consultasPos, consultasNeg], backgroundColor: [COLORES.verde, COLORES.rojo], borderRadius: 8, borderWidth: 0 }],
                         }} />
-                    </div>
-                    <div className="est-dona-stats">
-                        <span style={{ color: COLORES.verde }}><strong>{consultasPos}</strong> Positivas</span>
-                        <span style={{ color: COLORES.rojo }}><strong>{consultasNeg}</strong> Negativas</span>
                     </div>
                 </GraficaCard>
 
@@ -561,37 +527,76 @@ const Estadisticas = () => {
 
                 {/* Seguimientos por tipo de actividad agrupados por zona */}
                 {(() => {
-                    const ZONAS       = ['XOCHITEPEC', 'CUAUTLA', 'JOJUTLA'];
+                    const ZONAS        = ['XOCHITEPEC', 'CUAUTLA', 'JOJUTLA'];
                     const ZONA_COLORES = [COLORES.verde, COLORES.azulClaro, COLORES.naranja];
+
+                    // Zonas activas según el filtro
+                    const zonasFiltradas = zonaFiltro === 'TODAS' ? ZONAS : [zonaFiltro];
+                    const coloresFiltrados = zonasFiltradas.map(z => ZONA_COLORES[ZONAS.indexOf(z)]);
 
                     const tiposSuper = TIPOS_ACTIVIDAD.filter(t => t.grupo === 'SUPERVISIÓN');
                     const tiposEval  = TIPOS_ACTIVIDAD.filter(t => t.grupo === 'EVALUACIÓN');
 
-                    const totSuper = ZONAS.map(z =>
+                    const totSuper = zonasFiltradas.map(z =>
                         tiposSuper.reduce((s, t) => s + Number(segConsolidado[z]?.[t.value] ?? 0), 0)
                     );
-                    const totEval = ZONAS.map(z =>
+                    const totEval = zonasFiltradas.map(z =>
                         tiposEval.reduce((s, t) => s + Number(segConsolidado[z]?.[t.value] ?? 0), 0)
                     );
-
-                    const donaSegOpts = {
-                        ...doughnutOpts,
-                        plugins: {
-                            ...doughnutOpts.plugins,
-                            legend: { display: false },
-                            tooltip: { callbacks: { label: ctx => `  ${ctx.label}: ${ctx.parsed}` } },
-                        },
-                    };
-
-                    const buildDona = (totales) => ({
-                        labels: ZONAS,
-                        datasets: [{ data: totales, backgroundColor: ZONA_COLORES.map(c => c + 'dd'), borderWidth: 0, spacing: 3, borderRadius: 5, hoverOffset: 10 }],
-                    });
 
                     const totalPorZona = ZONAS.map(z =>
                         TIPOS_ACTIVIDAD.reduce((s, t) => s + (segConsolidado[z]?.[t.value] ?? 0), 0)
                     );
                     const totalSeg = totalPorZona.reduce((a, b) => a + b, 0);
+
+                    const buildSegChart = (tipos, color) => {
+                        const tiposFiltrados = tipos.filter(t =>
+                            ZONAS.reduce((s, z) => s + Number(segConsolidado[z]?.[t.value] ?? 0), 0) > 0
+                        );
+                        if (tiposFiltrados.length === 0) return null;
+                        const data = zonasFiltradas.length === 1 ? {
+                            labels: tiposFiltrados.map(t => t.label),
+                            datasets: [{
+                                label: zonasFiltradas[0],
+                                data: tiposFiltrados.map(t => Number(segConsolidado[zonasFiltradas[0]]?.[t.value] ?? 0)),
+                                backgroundColor: coloresFiltrados[0] + 'cc',
+                                borderRadius: 8, borderWidth: 0,
+                            }],
+                        } : {
+                            labels: tiposFiltrados.map(t => t.label),
+                            datasets: zonasFiltradas.map((z, zi) => ({
+                                label: z.charAt(0) + z.slice(1).toLowerCase(),
+                                data: tiposFiltrados.map(t => Number(segConsolidado[z]?.[t.value] ?? 0)),
+                                backgroundColor: coloresFiltrados[zi] + 'cc',
+                                borderRadius: 6, borderWidth: 0,
+                            })),
+                        };
+                        const opts = {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            barPercentage: 0.42,
+                            categoryPercentage: 0.65,
+                            layout: { padding: { top: 28 } },
+                            plugins: {
+                                legend: { display: zonasFiltradas.length > 1, position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
+                                tooltip: { enabled: false },
+                                datalabels: {
+                                    anchor: 'end', align: 'end', offset: -2,
+                                    font: { size: 12, weight: 'bold' },
+                                    color: '#374151',
+                                    formatter: v => (v == null || v === 0) ? '' : v,
+                                },
+                            },
+                            scales: {
+                                x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10, weight: '500' }, color: '#6b7280', maxRotation: 25, minRotation: 0 } },
+                                y: { display: false, beginAtZero: true, grace: '20%' },
+                            },
+                        };
+                        return { data, opts };
+                    };
+
+                    const superChart = buildSegChart(tiposSuper, COLORES.morado);
+                    const evalChart  = buildSegChart(tiposEval,  COLORES.verde);
 
                     return (<>
                         <div className="est-card est-card-wide">
@@ -617,51 +622,33 @@ const Estadisticas = () => {
                                 </div>
                             </div>
 
-                            <div className="est-seg-graficas">
-                                {[
-                                    { titulo: 'Supervisión', icono: 'bi bi-telephone-fill', color: COLORES.morado, totales: totSuper, tipos: tiposSuper },
-                                    { titulo: 'Evaluación',  icono: 'bi bi-clipboard2-pulse-fill', color: COLORES.verde, totales: totEval, tipos: tiposEval },
-                                ].map(({ titulo, icono, color, totales, tipos }) => {
-                                    const totalSeccion = totales.reduce((a, b) => a + b, 0);
-                                    return (
-                                        <div key={titulo} className="est-seg-grafica-col">
-                                            <div className="est-seg-grafica-titulo">
-                                                <i className={icono} style={{ color }} />
-                                                {titulo}
-                                                <span className="est-seg-grafica-total">{totalSeccion} actividades</span>
-                                            </div>
-                                            <div className="est-seg-dona-wrap">
-                                                <Doughnut options={donaSegOpts} data={buildDona(totales)} />
-                                            </div>
-                                            <div className="est-seg-zona-ley">
-                                                {ZONAS.map((z, i) => (
-                                                    <div key={z} className="est-seg-zona-item">
-                                                        <span className="est-seg-zona-dot" style={{ background: ZONA_COLORES[i] }} />
-                                                        <span className="est-seg-zona-nombre">{z}</span>
-                                                        <span className="est-seg-zona-val" style={{ color: ZONA_COLORES[i] }}>{totales[i]}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <div className="est-seg-top">
-                                                <span className="est-seg-top-titulo">Actividades registradas</span>
-                                                {tipos.map(t => {
-                                                    const tot = ZONAS.reduce((s, z) => s + Number(segConsolidado[z]?.[t.value] ?? 0), 0);
-                                                    if (tot === 0) return null;
-                                                    const pct = totalSeccion > 0 ? Math.round(tot / totalSeccion * 100) : 0;
-                                                    return (
-                                                        <div key={t.value} className="est-seg-top-row">
-                                                            <span className="est-seg-top-label">{t.label}</span>
-                                                            <div className="est-seg-top-bar-wrap">
-                                                                <div className="est-seg-top-bar" style={{ width: `${pct}%`, background: color + 'bb' }} />
-                                                            </div>
-                                                            <span className="est-seg-top-val">{tot}</span>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                            {/* Supervisión — full width */}
+                            <div className="est-seg-bloque" style={{ marginTop: 20 }}>
+                                <div className="est-seg-bloque-titulo">
+                                    <i className="bi bi-telephone-fill" style={{ color: COLORES.morado }} />
+                                    <span>Supervisión</span>
+                                    <span className="est-seg-grafica-total">{totSuper.reduce((a,b)=>a+b,0)} actividades</span>
+                                </div>
+                                {superChart
+                                    ? <div style={{ height: 240 }}><Bar data={superChart.data} options={superChart.opts} /></div>
+                                    : <p className="est-seg-vacio">Sin actividades registradas</p>
+                                }
+                            </div>
+
+                            {/* Separador */}
+                            <div style={{ margin: '28px 28px 0', borderTop: '1.5px solid #e5e7eb' }} />
+
+                            {/* Evaluación — full width */}
+                            <div className="est-seg-bloque" style={{ marginTop: 20 }}>
+                                <div className="est-seg-bloque-titulo">
+                                    <i className="bi bi-clipboard2-pulse-fill" style={{ color: COLORES.verde }} />
+                                    <span>Evaluación</span>
+                                    <span className="est-seg-grafica-total">{totEval.reduce((a,b)=>a+b,0)} actividades</span>
+                                </div>
+                                {evalChart
+                                    ? <div style={{ height: 240, paddingBottom: 16 }}><Bar data={evalChart.data} options={evalChart.opts} /></div>
+                                    : <p className="est-seg-vacio">Sin actividades registradas</p>
+                                }
                             </div>
                         </div>
                     </>);
@@ -679,56 +666,30 @@ const Estadisticas = () => {
                     {/* Por tipo — siempre 3 segmentos */}
                     <GraficaCard titulo="Oficios por tipo" subtitulo={`Distribución por tipo · ${anioFiltro}`}>
                         <div className="est-dona-wrap">
-                            <Doughnut options={doughnutOpts} data={{
+                            <Bar options={barCatOpts()} data={{
                                 labels: ['Oficio', 'Correo', 'WhatsApp'],
-                                datasets: [dDataset(
-                                    [byTipo('OFICIO'), byTipo('CORREO'), byTipo('WHATSAPP')],
-                                    [COLORES.verde, COLORES.azulClaro, COLORES.naranja]
-                                )],
+                                datasets: [{ data: [byTipo('OFICIO'), byTipo('CORREO'), byTipo('WHATSAPP')], backgroundColor: [COLORES.verde, COLORES.azulClaro, COLORES.naranja], borderRadius: 8, borderWidth: 0 }],
                             }} />
-                        </div>
-                        <div className="est-dona-stats">
-                            <span style={{ color: COLORES.verde }}><strong>{byTipo('OFICIO')}</strong> Oficio</span>
-                            <span style={{ color: COLORES.azulClaro }}><strong>{byTipo('CORREO')}</strong> Correo</span>
-                            <span style={{ color: COLORES.naranja }}><strong>{byTipo('WHATSAPP')}</strong> WhatsApp</span>
                         </div>
                     </GraficaCard>
 
                     {/* Por prioridad — siempre 3 segmentos */}
                     <GraficaCard titulo="Oficios por prioridad" subtitulo={`Distribución por prioridad · ${anioFiltro}`}>
                         <div className="est-dona-wrap">
-                            <Doughnut options={doughnutOpts} data={{
+                            <Bar options={barCatOpts()} data={{
                                 labels: ['Normal', 'Urgente', 'De Conocimiento'],
-                                datasets: [dDataset(
-                                    [byPrio('NORMAL'), byPrio('URGENTE'), byPrio('DE_CONOCIMIENTO')],
-                                    [COLORES.gris, COLORES.rojo, COLORES.azulClaro]
-                                )],
+                                datasets: [{ data: [byPrio('NORMAL'), byPrio('URGENTE'), byPrio('DE_CONOCIMIENTO')], backgroundColor: [COLORES.gris, COLORES.rojo, COLORES.azulClaro], borderRadius: 8, borderWidth: 0 }],
                             }} />
-                        </div>
-                        <div className="est-dona-stats">
-                            <span style={{ color: COLORES.gris }}><strong>{byPrio('NORMAL')}</strong> Normal</span>
-                            <span style={{ color: COLORES.rojo }}><strong>{byPrio('URGENTE')}</strong> Urgente</span>
-                            <span style={{ color: COLORES.azulClaro }}><strong>{byPrio('DE_CONOCIMIENTO')}</strong> De Conoc.</span>
                         </div>
                     </GraficaCard>
 
                     {/* Por estado — siempre 5 segmentos */}
                     <GraficaCard titulo="Oficios por estado" subtitulo={`Estado actual de todos los oficios · ${anioFiltro}`}>
                         <div className="est-dona-wrap">
-                            <Doughnut options={{ ...doughnutOpts, plugins: { ...doughnutOpts.plugins, legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 12 } } } }} data={{
+                            <Bar options={barCatOpts()} data={{
                                 labels: ['Pendiente', 'Asignado', 'Leído', 'En Espera', 'Finalizado'],
-                                datasets: [dDataset(
-                                    [byEst('PENDIENTE'), byEst('ASIGNADO'), byEst('LEIDO'), byEst('EN_ESPERA'), byEst('FINALIZADO')],
-                                    [COLORES.amarillo, COLORES.azulClaro, COLORES.verdeClaro, COLORES.naranja, COLORES.verde]
-                                )],
+                                datasets: [{ data: [byEst('PENDIENTE'), byEst('ASIGNADO'), byEst('LEIDO'), byEst('EN_ESPERA'), byEst('FINALIZADO')], backgroundColor: [COLORES.amarillo, COLORES.azulClaro, COLORES.verdeClaro, COLORES.naranja, COLORES.verde], borderRadius: 8, borderWidth: 0 }],
                             }} />
-                        </div>
-                        <div className="est-dona-stats">
-                            <span style={{ color: COLORES.amarillo }}><strong>{byEst('PENDIENTE')}</strong> Pendiente</span>
-                            <span style={{ color: COLORES.azulClaro }}><strong>{byEst('ASIGNADO')}</strong> Asignado</span>
-                            <span style={{ color: COLORES.verdeClaro }}><strong>{byEst('LEIDO')}</strong> Leído</span>
-                            <span style={{ color: COLORES.naranja }}><strong>{byEst('EN_ESPERA')}</strong> En Espera</span>
-                            <span style={{ color: COLORES.verde }}><strong>{byEst('FINALIZADO')}</strong> Finalizado</span>
                         </div>
                     </GraficaCard>
 
@@ -760,17 +721,10 @@ const Estadisticas = () => {
                 {/* Fallecidos — imputados activos vs fallecidos (totales acumulados) */}
                 <GraficaCard id="chart-fallecidos" titulo="Fallecidos" subtitulo="Imputados activos vs fallecidos · Total acumulado">
                     <div className="est-dona-wrap">
-                        <Doughnut options={doughnutOpts} data={{
+                        <Bar options={barCatOpts()} data={{
                             labels: ['Activos', 'Fallecidos'],
-                            datasets: [dDataset(
-                                [datos.totalActivos ?? 0, datos.totalFallecidos ?? 0],
-                                ['#d1d5db', '#374151']
-                            )],
+                            datasets: [{ data: [datos.totalActivos ?? 0, datos.totalFallecidos ?? 0], backgroundColor: ['#d1d5db', '#374151'], borderRadius: 8, borderWidth: 0 }],
                         }} />
-                    </div>
-                    <div className="est-dona-stats">
-                        <span style={{ color: '#6b7280' }}><strong>{datos.totalActivos ?? 0}</strong> Activos</span>
-                        <span style={{ color: '#374151' }}><strong>{datos.totalFallecidos ?? 0}</strong> Fallecidos</span>
                     </div>
                 </GraficaCard>
 

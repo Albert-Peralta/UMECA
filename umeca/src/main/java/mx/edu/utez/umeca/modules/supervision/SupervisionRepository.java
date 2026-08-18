@@ -69,9 +69,18 @@ public interface SupervisionRepository extends JpaRepository<Supervision, Long> 
     @Query("SELECT COUNT(s) FROM Supervision s WHERE s.fechaProgramada >= :inicio AND s.fechaProgramada <= :fin")
     long countByRango(@Param("inicio") LocalDate inicio, @Param("fin") LocalDate fin);
 
+    @Query("SELECT COUNT(s) FROM Supervision s WHERE s.fechaProgramada >= :inicio AND s.fechaProgramada <= :fin AND CAST(s.registradoPor.zona AS string) = :zona")
+    long countByRangoYZona(@Param("inicio") LocalDate inicio, @Param("fin") LocalDate fin, @Param("zona") String zona);
+
     @Query("SELECT COUNT(s) FROM Supervision s WHERE CAST(s.estado AS string) = :estado AND s.fechaProgramada >= :inicio AND s.fechaProgramada <= :fin")
     long countByEstadoYRango(@Param("estado") String estado, @Param("inicio") LocalDate inicio, @Param("fin") LocalDate fin);
 
+    @Query("SELECT COUNT(s) FROM Supervision s WHERE CAST(s.estado AS string) = :estado AND s.fechaProgramada >= :inicio AND s.fechaProgramada <= :fin AND CAST(s.registradoPor.zona AS string) = :zona")
+    long countByEstadoYRangoYZona(@Param("estado") String estado, @Param("inicio") LocalDate inicio, @Param("fin") LocalDate fin, @Param("zona") String zona);
+
     @Query("SELECT COUNT(s) FROM Supervision s WHERE CAST(s.tipo AS string) = :tipo AND s.fechaProgramada >= :inicio AND s.fechaProgramada <= :fin")
     long countByTipoYRango(@Param("tipo") String tipo, @Param("inicio") LocalDate inicio, @Param("fin") LocalDate fin);
+
+    @Query("SELECT COUNT(s) FROM Supervision s WHERE CAST(s.tipo AS string) = :tipo AND s.fechaProgramada >= :inicio AND s.fechaProgramada <= :fin AND CAST(s.registradoPor.zona AS string) = :zona")
+    long countByTipoYRangoYZona(@Param("tipo") String tipo, @Param("inicio") LocalDate inicio, @Param("fin") LocalDate fin, @Param("zona") String zona);
 }

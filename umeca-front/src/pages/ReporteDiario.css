@@ -215,6 +215,16 @@
     gap: 10px 16px;
 }
 
+.rd-campos-manuales-fila {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 16px;
+}
+.rd-campos-manuales-fila .rd-campo {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
 .rd-campo {
     display: flex;
     flex-direction: column;
@@ -437,6 +447,7 @@
 .rd-sec-super   td { background: #1e50a0; color: #fff; }
 .rd-sec-eval    td { background: #b45309; color: #fff; }
 .rd-sec-adic    td { background: #6b21a8; color: #fff; }
+.rd-sec-corr    td { background: #1a5c3a; color: #fff; }
 
 .rd-fila-cero td { color: #c4c9d0 !important; font-weight: 400; }
 .rd-fila-cero .rd-td-total { background: transparent; color: #d1d5db !important; }
@@ -1041,3 +1052,117 @@
 }
 .rd-oficios-guardar:active:not(:disabled) { transform: translateY(0); }
 .rd-oficios-guardar:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+
+/* ── Campo editado (sin guardar) ─────────────────────────────────────────── */
+.rd-campo-editado {
+    border-color: #f59e0b !important;
+    background: #fffbeb !important;
+}
+.rd-campo-editado label { color: #b45309; }
+
+/* ── Banner cambios sin guardar ──────────────────────────────────────────── */
+.rd-guardar-general-wrap {
+    padding: 16px 0 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+.rd-aviso-cambios {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fef3c7;
+    border: 1.5px solid #fcd34d;
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #92400e;
+    width: 100%;
+    box-sizing: border-box;
+}
+.rd-aviso-cambios i { color: #d97706; font-size: 15px; }
+
+/* ── Botón guardar general ───────────────────────────────────────────────── */
+.rd-btn-guardar-general {
+    background: #2d6a4f;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 24px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    letter-spacing: .2px;
+    box-shadow: 0 2px 8px rgba(45,106,79,.3);
+    transition: opacity .15s, transform .1s, box-shadow .15s;
+}
+.rd-btn-guardar-general:hover:not(:disabled) {
+    opacity: .9;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(45,106,79,.4);
+}
+.rd-btn-guardar-general:active:not(:disabled) { transform: translateY(0); }
+.rd-btn-guardar-general:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
+/* ── Input manual directo (sin botones +/-) ───────────────────────────────── */
+.rd-campo-input-manual {
+    border: 1.5px solid #d1d5db;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f2937;
+    text-align: center;
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+    background: #fff;
+    transition: border-color .2s, box-shadow .2s;
+}
+.rd-campo-input-manual:focus {
+    border-color: var(--rd-color, #376842);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--rd-color, #376842) 12%, transparent);
+}
+.rd-campo-input-manual:disabled { opacity: 0.5; }
+.rd-campo-input-manual::-webkit-outer-spin-button,
+.rd-campo-input-manual::-webkit-inner-spin-button { -webkit-appearance: none; }
+.rd-campo-input-manual { -moz-appearance: textfield; }
+.rd-campo-editado .rd-campo-input-manual {
+    border-color: #f59e0b;
+    background: #fffbeb;
+    color: #b45309;
+}
+
+/* ── Registros manuales en historial ─────────────────────────────────────── */
+.rd-hist-manual-wrap {
+    margin: 8px 12px 4px;
+    border-top: 1px dashed #d1d5db;
+    padding-top: 8px;
+}
+.rd-hist-manual-titulo {
+    font-size: 11px;
+    font-weight: 700;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.rd-hist-dot-manual {
+    background: #f59e0b !important;
+}
+.rd-hist-seg-cantidad {
+    font-size: 12px;
+    color: #374151;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}

@@ -48,4 +48,17 @@ public class ReporteDiarioDTO {
     private int sobreseimientos;
     private int cierreCarpetas;
     private int levantamientoMedida;
+
+    // Manuales SUPERVISIÓN
+    private int firmasRecabadasSuper;
+    private int entrevistaEncuadreSuper;
+    private int calendarioSuper;
+
+    // Manuales EVALUACIÓN
+    private int firmasRecabadasEval;
+    private int entrevistaEncuadreEval;
+    private int entrevistaEvaluacionEval;
+
+    // Manuales CORRESPONDENCIA
+    private int oficiosDiversosCorr;
 }

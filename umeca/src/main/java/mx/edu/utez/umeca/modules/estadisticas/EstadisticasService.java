@@ -42,6 +42,11 @@ public class EstadisticasService {
      */
     @Transactional(readOnly = true)
     public ApiResponse getEstadisticas(String desdeStr, String hastaStr) {
+        return getEstadisticas(desdeStr, hastaStr, null);
+    }
+
+    @Transactional(readOnly = true)
+    public ApiResponse getEstadisticas(String desdeStr, String hastaStr, String zonaStr) {
         LocalDate today = LocalDate.now();
         LocalDate desde = (desdeStr != null && !desdeStr.isBlank())
                 ? LocalDate.parse(desdeStr) : LocalDate.of(today.getYear(), 1, 1);
@@ -55,56 +60,93 @@ public class EstadisticasService {
         LocalDate     supInicio = desde;
         LocalDate     supFin    = hasta;
 
+        // zona: null o blank = sin filtro
+        final boolean filtrarZona = zonaStr != null && !zonaStr.isBlank() && !zonaStr.equals("TODAS");
+        final String  zona        = filtrarZona ? zonaStr : null;
+
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("desde", desde.toString());
         data.put("hasta", hasta.toString());
         data.put("anio",  anio);
+        if (filtrarZona) data.put("zona", zona);
 
         // ── Tarjetas resumen ──────────────────────────────────────────────────
+        // Imputados y evaluaciones: no tienen zona directa → siempre global
         data.put("totalImputados",   imputadoRepository.countByRango(fInicio, fFin));
-        // Fallecidos y activos: siempre totales acumulados
         data.put("totalFallecidos",  imputadoRepository.countFallecidos());
         data.put("totalActivos",     imputadoRepository.countActivos());
         data.put("totalTta",         medidaRepository.countTtaActivosByRango(fInicio, fFin));
-        data.put("totalEntrevistas", entrevistaRepository.countByRango(fInicio, fFin));
         data.put("totalEvaluaciones",evaluacionRepository.countByRango(fInicio, fFin));
-        data.put("totalMedidas",     medidaRepository.countByRango(fInicio, fFin));
 
-        long totalSup = supervisionRepository.countByRango(supInicio, supFin);
-        data.put("totalSupervisiones",        totalSup);
-        data.put("totalSupervisionPendiente", supervisionRepository.countByEstadoYRango("PENDIENTE", supInicio, supFin));
+        data.put("totalEntrevistas", filtrarZona
+                ? entrevistaRepository.countByRangoYZona(fInicio, fFin, zona)
+                : entrevistaRepository.countByRango(fInicio, fFin));
+        data.put("totalMedidas", filtrarZona
+                ? medidaRepository.countByRangoYZona(fInicio, fFin, zona)
+                : medidaRepository.countByRango(fInicio, fFin));
+
+        long totalSup = filtrarZona
+                ? supervisionRepository.countByRangoYZona(supInicio, supFin, zona)
+                : supervisionRepository.countByRango(supInicio, supFin);
+        data.put("totalSupervisiones", totalSup);
+        data.put("totalSupervisionPendiente", filtrarZona
+                ? supervisionRepository.countByEstadoYRangoYZona("PENDIENTE", supInicio, supFin, zona)
+                : supervisionRepository.countByEstadoYRango("PENDIENTE", supInicio, supFin));
 
         // ── Medidas por tipo, estado, cumplimiento ────────────────────────────
-        data.put("medidasPorTipo", Map.of(
+        data.put("medidasPorTipo", filtrarZona ? Map.of(
+                "MEDIDA_CAUTELAR",        medidaRepository.countByTipoYRangoYZona("MEDIDA_CAUTELAR",        fInicio, fFin, zona),
+                "SUSPENSION_CONDICIONAL", medidaRepository.countByTipoYRangoYZona("SUSPENSION_CONDICIONAL", fInicio, fFin, zona)
+        ) : Map.of(
                 "MEDIDA_CAUTELAR",        medidaRepository.countByTipoYRango("MEDIDA_CAUTELAR",        fInicio, fFin),
                 "SUSPENSION_CONDICIONAL", medidaRepository.countByTipoYRango("SUSPENSION_CONDICIONAL", fInicio, fFin)
         ));
-        data.put("medidasPorEstado", Map.of(
+        data.put("medidasPorEstado", filtrarZona ? Map.of(
+                "ACTIVO",     medidaRepository.countByEstadoYRangoYZona("ACTIVO",     fInicio, fFin, zona),
+                "SUSPENDIDO", medidaRepository.countByEstadoYRangoYZona("SUSPENDIDO", fInicio, fFin, zona),
+                "FINALIZADO", medidaRepository.countByEstadoYRangoYZona("FINALIZADO", fInicio, fFin, zona),
+                "LEVANTADO",  medidaRepository.countByEstadoYRangoYZona("LEVANTADO",  fInicio, fFin, zona),
+                "REVOCADO",   medidaRepository.countByEstadoYRangoYZona("REVOCADO",   fInicio, fFin, zona)
+        ) : Map.of(
                 "ACTIVO",     medidaRepository.countByEstadoYRango("ACTIVO",     fInicio, fFin),
                 "SUSPENDIDO", medidaRepository.countByEstadoYRango("SUSPENDIDO", fInicio, fFin),
                 "FINALIZADO", medidaRepository.countByEstadoYRango("FINALIZADO", fInicio, fFin),
                 "LEVANTADO",  medidaRepository.countByEstadoYRango("LEVANTADO",  fInicio, fFin),
                 "REVOCADO",   medidaRepository.countByEstadoYRango("REVOCADO",   fInicio, fFin)
         ));
-        data.put("cambiadoAScp",   medidaRepository.countByCambiadoAScpYRango(fInicio, fFin));
-        data.put("cambiadoAMc",    medidaRepository.countByCambiadoAMcYRango(fInicio, fFin));
-        data.put("levantamientos", medidaRepository.countByEstadoYRango("LEVANTADO", fInicio, fFin));
-        data.put("revocados",      medidaRepository.countByEstadoYRango("REVOCADO",  fInicio, fFin));
-        data.put("cumplimientoMC", Map.of(
+        data.put("cambiadoAScp",   filtrarZona ? medidaRepository.countByCambiadoAScpYRangoYZona(fInicio, fFin, zona) : medidaRepository.countByCambiadoAScpYRango(fInicio, fFin));
+        data.put("cambiadoAMc",    filtrarZona ? medidaRepository.countByCambiadoAMcYRangoYZona(fInicio, fFin, zona) : medidaRepository.countByCambiadoAMcYRango(fInicio, fFin));
+        data.put("levantamientos", filtrarZona ? medidaRepository.countByEstadoYRangoYZona("LEVANTADO", fInicio, fFin, zona) : medidaRepository.countByEstadoYRango("LEVANTADO", fInicio, fFin));
+        data.put("revocados",      filtrarZona ? medidaRepository.countByEstadoYRangoYZona("REVOCADO",  fInicio, fFin, zona) : medidaRepository.countByEstadoYRango("REVOCADO",  fInicio, fFin));
+        data.put("cumplimientoMC", filtrarZona ? Map.of(
+                "CUMPLIENDO",   medidaRepository.countByCumplimientoYTipoYRangoYZona("CUMPLIMIENTO",   "MEDIDA_CAUTELAR",        fInicio, fFin, zona),
+                "INCUMPLIENDO", medidaRepository.countByCumplimientoYTipoYRangoYZona("INCUMPLIMIENTO", "MEDIDA_CAUTELAR",        fInicio, fFin, zona)
+        ) : Map.of(
                 "CUMPLIENDO",   medidaRepository.countByCumplimientoYTipoYRango("CUMPLIMIENTO",   "MEDIDA_CAUTELAR",        fInicio, fFin),
                 "INCUMPLIENDO", medidaRepository.countByCumplimientoYTipoYRango("INCUMPLIMIENTO", "MEDIDA_CAUTELAR",        fInicio, fFin)
         ));
-        data.put("cumplimientoSCP", Map.of(
+        data.put("cumplimientoSCP", filtrarZona ? Map.of(
+                "CUMPLIENDO",   medidaRepository.countByCumplimientoYTipoYRangoYZona("CUMPLIMIENTO",   "SUSPENSION_CONDICIONAL", fInicio, fFin, zona),
+                "INCUMPLIENDO", medidaRepository.countByCumplimientoYTipoYRangoYZona("INCUMPLIMIENTO", "SUSPENSION_CONDICIONAL", fInicio, fFin, zona)
+        ) : Map.of(
                 "CUMPLIENDO",   medidaRepository.countByCumplimientoYTipoYRango("CUMPLIMIENTO",   "SUSPENSION_CONDICIONAL", fInicio, fFin),
                 "INCUMPLIENDO", medidaRepository.countByCumplimientoYTipoYRango("INCUMPLIMIENTO", "SUSPENSION_CONDICIONAL", fInicio, fFin)
         ));
 
         // ── Supervisiones ─────────────────────────────────────────────────────
-        data.put("supervisionesPorTipo", Map.of(
+        data.put("supervisionesPorTipo", filtrarZona ? Map.of(
+                "LLAMADA",             supervisionRepository.countByTipoYRangoYZona("LLAMADA",             supInicio, supFin, zona),
+                "VISITA_DOMICILIARIA", supervisionRepository.countByTipoYRangoYZona("VISITA_DOMICILIARIA", supInicio, supFin, zona)
+        ) : Map.of(
                 "LLAMADA",             supervisionRepository.countByTipoYRango("LLAMADA",             supInicio, supFin),
                 "VISITA_DOMICILIARIA", supervisionRepository.countByTipoYRango("VISITA_DOMICILIARIA", supInicio, supFin)
         ));
-        data.put("supervisionesPorEstado", Map.of(
+        data.put("supervisionesPorEstado", filtrarZona ? Map.of(
+                "PENDIENTE",     supervisionRepository.countByEstadoYRangoYZona("PENDIENTE",     supInicio, supFin, zona),
+                "REALIZADA",     supervisionRepository.countByEstadoYRangoYZona("REALIZADA",     supInicio, supFin, zona),
+                "NO_CONTACTADO", supervisionRepository.countByEstadoYRangoYZona("NO_CONTACTADO", supInicio, supFin, zona),
+                "CANCELADA",     supervisionRepository.countByEstadoYRangoYZona("CANCELADA",     supInicio, supFin, zona)
+        ) : Map.of(
                 "PENDIENTE",     supervisionRepository.countByEstadoYRango("PENDIENTE",     supInicio, supFin),
                 "REALIZADA",     supervisionRepository.countByEstadoYRango("REALIZADA",     supInicio, supFin),
                 "NO_CONTACTADO", supervisionRepository.countByEstadoYRango("NO_CONTACTADO", supInicio, supFin),
@@ -112,15 +154,23 @@ public class EstadisticasService {
         ));
 
         // ── Entrevistas ───────────────────────────────────────────────────────
-        data.put("entrevistasPorTipo", Map.of(
+        data.put("entrevistasPorTipo", filtrarZona ? Map.of(
+                "MC",          entrevistaRepository.countByTipoYRangoYZona("MC",  fInicio, fFin, zona),
+                "SCP",         entrevistaRepository.countByTipoYRangoYZona("SCP", fInicio, fFin, zona),
+                "SIN_ASIGNAR", entrevistaRepository.countByTipoNullYRangoYZona(fInicio, fFin, zona)
+        ) : Map.of(
                 "MC",          entrevistaRepository.countByTipoYRango("MC",  fInicio, fFin),
                 "SCP",         entrevistaRepository.countByTipoYRango("SCP", fInicio, fFin),
                 "SIN_ASIGNAR", entrevistaRepository.countByTipoNullYRango(fInicio, fFin)
         ));
 
         // ── Género ────────────────────────────────────────────────────────────
-        data.put("generoPorMC",  agruparGenero(medidaRepository.countPorGeneroYTipoYRango("MEDIDA_CAUTELAR",        fInicio, fFin)));
-        data.put("generoPorSCP", agruparGenero(medidaRepository.countPorGeneroYTipoYRango("SUSPENSION_CONDICIONAL", fInicio, fFin)));
+        data.put("generoPorMC",  agruparGenero(filtrarZona
+                ? medidaRepository.countPorGeneroYTipoYRangoYZona("MEDIDA_CAUTELAR",        fInicio, fFin, zona)
+                : medidaRepository.countPorGeneroYTipoYRango("MEDIDA_CAUTELAR",        fInicio, fFin)));
+        data.put("generoPorSCP", agruparGenero(filtrarZona
+                ? medidaRepository.countPorGeneroYTipoYRangoYZona("SUSPENSION_CONDICIONAL", fInicio, fFin, zona)
+                : medidaRepository.countPorGeneroYTipoYRango("SUSPENSION_CONDICIONAL", fInicio, fFin)));
 
         // ── Series mensuales del año de 'desde' (para gráficas de tendencia) ─
         data.put("medidas_por_mes",       medidaRepository.countPorMes(anio));
@@ -154,6 +204,11 @@ public class EstadisticasService {
      */
     @Transactional(readOnly = true)
     public byte[] exportarExcel(String desdeStr, String hastaStr) throws Exception {
+        return exportarExcel(desdeStr, hastaStr, null);
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] exportarExcel(String desdeStr, String hastaStr, String zonaStr) throws Exception {
         LocalDate today = LocalDate.now();
         LocalDate desde = (desdeStr != null && !desdeStr.isBlank())
                 ? LocalDate.parse(desdeStr) : LocalDate.of(today.getYear(), 1, 1);
@@ -162,7 +217,7 @@ public class EstadisticasService {
 
         long diasRango = java.time.temporal.ChronoUnit.DAYS.between(desde, hasta) + 1;
 
-        ApiResponse resp = getEstadisticas(desdeStr, hastaStr);
+        ApiResponse resp = getEstadisticas(desdeStr, hastaStr, zonaStr);
         @SuppressWarnings("unchecked")
         Map<String, Object> d = (Map<String, Object>) resp.getData();
 

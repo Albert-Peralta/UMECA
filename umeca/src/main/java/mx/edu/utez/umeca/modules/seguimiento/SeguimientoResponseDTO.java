@@ -66,6 +66,18 @@ public class SeguimientoResponseDTO {
             case INFORME_FF              -> "Informe F.F.";
             case EVALUACION_RIESGO_FC    -> "Evaluación de riesgo F.C.";
             case EVALUACION_RIESGO_FF    -> "Evaluación de riesgo F.F.";
+            case FIRMA_RECABADA          -> "Firmas recabadas";
+            case ENTREVISTA_ENCUADRE_SUPER -> "Entrevista de encuadre";
+            case CALENDARIO              -> "Calendario";
+            case FIRMA_RECABADA_EVAL     -> "Firmas recabadas";
+            case ENTREVISTA_ENCUADRE_EVAL -> "Entrevista de encuadre";
+            case ENTREVISTA_EVALUACION   -> "Entrevista de evaluación";
+            case OFICIO_RECIBIDO         -> "Oficio recibido";
+            case NUEVO_CASO_MC           -> "Nuevo caso M.C.";
+            case NUEVO_CASO_SCP          -> "Nuevo caso S.C.P.";
+            case SOBRESEIMIENTO          -> "Sobreseimiento";
+            case LEVANTAMIENTO_MEDIDA    -> "Levantamiento de medida";
+            case OFICIO_DIVERSO_CORR     -> "Oficio emitido diverso";
             case OTRO                    -> "Otro";
             case OTRO_SUPERVISION        -> "Otro";
         };

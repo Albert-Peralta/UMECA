@@ -52,6 +52,19 @@ public class ReporteDiarioResponseDTO {
     private int cierreCarpetas;
     private int levantamientoMedida;
 
+    // Manuales SUPERVISIÓN
+    private int firmasRecabadasSuper;
+    private int entrevistaEncuadreSuper;
+    private int calendarioSuper;
+
+    // Manuales EVALUACIÓN
+    private int firmasRecabadasEval;
+    private int entrevistaEncuadreEval;
+    private int entrevistaEvaluacionEval;
+
+    // Manuales CORRESPONDENCIA
+    private int oficiosDiversosCorr;
+
     public static ReporteDiarioResponseDTO from(ReporteDiario r) {
         ReporteDiarioResponseDTO dto = new ReporteDiarioResponseDTO();
         dto.setId(r.getId());
@@ -92,6 +105,14 @@ public class ReporteDiarioResponseDTO {
         dto.setSobreseimientos(r.getSobreseimientos());
         dto.setCierreCarpetas(r.getCierreCarpetas());
         dto.setLevantamientoMedida(r.getLevantamientoMedida());
+
+        dto.setFirmasRecabadasSuper(r.getFirmasRecabadasSuper());
+        dto.setEntrevistaEncuadreSuper(r.getEntrevistaEncuadreSuper());
+        dto.setCalendarioSuper(r.getCalendarioSuper());
+        dto.setFirmasRecabadasEval(r.getFirmasRecabadasEval());
+        dto.setEntrevistaEncuadreEval(r.getEntrevistaEncuadreEval());
+        dto.setEntrevistaEvaluacionEval(r.getEntrevistaEvaluacionEval());
+        dto.setOficiosDiversosCorr(r.getOficiosDiversosCorr());
 
         return dto;
     }
