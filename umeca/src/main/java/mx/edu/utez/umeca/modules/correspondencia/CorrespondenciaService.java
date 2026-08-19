@@ -293,7 +293,15 @@ public class CorrespondenciaService {
         c.setTerminoRespuestaHoras(dto.getTerminoRespuestaHoras());
         c.setRequiereRespuesta(dto.getRequiereRespuesta() != null && dto.getRequiereRespuesta());
         if (dto.getPrioridad() != null) {
-            try { c.setPrioridad(Correspondencia.Prioridad.valueOf(dto.getPrioridad())); } catch (Exception ignored) {}
+            try {
+                Correspondencia.Prioridad p = Correspondencia.Prioridad.valueOf(dto.getPrioridad());
+                c.setPrioridad(p);
+                if (p == Correspondencia.Prioridad.TURNO || p == Correspondencia.Prioridad.CIRCULAR) {
+                    c.setEstado(Correspondencia.Estado.ARCHIVADO);
+                    c.setAsignadoA(null);
+                    c.setFechaAsignacion(null);
+                }
+            } catch (Exception ignored) {}
         }
     }
 

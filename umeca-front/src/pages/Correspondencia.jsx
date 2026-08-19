@@ -29,8 +29,9 @@ export default function Correspondencia() {
     const esPersonal        = user?.rol === 'SUPERVISION' || user?.rol === 'EVALUADOR_RIESGO';
 
     const [lista,    setLista]    = useState([]);
-    const [buscar,   setBuscar]   = useState('');
-    const [pagina,   setPagina]   = useState(1);
+    const [buscar,          setBuscar]          = useState('');
+    const [filtroPrioridad, setFiltroPrioridad] = useState('');
+    const [pagina,          setPagina]          = useState(1);
     const [loading,  setLoading]  = useState(false);
 
     // Vista activa: 'lista' | 'form' | 'detalle'
@@ -96,10 +97,12 @@ export default function Correspondencia() {
     useEffect(() => { cargar(); }, [cargar]);
 
     // ── Filtrado y paginación ───────────────────────────────────────────────
-    const filtrada = lista.filter(r =>
-        !buscar || [r.noTurno, r.noOficio, r.remitente, r.asunto, r.asignadoANombre]
-            .some(v => v?.toLowerCase().includes(buscar.toLowerCase()))
-    );
+    const filtrada = lista.filter(r => {
+        const coincideTexto = !buscar || [r.noTurno, r.noOficio, r.remitente, r.asunto, r.asignadoANombre]
+            .some(v => v?.toLowerCase().includes(buscar.toLowerCase()));
+        const coincidePrioridad = !filtroPrioridad || r.prioridad === filtroPrioridad;
+        return coincideTexto && coincidePrioridad;
+    });
     const totalPags = Math.max(1, Math.ceil(filtrada.length / POR_PAGINA));
     const pagActual = filtrada.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
 
@@ -737,6 +740,14 @@ export default function Correspondencia() {
                     value={buscar}
                     onChange={e => { setBuscar(e.target.value); setPagina(1); }}
                 />
+                <select
+                    className="corr-filtro-prioridad"
+                    value={filtroPrioridad}
+                    onChange={e => { setFiltroPrioridad(e.target.value); setPagina(1); }}
+                >
+                    <option value="">Todas las prioridades</option>
+                    {PRIORIDADES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                </select>
                 {/* Contador con filtro de periodo — solo admin y correspondencia */}
                 {puedeRegistrar && <div className="corr-hoy-wrap" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setShowContMenu(false); }} tabIndex={-1}>
                     <button className="corr-hoy-badge" onClick={() => setShowContMenu(v => !v)}>
@@ -874,7 +885,7 @@ export default function Correspondencia() {
                                             onClick={() => { setRegistro(r); setVista('detalle'); }}>
                                             <i className="bi bi-eye" />
                                         </button>
-                                        {esAdmin && (
+                                        {esAdmin && r.prioridad !== 'TURNO' && r.prioridad !== 'CIRCULAR' && (
                                             r.asignadoAId ? (
                                                 <button className="corr-btn-quitar" title="Quitar asignación"
                                                     onClick={() => handleQuitarAsignacion(r)}>

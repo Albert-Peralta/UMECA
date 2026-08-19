@@ -73,6 +73,8 @@ export const PRIORIDADES = [
     { value: 'NORMAL',          label: 'Normal' },
     { value: 'URGENTE',         label: 'Urgente' },
     { value: 'DE_CONOCIMIENTO', label: 'De Conocimiento' },
+    { value: 'TURNO',           label: 'Turno' },
+    { value: 'CIRCULAR',        label: 'Circular' },
 ];
 
 export const ESTADOS_PERSONAL = [
@@ -87,10 +89,13 @@ export const ESTADO_CONFIG = {
     LEIDO:      { label: 'Leído',      clase: 'corr-badge-leido' },
     EN_ESPERA:  { label: 'En Espera',  clase: 'corr-badge-espera' },
     FINALIZADO: { label: 'Finalizado', clase: 'corr-badge-finalizado' },
+    ARCHIVADO:  { label: 'Archivado',  clase: 'corr-badge-archivado' },
 };
 
 export const PRIORIDAD_CONFIG = {
     NORMAL:          { label: 'Normal',          clase: 'corr-prior-normal' },
-    URGENTE:         { label: 'Urgente',          clase: 'corr-prior-urgente' },
-    DE_CONOCIMIENTO: { label: 'De Conocimiento',  clase: 'corr-prior-conocimiento' },
+    URGENTE:         { label: 'Urgente',         clase: 'corr-prior-urgente' },
+    DE_CONOCIMIENTO: { label: 'De Conocimiento', clase: 'corr-prior-conocimiento' },
+    TURNO:           { label: 'Turno',           clase: 'corr-prior-turno' },
+    CIRCULAR:        { label: 'Circular',        clase: 'corr-prior-circular' },
 };

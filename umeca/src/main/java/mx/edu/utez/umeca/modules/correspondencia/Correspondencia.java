@@ -87,7 +87,7 @@ public class Correspondencia {
 
     public enum Tipo { OFICIO, CORREO, WHATSAPP }
 
-    public enum Prioridad { NORMAL, URGENTE, DE_CONOCIMIENTO }
+    public enum Prioridad { NORMAL, URGENTE, DE_CONOCIMIENTO, TURNO, CIRCULAR }
 
-    public enum Estado { PENDIENTE, ASIGNADO, LEIDO, EN_ESPERA, FINALIZADO }
+    public enum Estado { PENDIENTE, ASIGNADO, LEIDO, EN_ESPERA, FINALIZADO, ARCHIVADO }
 }
