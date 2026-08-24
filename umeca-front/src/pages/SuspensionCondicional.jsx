@@ -5,6 +5,7 @@ import {
 } from '../api/suspensionApi';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
+import { puedeCrear as _puedeCrear, puedeEditar as _puedeEditar } from '../utils/permisos';
 import './SuspensionCondicional.css';
 
 const ITEMS = 50;
@@ -19,8 +20,8 @@ const campoVacio = {
 export default function SuspensionCondicional() {
     const { showToast } = useToast();
     const { user } = useAuth();
-    const esAdmin = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' ;
-    const puedeEditar = esAdmin || user?.rol === 'SUPERVISION' || user?.rol === 'EVALUADOR_RIESGO';
+    const esAdmin     = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN';
+    const puedeEditar = _puedeCrear(user, 'SUSPENSION') || _puedeEditar(user, 'SUSPENSION');
 
     const [lista,   setLista]   = useState([]);
     const [total,   setTotal]   = useState(0);

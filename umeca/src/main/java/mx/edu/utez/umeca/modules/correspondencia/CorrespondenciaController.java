@@ -145,7 +145,7 @@ public class CorrespondenciaController {
 
     /** Estadísticas de correspondencia para el módulo de estadísticas */
     @GetMapping("/estadisticas")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_CORRESPONDENCIA')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_CORRESPONDENCIA') or @moduloChecker.puedeVer(authentication,'ESTADISTICAS')")
     public ResponseEntity<ApiResponse> estadisticas(@RequestParam(defaultValue = "0") int anio) {
         int a = anio > 0 ? anio : java.time.Year.now().getValue();
         return ResponseEntity.ok(service.getEstadisticas(a));

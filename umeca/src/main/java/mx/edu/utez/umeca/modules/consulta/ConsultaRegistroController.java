@@ -16,19 +16,19 @@ public class ConsultaRegistroController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO','CORRESPONDENCIA')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO','CORRESPONDENCIA') or @moduloChecker.puedeVer(authentication,'CONSULTAS')")
     public ResponseEntity<ApiResponse> listar() {
         return ResponseEntity.ok(service.listar());
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO') or @moduloChecker.puedeVer(authentication,'CONSULTAS')")
     public ResponseEntity<ApiResponse> obtener(@PathVariable Long id) {
         return ResponseEntity.ok(service.obtener(id));
     }
 
     @GetMapping("/antecedentes")
-    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO') or @moduloChecker.puedeVer(authentication,'CONSULTAS')")
     public ResponseEntity<ApiResponse> antecedentes(
             @RequestParam(required = false) String curp,
             @RequestParam(required = false) String nombre,
@@ -37,19 +37,19 @@ public class ConsultaRegistroController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO') or @moduloChecker.puedeVer(authentication,'CONSULTAS')")
     public ResponseEntity<ApiResponse> crear(@RequestBody ConsultaRegistroDTO dto) {
         return ResponseEntity.ok(service.crear(dto));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO') or @moduloChecker.puedeVer(authentication,'CONSULTAS')")
     public ResponseEntity<ApiResponse> actualizar(@PathVariable Long id, @RequestBody ConsultaRegistroDTO dto) {
         return ResponseEntity.ok(service.actualizar(id, dto));
     }
 
     @GetMapping("/registros")
-    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO') or @moduloChecker.puedeVer(authentication,'CONSULTAS')")
     public ResponseEntity<ApiResponse> buscarRegistros(
             @RequestParam(required = false) String curp,
             @RequestParam(required = false) String nombre,

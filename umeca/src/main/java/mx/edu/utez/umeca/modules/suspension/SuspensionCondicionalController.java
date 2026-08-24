@@ -15,7 +15,7 @@ public class SuspensionCondicionalController {
     private final SuspensionCondicionalService service;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO') or @moduloChecker.puedeVer(authentication,'SUSPENSION')")
     public ResponseEntity<ApiResponse> listar(
             @RequestParam(required = false) String fuero,
             @RequestParam(required = false) Integer anio,
@@ -26,19 +26,19 @@ public class SuspensionCondicionalController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO') or @moduloChecker.puedeVer(authentication,'SUSPENSION')")
     public ResponseEntity<ApiResponse> detalle(@PathVariable Long id) {
         return ResponseEntity.ok(service.detalle(id));
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO') or @moduloChecker.puedeCrear(authentication,'SUSPENSION')")
     public ResponseEntity<ApiResponse> crear(@RequestBody SuspensionCondicionalDTO dto) {
         return ResponseEntity.ok(service.crear(dto));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO') or @moduloChecker.puedeEditar(authentication,'SUSPENSION')")
     public ResponseEntity<ApiResponse> actualizar(@PathVariable Long id,
                                                    @RequestBody SuspensionCondicionalDTO dto) {
         return ResponseEntity.ok(service.actualizar(id, dto));
@@ -57,7 +57,7 @@ public class SuspensionCondicionalController {
     }
 
     @GetMapping("/anios")
-    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO') or @moduloChecker.puedeVer(authentication,'SUSPENSION')")
     public ResponseEntity<ApiResponse> anios() {
         return ResponseEntity.ok(service.aniosDisponibles());
     }

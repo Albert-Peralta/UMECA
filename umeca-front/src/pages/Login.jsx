@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import { getModulosExtra } from '../api/modulosExtraApi';
 import headerImg from '../assets/header-login.png';
 import footerDorado from '../assets/footer-dorado.png';
 import footerVerde from '../assets/footer-verde.png';
@@ -31,6 +32,12 @@ const Login = () => {
             const res = await api.post('/auth/login', { username, password });
             if (res.data.ok) {
                 const { token, ...userData } = res.data.data;
+                // Guardar el token antes de pedir módulos extra para que axios lo adjunte
+                localStorage.setItem('token', token);
+                try {
+                    const extRes = await getModulosExtra(userData.id);
+                    if (extRes.data.ok) userData.modulosExtra = extRes.data.data;
+                } catch (_) { userData.modulosExtra = []; }
                 login(userData, token);
                 const nombre = [userData.nombre, userData.apPaterno, userData.apMaterno].filter(Boolean).join(' ');
                 const destino = userData.primerLogin ? '/primer-login' : '/dashboard';

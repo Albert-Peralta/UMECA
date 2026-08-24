@@ -17,13 +17,15 @@ public class SupervisionController {
     private final SupervisionService service;
 
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')" +
+                  " or @moduloChecker.puedeVer(authentication,'SUPERVISION')")
     public ResponseEntity<ApiResponse> findAll() {
         return ResponseEntity.ok(service.findAll());
     }
 
     @GetMapping("/agenda")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')" +
+                  " or @moduloChecker.puedeVer(authentication,'SUPERVISION')")
     public ResponseEntity<ApiResponse> agenda(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
@@ -31,33 +33,38 @@ public class SupervisionController {
     }
 
     @GetMapping("/buscar")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')" +
+                  " or @moduloChecker.puedeVer(authentication,'SUPERVISION')")
     public ResponseEntity<ApiResponse> buscar(@RequestParam String q) {
         return ResponseEntity.ok(service.buscar(q));
     }
 
     @GetMapping("/imputado/{imputadoId}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')" +
+                  " or @moduloChecker.puedeVer(authentication,'SUPERVISION')")
     public ResponseEntity<ApiResponse> porImputado(@PathVariable Long imputadoId) {
         return ResponseEntity.ok(service.findByImputado(imputadoId));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')" +
+                  " or @moduloChecker.puedeVer(authentication,'SUPERVISION')")
     public ResponseEntity<ApiResponse> findById(@PathVariable Long id) {
         ApiResponse res = service.findById(id);
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.status(404).body(res);
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION')" +
+                  " or @moduloChecker.puedeCrear(authentication,'SUPERVISION')")
     public ResponseEntity<ApiResponse> save(@RequestBody SupervisionDTO dto) {
         ApiResponse res = service.save(dto);
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION')" +
+                  " or @moduloChecker.puedeEditar(authentication,'SUPERVISION')")
     public ResponseEntity<ApiResponse> update(@PathVariable Long id, @RequestBody SupervisionDTO dto) {
         ApiResponse res = service.update(id, dto);
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);

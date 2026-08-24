@@ -15,9 +15,11 @@ public class UsuarioModuloExtraController {
 
     private final UsuarioModuloExtraService service;
 
-    /** Obtiene los módulos extra de un usuario. Solo SUPERADMIN. */
+    /** Obtiene los módulos extra de un usuario.
+     *  SUPERADMIN puede consultar cualquier usuario;
+     *  cualquier otro rol solo puede consultar sus propios módulos. */
     @GetMapping
-    @PreAuthorize("hasAuthority('ROLE_SUPERADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPERADMIN') or #usuarioId == authentication.principal.id")
     public ResponseEntity<ApiResponse> get(@PathVariable Long usuarioId) {
         return ResponseEntity.ok(service.getByUsuario(usuarioId));
     }

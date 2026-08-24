@@ -36,7 +36,10 @@ const initialForm = {
 
 // Todos los módulos del sistema
 const TODOS_MODULOS = [
-    { modulo: 'ENTREVISTA',       label: 'Entrevista de Encuadre',  grupo: 'Supervisión' },
+    { modulo: 'IMPUTADOS',        label: 'Imputados',                grupo: 'General',    soloVista: true },
+    { modulo: 'ESTADISTICAS',     label: 'Estadísticas',             grupo: 'General',    soloVista: true },
+    { modulo: 'REPORTE_DIARIO',   label: 'Reporte Diario',           grupo: 'General',    soloVista: true },
+    { modulo: 'ENTREVISTA',       label: 'Entrevista de Encuadre',   grupo: 'Supervisión' },
     { modulo: 'MEDIDAS',          label: 'Medidas y Suspensiones',   grupo: 'Supervisión' },
     { modulo: 'SUPERVISION',      label: 'Supervisión',              grupo: 'Supervisión' },
     { modulo: 'EVALUACION',       label: 'Evaluación de Riesgos',    grupo: 'Evaluación'  },
@@ -44,16 +47,48 @@ const TODOS_MODULOS = [
     { modulo: 'SUSPENSION',       label: 'Suspensión Condicional',   grupo: 'Evaluación'  },
     { modulo: 'CORRESPONDENCIA',  label: 'Correspondencia',          grupo: 'Oficios'     },
     { modulo: 'CONTROL_OFICIOS',  label: 'Control de Oficios',       grupo: 'Oficios'     },
-    { modulo: 'ESTADISTICAS',     label: 'Estadísticas',             grupo: 'General'     },
     { modulo: 'EXPEDIENTES',      label: 'Expedientes Anteriores',   grupo: 'Histórico'   },
 ];
 
 // Módulos que ya vienen incluidos por defecto en cada rol
 const MODULOS_POR_ROL = {
-    ADMINISTRADOR:   ['ENTREVISTA','MEDIDAS','SUPERVISION','EVALUACION','CONSULTAS','SUSPENSION','CORRESPONDENCIA','CONTROL_OFICIOS','ESTADISTICAS','EXPEDIENTES'],
-    SUPERVISION:     ['ENTREVISTA','MEDIDAS','SUPERVISION','EVALUACION','CONSULTAS','CORRESPONDENCIA','CONTROL_OFICIOS','EXPEDIENTES'],
-    EVALUADOR_RIESGO:['ENTREVISTA','MEDIDAS','SUPERVISION','EVALUACION','CONSULTAS','SUSPENSION','CORRESPONDENCIA','CONTROL_OFICIOS','EXPEDIENTES'],
-    CORRESPONDENCIA: ['ENTREVISTA','CORRESPONDENCIA','CONTROL_OFICIOS','ESTADISTICAS'],
+    ADMINISTRADOR:   ['IMPUTADOS','ESTADISTICAS','REPORTE_DIARIO','ENTREVISTA','MEDIDAS','SUPERVISION','EVALUACION','CONSULTAS','SUSPENSION','CORRESPONDENCIA','CONTROL_OFICIOS','EXPEDIENTES'],
+    SUPERVISION:     ['IMPUTADOS','REPORTE_DIARIO','ENTREVISTA','MEDIDAS','SUPERVISION','EVALUACION','CONSULTAS','CORRESPONDENCIA','CONTROL_OFICIOS','EXPEDIENTES'],
+    EVALUADOR_RIESGO:['IMPUTADOS','REPORTE_DIARIO','ENTREVISTA','MEDIDAS','SUPERVISION','EVALUACION','CONSULTAS','SUSPENSION','CORRESPONDENCIA','CONTROL_OFICIOS','EXPEDIENTES'],
+    CORRESPONDENCIA: ['IMPUTADOS','ESTADISTICAS','REPORTE_DIARIO','ENTREVISTA','CORRESPONDENCIA','CONTROL_OFICIOS'],
+};
+
+// Nivel de acceso por defecto de cada módulo según el rol
+// 'completo' = puede ver, crear y editar | 'lectura' = solo consulta
+const ACCESO_BASE_ROL = {
+    ADMINISTRADOR: {
+        IMPUTADOS:'lectura', ESTADISTICAS:'lectura', REPORTE_DIARIO:'lectura',
+        ENTREVISTA:'completo', MEDIDAS:'completo', SUPERVISION:'completo', EVALUACION:'completo',
+        CONSULTAS:'completo', SUSPENSION:'completo', CORRESPONDENCIA:'completo',
+        CONTROL_OFICIOS:'completo', EXPEDIENTES:'completo',
+    },
+    SUPERVISION: {
+        IMPUTADOS:'lectura', REPORTE_DIARIO:'lectura',
+        ENTREVISTA:'completo', MEDIDAS:'completo', SUPERVISION:'completo',
+        EVALUACION:'lectura',  CONSULTAS:'lectura',
+        CORRESPONDENCIA:'completo', CONTROL_OFICIOS:'completo', EXPEDIENTES:'lectura',
+    },
+    EVALUADOR_RIESGO: {
+        IMPUTADOS:'lectura', REPORTE_DIARIO:'lectura',
+        ENTREVISTA:'completo', MEDIDAS:'lectura', SUPERVISION:'completo',
+        EVALUACION:'completo', CONSULTAS:'completo', SUSPENSION:'completo',
+        CORRESPONDENCIA:'completo', CONTROL_OFICIOS:'completo', EXPEDIENTES:'lectura',
+    },
+    CORRESPONDENCIA: {
+        IMPUTADOS:'lectura', ESTADISTICAS:'lectura', REPORTE_DIARIO:'lectura',
+        ENTREVISTA:'completo', CORRESPONDENCIA:'completo', CONTROL_OFICIOS:'completo',
+    },
+};
+
+// Módulos de lectura que no pueden ampliarse para un rol específico (solo consulta)
+const SOLO_VISTA_POR_ROL = {
+    SUPERVISION:     ['EXPEDIENTES'],
+    EVALUADOR_RIESGO:['EXPEDIENTES'],
 };
 
 // Filtra los módulos que ya tiene el rol para mostrar solo los extras posibles
@@ -97,6 +132,23 @@ const GestionUsuarios = () => {
             const existe = prev.find(m => m.modulo === modulo);
             if (existe) return prev.filter(m => m.modulo !== modulo);
             return [...prev, { modulo, puedeVer: true, puedeCrear: false, puedeEditar: false }];
+        });
+    };
+
+    // Para módulos base de "solo lectura": activa/desactiva crear o editar
+    const togglePermisoBase = (modulo, campo) => {
+        setModulosActivos(prev => {
+            const existe = prev.find(m => m.modulo === modulo);
+            if (existe) {
+                const actualizado = { ...existe, [campo]: !existe[campo] };
+                // Si ambos quedan en false, quitar el registro
+                if (!actualizado.puedeCrear && !actualizado.puedeEditar) {
+                    return prev.filter(m => m.modulo !== modulo);
+                }
+                return prev.map(m => m.modulo === modulo ? actualizado : m);
+            }
+            // No existía: agregar con el permiso activado
+            return [...prev, { modulo, puedeVer: true, puedeCrear: campo === 'puedeCrear', puedeEditar: campo === 'puedeEditar' }];
         });
     };
 
@@ -456,73 +508,162 @@ const GestionUsuarios = () => {
             )}
         </div>
 
-        {/* ── Modal Módulos Extra ── */}
-        {showModulos && usuarioModulos && (
+        {/* ── Modal Módulos ── */}
+        {showModulos && usuarioModulos && (() => {
+            const modulosBase = MODULOS_POR_ROL[usuarioModulos.rol] || [];
+            const accesoBase  = ACCESO_BASE_ROL[usuarioModulos.rol] || {};
+            const extras      = modulosDisponiblesParaRol(usuarioModulos.rol);
+            // agrupar módulos base por grupo manteniendo el orden del dashboard
+            const ORDEN_GRUPOS = ['General', 'Supervisión', 'Evaluación', 'Oficios', 'Histórico'];
+            const gruposBaseMap = TODOS_MODULOS.filter(m => modulosBase.includes(m.modulo)).reduce((acc, m) => {
+                if (!acc[m.grupo]) acc[m.grupo] = [];
+                acc[m.grupo].push(m);
+                return acc;
+            }, {});
+            const gruposBase = ORDEN_GRUPOS.filter(g => gruposBaseMap[g]).map(g => [g, gruposBaseMap[g]]);
+            const gruposExtraMap = extras.reduce((acc, m) => {
+                if (!acc[m.grupo]) acc[m.grupo] = [];
+                acc[m.grupo].push(m);
+                return acc;
+            }, {});
+            const gruposExtra = ORDEN_GRUPOS
+                .filter(g => gruposExtraMap[g])
+                .map(g => [g, gruposExtraMap[g]]);
+            return (
             <div className="gu-modal-overlay">
                 <div className="gu-modal gu-modal-modulos">
+                    {/* Header */}
                     <div className="gu-modulos-header">
-                        <div>
-                            <h2><i className="bi bi-grid-3x3-gap"></i> Módulos Extra</h2>
-                            <p className="gu-modulos-sub">
-                                {usuarioModulos.nombre} {usuarioModulos.apPaterno} —
-                                <span className="gu-modulos-rol"> {usuarioModulos.rol}</span>
-                            </p>
+                        <div className="gu-modulos-header-icon">
+                            <i className="bi bi-grid-3x3-gap-fill"></i>
+                        </div>
+                        <div className="gu-modulos-header-info">
+                            <h2>Asignación de Módulos</h2>
+                            <p>{usuarioModulos.nombre} {usuarioModulos.apPaterno} {usuarioModulos.apMaterno || ''}</p>
+                            <span className={`gu-badge-rol gu-badge-rol-${usuarioModulos.rol?.toLowerCase()}`}>
+                                {ETIQUETA_ROL[usuarioModulos.rol] || usuarioModulos.rol}
+                            </span>
                         </div>
                         <button className="gu-modulos-close" onClick={() => setShowModulos(false)}>
                             <i className="bi bi-x-lg"></i>
                         </button>
                     </div>
-                    <p className="gu-modulos-hint">
-                        <i className="bi bi-info-circle"></i>
-                        Activa módulos adicionales al rol base. Los módulos propios del rol no aparecen aquí.
-                    </p>
-                    <div className="gu-modulos-lista">
-                        {modulosDisponiblesParaRol(usuarioModulos.rol).length === 0 ? (
-                            <div style={{ textAlign: 'center', color: '#6b7280', padding: '24px 0', fontSize: 14 }}>
-                                <i className="bi bi-check-circle" style={{ fontSize: 28, color: '#10b981', display: 'block', marginBottom: 8 }}></i>
-                                Este rol ya tiene acceso a todos los módulos disponibles.
+
+                    <div className="gu-modulos-body">
+                        {/* Sección: módulos del rol */}
+                        <div className="gu-modulos-seccion">
+                            <div className="gu-modulos-seccion-titulo">
+                                <i className="bi bi-shield-lock-fill"></i> Módulos incluidos en el rol
+                                <span className="gu-modulos-seccion-sub">Los de solo lectura pueden ampliarse</span>
                             </div>
-                        ) : Object.entries(
-                            modulosDisponiblesParaRol(usuarioModulos.rol).reduce((acc, m) => {
-                                if (!acc[m.grupo]) acc[m.grupo] = [];
-                                acc[m.grupo].push(m);
-                                return acc;
-                            }, {})
-                        ).map(([grupo, items]) => (
-                            <div key={grupo} className="gu-modulos-grupo">
-                                <div className="gu-modulos-grupo-titulo">{grupo}</div>
-                                {items.map(({ modulo, label }) => {
-                                    const activo = modulosActivos.find(m => m.modulo === modulo);
-                                    return (
-                                        <div key={modulo} className={`gu-modulo-fila${activo ? ' activo' : ''}`}>
-                                            <label className="gu-modulo-check">
-                                                <input type="checkbox" checked={!!activo}
-                                                    onChange={() => toggleModulo(modulo)} />
-                                                <span>{label}</span>
-                                            </label>
-                                            {activo && (
-                                                <div className="gu-modulo-permisos">
-                                                    <label><input type="checkbox" checked={activo.puedeCrear}
-                                                        onChange={() => togglePermiso(modulo, 'puedeCrear')} /> Crear</label>
-                                                    <label><input type="checkbox" checked={activo.puedeEditar}
-                                                        onChange={() => togglePermiso(modulo, 'puedeEditar')} /> Editar</label>
+                            {gruposBase.map(([grupo, items]) => (
+                                <div key={grupo} className="gu-modulos-grupo">
+                                    <div className="gu-modulos-grupo-titulo">{grupo}</div>
+                                    {items.map(({ modulo, label, soloVista }) => {
+                                        const esLectura = accesoBase[modulo] === 'lectura';
+                                        const esSoloVista = soloVista || !!(SOLO_VISTA_POR_ROL[usuarioModulos.rol]?.includes(modulo));
+                                        const override  = modulosActivos.find(m => m.modulo === modulo);
+                                        return (
+                                            <div key={modulo} className={`gu-modulo-fila ${esLectura ? 'gu-modulo-fila-lectura' : 'gu-modulo-fila-base'}`}>
+                                                <div className="gu-modulo-base-left">
+                                                    <i className={`bi ${esLectura ? 'bi-eye-fill' : 'bi-check-circle-fill'}`}
+                                                       style={{ color: esLectura ? '#0369a1' : '#16a34a', fontSize: 15 }}></i>
+                                                    <span className="gu-modulo-label">{label}</span>
                                                 </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
+                                                {esLectura && !esSoloVista ? (
+                                                    <div className="gu-modulo-permisos">
+                                                        <label className="gu-permiso-chip">
+                                                            <input type="checkbox"
+                                                                checked={!!(override?.puedeCrear)}
+                                                                onChange={() => togglePermisoBase(modulo, 'puedeCrear')} />
+                                                            <i className="bi bi-plus-lg"></i> Crear
+                                                        </label>
+                                                        <label className="gu-permiso-chip">
+                                                            <input type="checkbox"
+                                                                checked={!!(override?.puedeEditar)}
+                                                                onChange={() => togglePermisoBase(modulo, 'puedeEditar')} />
+                                                            <i className="bi bi-pencil"></i> Editar
+                                                        </label>
+                                                    </div>
+                                                ) : esLectura && esSoloVista ? (
+                                                    <span className="gu-modulo-nivel nivel-lectura">
+                                                        <i className="bi bi-eye"></i> Solo lectura
+                                                    </span>
+                                                ) : (
+                                                    <span className="gu-modulo-nivel nivel-completo">
+                                                        <i className="bi bi-pencil-square"></i> Acceso completo
+                                                    </span>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Sección: módulos extra */}
+                        <div className="gu-modulos-seccion">
+                            <div className="gu-modulos-seccion-titulo">
+                                <i className="bi bi-plus-circle-fill"></i> Módulos adicionales
+                                <span className="gu-modulos-seccion-sub">Asigna acceso extra al usuario</span>
                             </div>
-                        ))}
+                            {extras.length === 0 ? (
+                                <div className="gu-modulos-completo">
+                                    <i className="bi bi-check2-all"></i>
+                                    Este rol ya tiene acceso a todos los módulos disponibles.
+                                </div>
+                            ) : gruposExtra.map(([grupo, items]) => (
+                                <div key={grupo} className="gu-modulos-grupo">
+                                    <div className="gu-modulos-grupo-titulo">{grupo}</div>
+                                    {items.map(({ modulo, label, soloVista }) => {
+                                        const activo = modulosActivos.find(m => m.modulo === modulo);
+                                        return (
+                                            <div key={modulo} className={`gu-modulo-fila gu-modulo-fila-extra${activo ? ' activo' : ''}`}>
+                                                <label className="gu-modulo-check">
+                                                    <input type="checkbox" checked={!!activo}
+                                                        onChange={() => toggleModulo(modulo)} />
+                                                    <span className="gu-modulo-label">{label}</span>
+                                                </label>
+                                                {activo && !soloVista && (
+                                                    <div className="gu-modulo-permisos">
+                                                        <label className="gu-permiso-chip">
+                                                            <input type="checkbox" checked={activo.puedeCrear}
+                                                                onChange={() => togglePermiso(modulo, 'puedeCrear')} />
+                                                            <i className="bi bi-plus-lg"></i> Crear
+                                                        </label>
+                                                        <label className="gu-permiso-chip">
+                                                            <input type="checkbox" checked={activo.puedeEditar}
+                                                                onChange={() => togglePermiso(modulo, 'puedeEditar')} />
+                                                            <i className="bi bi-pencil"></i> Editar
+                                                        </label>
+                                                    </div>
+                                                )}
+                                                {activo && soloVista && (
+                                                    <span className="gu-modulo-nivel nivel-lectura">
+                                                        <i className="bi bi-eye"></i> Solo lectura
+                                                    </span>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ))}
+                        </div>
                     </div>
+
                     <div className="gu-modal-actions">
                         <button className="gu-btn-cancelar" onClick={() => setShowModulos(false)}>Cancelar</button>
                         <button className="gu-btn-guardar" onClick={handleGuardarModulos} disabled={guardandoModulos}>
-                            {guardandoModulos ? 'Guardando...' : 'Guardar Módulos'}
+                            {guardandoModulos
+                                ? <><i className="bi bi-arrow-repeat spin"></i> Guardando...</>
+                                : <><i className="bi bi-floppy2-fill"></i> Guardar cambios</>
+                            }
                         </button>
                     </div>
                 </div>
             </div>
-        )}
+            );
+        })()}
         </>
     );
 };

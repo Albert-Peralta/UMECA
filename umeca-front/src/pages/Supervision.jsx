@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { puedeCrear as _puedeCrear, puedeEditar as _puedeEditar } from '../utils/permisos';
 import { useToast } from '../context/ToastContext';
 import {
     getAllSupervisions, getAgenda, buscarSupervision, crearSupervision,
@@ -71,8 +72,8 @@ const FORM_VACIO = {
 const Supervision = () => {
     const { user } = useAuth();
     const { showToast } = useToast();
-    const puedeEditar  = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION' || user?.rol === 'EVALUADOR_RIESGO';
-    const puedeEliminar = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' ;
+    const puedeEditar   = _puedeCrear(user, 'SUPERVISION') || _puedeEditar(user, 'SUPERVISION');
+    const puedeEliminar = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN';
 
     // Vista: 'agenda' | 'buscar'
     const [vista, setVista] = useState('agenda');

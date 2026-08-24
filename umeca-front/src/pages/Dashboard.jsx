@@ -298,23 +298,32 @@ const Dashboard = () => {
         .filter(Boolean)
         .filter(cfg => !keysBase.has(cfg.key));
 
-    // Agrupar extras por grupo y añadirlos al menú base
+    // Agrupar extras por grupo e insertarlos en la posición correcta del menú base
     const menuItems = (() => {
         if (extrasOrdenados.length === 0) return menuBase;
         const result = [...menuBase];
-        const gruposYaEnMenu = new Set(
-            menuBase.filter(i => i.separator).map(i => i.label)
-        );
         const porGrupo = {};
         extrasOrdenados.forEach(cfg => {
             if (!porGrupo[cfg.grupo]) porGrupo[cfg.grupo] = [];
             porGrupo[cfg.grupo].push({ key: cfg.key, label: cfg.label, icon: cfg.icon });
         });
+        // Insertar cada grupo en su lugar correcto
         Object.entries(porGrupo).forEach(([grupo, items]) => {
-            if (!gruposYaEnMenu.has(grupo)) {
+            // Buscar si ya existe el separador de este grupo en el resultado
+            const sepIdx = result.findIndex(i => i.separator && i.label === grupo);
+            if (sepIdx !== -1) {
+                // Encontrar el último ítem de esa sección (antes del siguiente separador)
+                let insertIdx = sepIdx + 1;
+                while (insertIdx < result.length && !result[insertIdx].separator) {
+                    insertIdx++;
+                }
+                // Insertar los ítems extra justo antes del siguiente separador (o al final de la sección)
+                result.splice(insertIdx, 0, ...items);
+            } else {
+                // El grupo no existe — añadir separador e ítems al final
                 result.push({ separator: true, label: grupo });
+                items.forEach(item => result.push(item));
             }
-            items.forEach(item => result.push(item));
         });
         return result;
     })();

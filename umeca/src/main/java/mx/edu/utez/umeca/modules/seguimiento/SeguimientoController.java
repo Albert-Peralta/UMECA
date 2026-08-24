@@ -64,7 +64,7 @@ public class SeguimientoController {
 
     // Reporte consolidado por zona para el admin (rango de fechas)
     @GetMapping("/reporte-consolidado")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_CORRESPONDENCIA')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_CORRESPONDENCIA') or @moduloChecker.puedeVer(authentication,'ESTADISTICAS')")
     public ResponseEntity<ApiResponse> reporteConsolidado(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {

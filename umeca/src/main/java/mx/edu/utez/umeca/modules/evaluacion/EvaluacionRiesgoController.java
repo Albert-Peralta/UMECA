@@ -6,11 +6,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * Endpoints REST para evaluaciones de riesgo cautelar.
- * Base path: {@code /api/evaluaciones}
- * Requiere JWT; cada endpoint define sus roles permitidos con @PreAuthorize.
- */
 @RestController
 @RequestMapping("/api/evaluaciones")
 @RequiredArgsConstructor
@@ -18,111 +13,99 @@ public class EvaluacionRiesgoController {
 
     private final EvaluacionRiesgoService evaluacionService;
 
-    /** Lista todas las evaluaciones, más recientes primero. */
+    // ── Lectura ─────────────────────────────────────────────────────────────
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')" +
+                  " or @moduloChecker.puedeVer(authentication,'EVALUACION')")
     public ResponseEntity<ApiResponse> findAll() {
         return ResponseEntity.ok(evaluacionService.findAll());
     }
 
-    /** Búsqueda por nombre, apellido o causa penal. */
     @GetMapping("/buscar")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')" +
+                  " or @moduloChecker.puedeVer(authentication,'EVALUACION')")
     public ResponseEntity<ApiResponse> buscar(@RequestParam String termino) {
         return ResponseEntity.ok(evaluacionService.buscar(termino));
     }
 
-    @PostMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')")
-    public ResponseEntity<ApiResponse> save(@RequestBody EvaluacionRiesgoDTO dto) {
-        ApiResponse response = evaluacionService.save(dto);
-        return response.isOk()
-                ? ResponseEntity.ok(response)
-                : ResponseEntity.status(400).body(response);
-    }
-
-    @PatchMapping("/{id}/estatus")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO')")
-    public ResponseEntity<ApiResponse> cambiarEstatus(@PathVariable Long id,
-                                                      @RequestParam String estatus) {
-        ApiResponse response = evaluacionService.cambiarEstatus(id, estatus);
-        return response.isOk()
-                ? ResponseEntity.ok(response)
-                : ResponseEntity.status(400).body(response);
-    }
-
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')" +
+                  " or @moduloChecker.puedeVer(authentication,'EVALUACION')")
     public ResponseEntity<ApiResponse> findById(@PathVariable Long id) {
         ApiResponse response = evaluacionService.findById(id);
-        return response.isOk()
-                ? ResponseEntity.ok(response)
-                : ResponseEntity.status(404).body(response);
-    }
-
-    @PatchMapping("/{id}/evaluador")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO')")
-    public ResponseEntity<ApiResponse> asignarEvaluador(@PathVariable Long id) {
-        ApiResponse response = evaluacionService.asignarEvaluador(id);
-        return response.isOk()
-                ? ResponseEntity.ok(response)
-                : ResponseEntity.status(404).body(response);
-    }
-
-    @PatchMapping("/{id}/resultado")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO')")
-    public ResponseEntity<ApiResponse> asignarResultado(@PathVariable Long id,
-                                                        @RequestParam String resultado) {
-        ApiResponse response = evaluacionService.asignarResultado(id, resultado);
-        return response.isOk()
-                ? ResponseEntity.ok(response)
-                : ResponseEntity.status(400).body(response);
-    }
-
-    /** Registra que el imputado se negó a ser entrevistado. */
-    @PostMapping("/negacion")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')")
-    public ResponseEntity<ApiResponse> saveNegacion(@RequestBody NegacionDTO dto) {
-        ApiResponse response = evaluacionService.saveNegacion(dto);
-        return response.isOk()
-                ? ResponseEntity.ok(response)
-                : ResponseEntity.status(400).body(response);
+        return response.isOk() ? ResponseEntity.ok(response) : ResponseEntity.status(404).body(response);
     }
 
     @GetMapping("/imputado/{imputadoId}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')" +
+                  " or @moduloChecker.puedeVer(authentication,'EVALUACION')")
     public ResponseEntity<ApiResponse> findByImputado(@PathVariable Long imputadoId) {
         return ResponseEntity.ok(evaluacionService.findByImputado(imputadoId));
     }
 
-    @PutMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')")
-    public ResponseEntity<ApiResponse> update(@PathVariable Long id,
-                                              @RequestBody EvaluacionRiesgoDTO dto) {
-        ApiResponse response = evaluacionService.update(id, dto);
-        return response.isOk()
-                ? ResponseEntity.ok(response)
-                : ResponseEntity.status(400).body(response);
+    // ── Escritura ────────────────────────────────────────────────────────────
+    @PostMapping
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')" +
+                  " or @moduloChecker.puedeCrear(authentication,'EVALUACION')")
+    public ResponseEntity<ApiResponse> save(@RequestBody EvaluacionRiesgoDTO dto) {
+        ApiResponse response = evaluacionService.save(dto);
+        return response.isOk() ? ResponseEntity.ok(response) : ResponseEntity.status(400).body(response);
     }
 
-    /** Guarda el HTML editado del informe o negación en la BD (persiste entre equipos). */
+    @PostMapping("/negacion")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')" +
+                  " or @moduloChecker.puedeCrear(authentication,'EVALUACION')")
+    public ResponseEntity<ApiResponse> saveNegacion(@RequestBody NegacionDTO dto) {
+        ApiResponse response = evaluacionService.saveNegacion(dto);
+        return response.isOk() ? ResponseEntity.ok(response) : ResponseEntity.status(400).body(response);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')" +
+                  " or @moduloChecker.puedeEditar(authentication,'EVALUACION')")
+    public ResponseEntity<ApiResponse> update(@PathVariable Long id, @RequestBody EvaluacionRiesgoDTO dto) {
+        ApiResponse response = evaluacionService.update(id, dto);
+        return response.isOk() ? ResponseEntity.ok(response) : ResponseEntity.status(400).body(response);
+    }
+
+    @PatchMapping("/{id}/estatus")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO')" +
+                  " or @moduloChecker.puedeEditar(authentication,'EVALUACION')")
+    public ResponseEntity<ApiResponse> cambiarEstatus(@PathVariable Long id, @RequestParam String estatus) {
+        ApiResponse response = evaluacionService.cambiarEstatus(id, estatus);
+        return response.isOk() ? ResponseEntity.ok(response) : ResponseEntity.status(400).body(response);
+    }
+
+    @PatchMapping("/{id}/evaluador")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO')" +
+                  " or @moduloChecker.puedeEditar(authentication,'EVALUACION')")
+    public ResponseEntity<ApiResponse> asignarEvaluador(@PathVariable Long id) {
+        ApiResponse response = evaluacionService.asignarEvaluador(id);
+        return response.isOk() ? ResponseEntity.ok(response) : ResponseEntity.status(404).body(response);
+    }
+
+    @PatchMapping("/{id}/resultado")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO')" +
+                  " or @moduloChecker.puedeEditar(authentication,'EVALUACION')")
+    public ResponseEntity<ApiResponse> asignarResultado(@PathVariable Long id, @RequestParam String resultado) {
+        ApiResponse response = evaluacionService.asignarResultado(id, resultado);
+        return response.isOk() ? ResponseEntity.ok(response) : ResponseEntity.status(400).body(response);
+    }
+
     @PatchMapping("/{id}/html-documento")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_EVALUADOR_RIESGO','ROLE_SUPERVISION')" +
+                  " or @moduloChecker.puedeEditar(authentication,'EVALUACION')")
     public ResponseEntity<ApiResponse> guardarHtmlDocumento(@PathVariable Long id,
                                                              @RequestParam String tipo,
                                                              @RequestBody String html) {
         ApiResponse response = evaluacionService.guardarHtmlDocumento(id, tipo, html);
-        return response.isOk()
-                ? ResponseEntity.ok(response)
-                : ResponseEntity.status(400).body(response);
+        return response.isOk() ? ResponseEntity.ok(response) : ResponseEntity.status(400).body(response);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
     public ResponseEntity<ApiResponse> eliminar(@PathVariable Long id) {
         ApiResponse response = evaluacionService.eliminar(id);
-        return response.isOk()
-                ? ResponseEntity.ok(response)
-                : ResponseEntity.status(404).body(response);
+        return response.isOk() ? ResponseEntity.ok(response) : ResponseEntity.status(404).body(response);
     }
 }

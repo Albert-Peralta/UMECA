@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getEntrevistas, getEntrevistaById } from '../api/entrevistasApi';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
+import { puedeCrear as _puedeCrear } from '../utils/permisos';
 import './EntrevistaEncuadre.css';
 import './Imputados.css';
 import FormularioEntrevista from './FormularioEntrevista';
@@ -11,7 +12,7 @@ import { ESTATUS_CIERRE_LABEL } from '../constants/estatusCierre';
 const EntrevistaEncuadre = () => {
     const { showToast } = useToast();
     const { user } = useAuth();
-    const puedeCrear = ['ADMINISTRADOR', 'SUPERADMIN', 'SUPERVISION', 'EVALUADOR_RIESGO', 'CORRESPONDENCIA'].includes(user?.rol);
+    const puedeCrear = _puedeCrear(user, 'ENTREVISTA');
     const [mostrarFormulario, setMostrarFormulario] = useState(false);
     const [entrevistaSeleccionada, setEntrevistaSeleccionada] = useState(null);
     const [entrevistas, setEntrevistas] = useState([]);

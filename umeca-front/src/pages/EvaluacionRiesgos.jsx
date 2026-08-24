@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { puedeCrear as _puedeCrear, puedeEditar as _puedeEditar } from '../utils/permisos';
 import { useToast } from '../context/ToastContext';
 import { getEvaluaciones, buscarEvaluaciones, getEvaluacionById, asignarEvaluador, asignarResultado, crearNegacion } from '../api/evaluacionesApi';
 import { getImputadosPorCausaPenal } from '../api/imputadosApi';
@@ -36,8 +37,8 @@ const RESULTADOS = [
 const EvaluacionRiesgos = () => {
     const { user } = useAuth();
     const { showToast } = useToast();
-    const puedeEvaluar   = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || user?.rol === 'EVALUADOR_RIESGO';
-    const puedeRegistrar = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || user?.rol === 'EVALUADOR_RIESGO';
+    const puedeRegistrar = _puedeCrear(user, 'EVALUACION');
+    const puedeEvaluar   = _puedeEditar(user, 'EVALUACION');
 
     const [datos, setDatos] = useState([]);
     const [busqueda, setBusqueda] = useState('');

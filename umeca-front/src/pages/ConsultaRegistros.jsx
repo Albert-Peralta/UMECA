@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import PrintConsulta from './PrintConsulta';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
+import { puedeCrear as _puedeCrear, puedeEditar as _puedeEditar } from '../utils/permisos';
 import { useFormGuard } from '../context/FormGuardContext';
 import {
     getConsultas, getConsultaById, getAntecedentes,
@@ -440,6 +441,8 @@ const DetalleConsulta = ({ consulta: d, onVolver, onEditar }) => {
 const ConsultaRegistros = () => {
     const { user } = useAuth();
     const { showToast } = useToast();
+    const puedeCrear  = _puedeCrear(user, 'CONSULTAS');
+    const puedeEditar = _puedeEditar(user, 'CONSULTAS');
     const [consultas, setConsultas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [busqueda, setBusqueda] = useState('');
@@ -750,7 +753,7 @@ const ConsultaRegistros = () => {
                         <option value="NEGATIVO">Negativo</option>
                     </select>
                 </div>
-                {['ADMINISTRADOR', 'SUPERADMIN', 'EVALUADOR_RIESGO'].includes(user?.rol) && (
+                {puedeCrear && (
                     <button className="cr-btn-nuevo" onClick={() => { setSeleccionada(null); setVista('form'); }}>
                         <i className="bi bi-plus-lg" /> Nueva Consulta
                     </button>
@@ -800,7 +803,7 @@ const ConsultaRegistros = () => {
                                         <button className="cr-btn-ver" onClick={() => abrirDetalle(c.id)} title="Ver detalle">
                                             <i className="bi bi-eye-fill" />
                                         </button>
-                                        {['ADMINISTRADOR', 'SUPERADMIN', 'EVALUADOR_RIESGO'].includes(user?.rol) && (
+                                        {puedeEditar && (
                                             <button className="cr-btn-editar-fila" onClick={() => { abrirDetalle(c.id).then?.(() => {}); getConsultaById(c.id).then(res => { if (res.data.ok) { setSeleccionada(res.data.data); setVista('form'); } }); }} title="Editar">
                                                 <i className="bi bi-pencil-fill" />
                                             </button>

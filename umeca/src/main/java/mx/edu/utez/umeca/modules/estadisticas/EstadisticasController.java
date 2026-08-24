@@ -16,7 +16,7 @@ public class EstadisticasController {
     private final EstadisticasService service;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO','CORRESPONDENCIA')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','CORRESPONDENCIA') or @moduloChecker.puedeVer(authentication,'ESTADISTICAS')")
     public ResponseEntity<ApiResponse> getEstadisticas(
             @RequestParam(defaultValue = "") String desde,
             @RequestParam(defaultValue = "") String hasta,
@@ -25,7 +25,7 @@ public class EstadisticasController {
     }
 
     @GetMapping("/exportar")
-    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO','CORRESPONDENCIA')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','CORRESPONDENCIA') or @moduloChecker.puedeVer(authentication,'ESTADISTICAS')")
     public ResponseEntity<byte[]> exportarExcel(
             @RequestParam(defaultValue = "") String desde,
             @RequestParam(defaultValue = "") String hasta,

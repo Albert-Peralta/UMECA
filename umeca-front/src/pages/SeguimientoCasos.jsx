@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { puedeCrear as _puedeCrear, puedeEditar as _puedeEditar } from '../utils/permisos';
 import { useToast } from '../context/ToastContext';
 import { getMedidas, getMedidaById } from '../api/medidasApi';
 import { getImputados } from '../api/imputadosApi';
@@ -25,8 +26,8 @@ const estadoConfig = {
 const SeguimientoCasos = () => {
     const { user } = useAuth();
     const { showToast } = useToast();
-    const puedeRegistrar   = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION';
-    const puedeSeguimiento = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION' || user?.rol === 'EVALUADOR_RIESGO';
+    const puedeRegistrar   = _puedeCrear(user, 'MEDIDAS');
+    const puedeSeguimiento = _puedeCrear(user, 'MEDIDAS') || _puedeEditar(user, 'MEDIDAS');
 
     // ── Alerta de vencimiento SCP ─────────────────────────────────────────────
     // Prioridad de plazo: nuevo plazo acordado > vencimiento calculado > plazo original
