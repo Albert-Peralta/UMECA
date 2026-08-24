@@ -28,7 +28,7 @@ public class Imputado extends BaseEntity {
     @Column(length = 255)
     private String delito;
 
-    @Column(name = "ubicacion_fisica", length = 100)
+    @Column(name = "ubicacion_fisica", length = 300)
     private String ubicacionFisica;
 
     @Column(name = "foto", columnDefinition = "LONGTEXT")

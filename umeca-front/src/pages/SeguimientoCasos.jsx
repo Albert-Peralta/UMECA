@@ -466,14 +466,14 @@ const SeguimientoCasos = () => {
                     <thead>
                         <tr>
                             <th>NO.</th>
-                            <th>NOMBRE IMPUTADO</th>
+                            <th style={{ minWidth: 200, width: 220 }}>NOMBRE IMPUTADO</th>
                             <th>CAUSA PENAL</th>
                             <th>TIPO</th>
                             <th>DELITO</th>
                             <th>FRACC.</th>
                             <th>VIGENCIA</th>
                             <th style={{ minWidth: 130 }}>CUMPLIMIENTO</th>
-                            <th style={{ minWidth: 190 }}>ESTADO</th>
+                            <th style={{ minWidth: 140, maxWidth: 200, width: 170 }}>ESTADO</th>
                             <th style={{ minWidth: 70, width: 70, textAlign: 'center', paddingRight: 16 }}>VER</th>
                         </tr>
                     </thead>
@@ -563,16 +563,29 @@ const SeguimientoCasos = () => {
                                             : <span className="cumpl-badge-tabla cumpl-sin-asignar">Sin estatus</span>
                                         }
                                     </td>
-                                    <td>
-                                        {item.imputadoFallecido
-                                            ? <span className="imp-badge-fallecido"><i className="bi bi-heartbreak-fill" /> Fallecido</span>
-                                            : item.imputadoCarpetaCerrada
-                                            ? <span className="exp-badge-cierre" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}>
-                                                <span><i className="bi bi-folder-x" /> Carpeta Cerrada</span>
-                                                {item.imputadoEstatusCierre && <span style={{ fontSize: 10, opacity: 0.85, fontWeight: 400 }}>{ESTATUS_CIERRE_LABEL[item.imputadoEstatusCierre] ?? item.imputadoEstatusCierre}</span>}
-                                              </span>
-                                            : <span className={`estatus-badge ${estadoConfig[item.estado]?.clase}`}>{estadoConfig[item.estado]?.label ?? item.estado}</span>
-                                        }
+                                    <td style={{ maxWidth: 200 }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+                                            {item.imputadoFallecido
+                                                ? <span className="imp-badge-fallecido"><i className="bi bi-heartbreak-fill" /> Fallecido</span>
+                                                : item.imputadoCarpetaCerrada
+                                                ? <span className="exp-badge-cierre" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}>
+                                                    <span><i className="bi bi-folder-x" /> Carpeta Cerrada</span>
+                                                    {item.imputadoEstatusCierre && <span style={{ fontSize: 10, opacity: 0.85, fontWeight: 400 }}>{ESTATUS_CIERRE_LABEL[item.imputadoEstatusCierre] ?? item.imputadoEstatusCierre}</span>}
+                                                  </span>
+                                                : <span className={`estatus-badge ${estadoConfig[item.estado]?.clase}`}>{estadoConfig[item.estado]?.label ?? item.estado}</span>
+                                            }
+                                            {item.tieneSobreseimiento && (
+                                                <span style={{
+                                                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                                                    background: '#7c3aed', color: '#fff',
+                                                    borderRadius: 20, padding: '2px 9px',
+                                                    fontSize: 10, fontWeight: 700,
+                                                }}>
+                                                    <i className="bi bi-check2-circle" style={{ fontSize: 10 }} />
+                                                    Sobreseimiento
+                                                </span>
+                                            )}
+                                        </div>
                                     </td>
                                 </>;
                             };

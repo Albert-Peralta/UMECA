@@ -132,17 +132,26 @@ public class MedidaCautelar extends BaseEntity {
     @Column(name = "plazo_scp")
     private Integer plazoScp; // meses
 
+    @Column(name = "tiene_canalizacion")
+    private Boolean tieneCanalizacion = false;
+
     @Column(name = "canalizacion", length = 200)
     private String canalizacion;
 
     @Column(name = "tipo_servicio", length = 100)
     private String tipoServicio;
 
+    @Column(name = "canalizacion_observaciones", columnDefinition = "TEXT")
+    private String canalizacionObservaciones;
+
     @Column(name = "fecha_informe_final")
     private LocalDate fechaInformeFinal;
 
     @Column(name = "vencimiento_plazo")
     private LocalDate vencimientoPlazo;
+
+    @Column(name = "tiene_sobreseimiento")
+    private Boolean tieneSobreseimiento = false;
 
     @Column(name = "oficio_sobreseimiento", length = 200)
     private String oficioSobreseimiento;

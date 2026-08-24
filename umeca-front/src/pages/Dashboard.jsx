@@ -22,8 +22,10 @@ import ReporteDiario from './ReporteDiario';
 import PrimerLogin from './PrimerLogin';
 import Perfil from './Perfil';
 import Correspondencia from './Correspondencia';
+import ControlOficios from './ControlOficios';
 import ExpedientesAnteriores from './ExpedientesAnteriores';
 import { getContadoresCorrespondencia } from '../api/correspondenciaApi';
+import { getContadores as getContadoresOficios } from '../api/controlOficiosApi';
 
 // ── Menú por rol ──────────────────────────────────────────────────────────────
 // Cada entrada puede ser un ítem de navegación (con key e icon) o un separador visual.
@@ -45,7 +47,8 @@ const menuPorRol = {
         { key: 'consultas',   label: 'Consulta de Registros',  icon: 'bi bi-search' },
         { key: 'suspension',  label: 'Suspensión Condicional', icon: 'bi bi-hourglass-split' },
         { separator: true,   label: 'Oficios' },
-        { key: 'correspondencia', label: 'Correspondencia',    icon: 'bi bi-envelope-paper' },
+        { key: 'correspondencia',  label: 'Correspondencia',    icon: 'bi bi-envelope-paper' },
+        { key: 'control-oficios',  label: 'Control de Oficios', icon: 'bi bi-file-earmark-text' },
         { separator: true,   label: 'Histórico' },
         { key: 'expedientes', label: 'Expedientes Anteriores', icon: 'bi bi-archive' },
     ],
@@ -64,7 +67,8 @@ const menuPorRol = {
         { key: 'consultas',   label: 'Consulta de Registros',  icon: 'bi bi-search' },
         { key: 'suspension',  label: 'Suspensión Condicional', icon: 'bi bi-hourglass-split' },
         { separator: true,   label: 'Oficios' },
-        { key: 'correspondencia', label: 'Correspondencia',    icon: 'bi bi-envelope-paper' },
+        { key: 'correspondencia',  label: 'Correspondencia',    icon: 'bi bi-envelope-paper' },
+        { key: 'control-oficios',  label: 'Control de Oficios', icon: 'bi bi-file-earmark-text' },
         { separator: true,   label: 'Histórico' },
         { key: 'expedientes', label: 'Expedientes Anteriores', icon: 'bi bi-archive' },
     ],
@@ -80,7 +84,8 @@ const menuPorRol = {
         { key: 'evaluacion',  label: 'Evaluación de riesgos',  icon: 'bi bi-shield-check' },
         { key: 'consultas',   label: 'Consulta de Registros',  icon: 'bi bi-search' },
         { separator: true,   label: 'Oficios' },
-        { key: 'correspondencia', label: 'Correspondencia',        icon: 'bi bi-envelope-paper' },
+        { key: 'correspondencia',  label: 'Correspondencia',        icon: 'bi bi-envelope-paper' },
+        { key: 'control-oficios',  label: 'Control de Oficios',     icon: 'bi bi-file-earmark-text' },
         { separator: true,   label: 'Histórico' },
         { key: 'expedientes',     label: 'Expedientes Anteriores', icon: 'bi bi-archive' },
     ],
@@ -97,7 +102,8 @@ const menuPorRol = {
         { key: 'consultas',   label: 'Consulta de Registros',  icon: 'bi bi-search' },
         { key: 'suspension',  label: 'Suspensión Condicional', icon: 'bi bi-hourglass-split' },
         { separator: true,   label: 'Oficios' },
-        { key: 'correspondencia', label: 'Correspondencia',        icon: 'bi bi-envelope-paper' },
+        { key: 'correspondencia',  label: 'Correspondencia',        icon: 'bi bi-envelope-paper' },
+        { key: 'control-oficios',  label: 'Control de Oficios',     icon: 'bi bi-file-earmark-text' },
         { separator: true,   label: 'Histórico' },
         { key: 'expedientes',     label: 'Expedientes Anteriores', icon: 'bi bi-archive' },
     ],
@@ -109,7 +115,8 @@ const menuPorRol = {
         { separator: true,        label: 'Supervisión' },
         { key: 'entrevista',      label: 'Entrevista de encuadre', icon: 'bi bi-journal-text' },
         { separator: true,        label: 'Oficios' },
-        { key: 'correspondencia', label: 'Correspondencia',     icon: 'bi bi-envelope-paper' },
+        { key: 'correspondencia',  label: 'Correspondencia',     icon: 'bi bi-envelope-paper' },
+        { key: 'control-oficios',  label: 'Control de Oficios',  icon: 'bi bi-file-earmark-text' },
     ],
 };
 
@@ -125,7 +132,14 @@ const Dashboard = () => {
 
     const getValidKey = (hash) => {
         const items = menuPorRol[user?.rol] || [];
-        const keys = [...items.filter(i => !i.separator).map(i => i.key), 'perfil'];
+        const extraKeys = (user?.modulosExtra || []).filter(e => e.puedeVer).map(e => {
+            const cfg = { EVALUACION: 'evaluacion', ENTREVISTA: 'entrevista', MEDIDAS: 'medidas',
+                SUPERVISION: 'supervision', CONSULTAS: 'consultas', SUSPENSION: 'suspension',
+                CORRESPONDENCIA: 'correspondencia', CONTROL_OFICIOS: 'control-oficios',
+                ESTADISTICAS: 'graficas', EXPEDIENTES: 'expedientes' };
+            return cfg[e.modulo];
+        }).filter(Boolean);
+        const keys = [...items.filter(i => !i.separator).map(i => i.key), ...extraKeys, 'perfil'];
         const key = hash.replace('#', '');
         return keys.includes(key) ? key : (keys[0] || 'imputados');
     };
@@ -133,7 +147,8 @@ const Dashboard = () => {
     const [activeMenu, setActiveMenu] = useState(() => getValidKey(window.location.hash));
     const [avatarSrc, setAvatarSrc] = useState(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [corrPendientes, setCorrPendientes] = useState(0);
+    const [corrPendientes,   setCorrPendientes]   = useState(0);
+    const [oficiosPendientes, setOficiosPendientes] = useState(0);
     const [guardConfirm, setGuardConfirm] = useState(null); // key pendiente de navegar
     const { isFormDirty, setFormDirty } = useFormGuard();
 
@@ -155,7 +170,7 @@ const Dashboard = () => {
 
     // Carga y refresca el contador de correspondencia pendiente cada 10 s
     useEffect(() => {
-        const tieneCorr = (menuPorRol[user?.rol] || []).some(i => i.key === 'correspondencia');
+        const tieneCorr = menuItems.some(i => i.key === 'correspondencia');
         // CORRESPONDENCIA solo registra; no tiene contadores de pendientes
         if (!tieneCorr || user?.rol === 'CORRESPONDENCIA') return;
 
@@ -184,6 +199,24 @@ const Dashboard = () => {
         };
     }, [user?.rol]);
 
+    // Carga y refresca el contador de oficios pendientes cada 30 s
+    useEffect(() => {
+        const cargar = async () => {
+            try {
+                const res = await getContadoresOficios();
+                if (res.data?.ok) setOficiosPendientes(res.data.data?.pendientes ?? 0);
+            } catch { /* silencioso */ }
+        };
+        cargar();
+        const id = setInterval(cargar, 10_000);
+        const handler = () => cargar();
+        window.addEventListener('oficios-contadores-cambio', handler);
+        return () => {
+            clearInterval(id);
+            window.removeEventListener('oficios-contadores-cambio', handler);
+        };
+    }, [user?.rol]);
+
     // Sincroniza activeMenu con el hash cuando el usuario usa las flechas del navegador
     useEffect(() => {
         setActiveMenu(getValidKey(location.hash));
@@ -196,7 +229,6 @@ const Dashboard = () => {
             const key = e.detail;
             const items = menuPorRol[user?.rol] || [];
             const keys = items.filter(i => !i.separator).map(i => i.key);
-            // Rutas auxiliares: accesibles desde el expediente aunque no estén en el menú lateral
             const rutasAuxiliares = ['entrevista', 'medidas', 'evaluacion'];
             if (keys.includes(key) || rutasAuxiliares.includes(key)) navegarA(key);
         };
@@ -243,7 +275,49 @@ const Dashboard = () => {
 
     const nombreSidebar = [user?.nombre, user?.apPaterno].filter(Boolean).join(' ');
 
-    const menuItems = menuPorRol[user?.rol] || [];
+    // Módulos extra asignados por SUPERADMIN a este usuario
+    const MODULO_EXTRA_CONFIG = {
+        EVALUACION:    { key: 'evaluacion',   label: 'Evaluación de riesgos',  icon: 'bi bi-shield-check',       grupo: 'Evaluación' },
+        ENTREVISTA:    { key: 'entrevista',   label: 'Entrevista de encuadre', icon: 'bi bi-journal-text',       grupo: 'Supervisión' },
+        MEDIDAS:       { key: 'medidas',      label: 'Medidas y Suspensiones', icon: 'bi bi-card-checklist',     grupo: 'Supervisión' },
+        SUPERVISION:   { key: 'supervision',  label: 'Supervisión',            icon: 'bi bi-eye',                grupo: 'Supervisión' },
+        CONSULTAS:     { key: 'consultas',    label: 'Consulta de Registros',  icon: 'bi bi-search',             grupo: 'Evaluación' },
+        SUSPENSION:    { key: 'suspension',   label: 'Suspensión Condicional', icon: 'bi bi-hourglass-split',    grupo: 'Evaluación' },
+        CORRESPONDENCIA:  { key: 'correspondencia',  label: 'Correspondencia',    icon: 'bi bi-envelope-paper',      grupo: 'Oficios' },
+        CONTROL_OFICIOS:  { key: 'control-oficios',  label: 'Control de Oficios', icon: 'bi bi-file-earmark-text',   grupo: 'Oficios' },
+        ESTADISTICAS:  { key: 'graficas',     label: 'Estadísticas',           icon: 'bi bi-bar-chart',          grupo: 'General' },
+        EXPEDIENTES:   { key: 'expedientes',  label: 'Expedientes Anteriores', icon: 'bi bi-archive',            grupo: 'Histórico' },
+    };
+
+    const menuBase = menuPorRol[user?.rol] || [];
+    const keysBase = new Set(menuBase.filter(i => !i.separator).map(i => i.key));
+
+    const extrasOrdenados = (user?.modulosExtra || [])
+        .filter(e => e.puedeVer)
+        .map(e => MODULO_EXTRA_CONFIG[e.modulo])
+        .filter(Boolean)
+        .filter(cfg => !keysBase.has(cfg.key));
+
+    // Agrupar extras por grupo y añadirlos al menú base
+    const menuItems = (() => {
+        if (extrasOrdenados.length === 0) return menuBase;
+        const result = [...menuBase];
+        const gruposYaEnMenu = new Set(
+            menuBase.filter(i => i.separator).map(i => i.label)
+        );
+        const porGrupo = {};
+        extrasOrdenados.forEach(cfg => {
+            if (!porGrupo[cfg.grupo]) porGrupo[cfg.grupo] = [];
+            porGrupo[cfg.grupo].push({ key: cfg.key, label: cfg.label, icon: cfg.icon });
+        });
+        Object.entries(porGrupo).forEach(([grupo, items]) => {
+            if (!gruposYaEnMenu.has(grupo)) {
+                result.push({ separator: true, label: grupo });
+            }
+            items.forEach(item => result.push(item));
+        });
+        return result;
+    })();
 
     const renderContent = () => {
     switch (activeMenu) {
@@ -267,11 +341,12 @@ const Dashboard = () => {
         case 'suspension':  return <SuspensionCondicional />;
         case 'reporte':          return <ReporteDiario />;
         case 'correspondencia':  return <Correspondencia />;
+        case 'control-oficios':  return <ControlOficios />;
         case 'expedientes':      return <ExpedientesAnteriores />;
         case 'perfil':           return <Perfil />;
         default: {
             // Redirigir a la primera sección disponible fuera del render
-            const primerKey = (menuPorRol[user?.rol] || []).find(i => !i.separator)?.key || 'imputados';
+            const primerKey = menuItems.find(i => !i.separator)?.key || 'imputados';
             setTimeout(() => navegarA(primerKey), 0);
             return null;
         }
@@ -336,6 +411,9 @@ const Dashboard = () => {
                                 <span style={{ flex: 1 }}>{item.label}</span>
                                 {item.key === 'correspondencia' && corrPendientes > 0 && (
                                     <span className="sidebar-badge">{corrPendientes > 99 ? '99+' : corrPendientes}</span>
+                                )}
+                                {item.key === 'control-oficios' && oficiosPendientes > 0 && (
+                                    <span className="sidebar-badge">{oficiosPendientes > 99 ? '99+' : oficiosPendientes}</span>
                                 )}
                             </button>
                         )

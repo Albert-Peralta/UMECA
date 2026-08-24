@@ -20,6 +20,13 @@ public interface EntrevistaEncuadreRepository extends JpaRepository<EntrevistaEn
     @Query("SELECT e FROM EntrevistaEncuadre e WHERE e.imputado.id = :imputadoId")
     List<EntrevistaEncuadre> findByImputadoId(@Param("imputadoId") Long imputadoId);
 
+    @Modifying
+    @Query("UPDATE EntrevistaEncuadre e SET e.nombre = :nombre, e.apPaterno = :apPaterno, e.apMaterno = :apMaterno WHERE e.imputado.id = :imputadoId")
+    int actualizarNombrePorImputado(@Param("imputadoId") Long imputadoId,
+                                    @Param("nombre") String nombre,
+                                    @Param("apPaterno") String apPaterno,
+                                    @Param("apMaterno") String apMaterno);
+
     @Query("SELECT COUNT(e) FROM EntrevistaEncuadre e WHERE e.imputado.id = :imputadoId")
     long countByImputadoId(@Param("imputadoId") Long imputadoId);
 

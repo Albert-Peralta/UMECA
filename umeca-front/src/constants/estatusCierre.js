@@ -4,16 +4,15 @@
  */
 export const ESTATUS_CIERRE_LABEL = {
     // SCP
-    CUMPLIMIENTO_DE_CONDICIONES:    'Cumplimiento de las condiciones',
-    CUMPLIMIENTO_DE_REPARACION_DANO:'Cumplimiento de la reparación del daño',
-    INCUMPLIMIENTO:                 'Incumplimiento',
-    NUEVA_CONDENA:                  'Nueva condena',
-    FALLECIMIENTO_IMPUTADO:         'Fallecimiento del imputado',
+    CUMPLIMIENTO_TOTAL_CONDICIONES:       'Cumplimiento total de condiciones',
+    FALLECIMIENTO_IMPUTADO:               'Fallecimiento',
+    REVOCACION_SCP_INCUMPLIMIENTO:        'Revocación de la SCP por incumplimiento',
     // MC
-    AUTO_NO_VINCULACION:            'Auto de no vinculación a proceso',
-    SENTENCIA_ABSOLUTORIA:          'Sentencia absolutoria',
-    SENTENCIA_CONDENATORIA:         'Sentencia condenatoria',
-    ARRAIGO_DOMICILIARIO:           'Arraigo domiciliario',
-    CAMBIO_MC_A_SCP:                'Cambio de MC a SCP',
-    SUSTITUCION_O_MODIFICACION:     'Sustitución o modificación',
+    CAMBIO_MEDIDA_SCP:                    'Cambio de medida (modificación a SCP)',
+    LEVANTAMIENTO_MEDIDA:                 'Levantamiento de medida',
+    PRISION_PREVENTIVA:                   'Prisión preventiva (modificación)',
+    ACUERDO_REPARATORIO:                  'Acuerdo reparatorio',
+    NO_VINCULACION:                       'No vinculación',
+    FALLECIMIENTO_MC:                     'Fallecimiento',
+    SENTENCIA_ABSOLUTORIA:                'Sentencia absolutoria',
 };

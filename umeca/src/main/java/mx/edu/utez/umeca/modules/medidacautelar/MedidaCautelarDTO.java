@@ -49,10 +49,13 @@ public class MedidaCautelarDTO {
     // SCP específico
     private LocalDate fechaImposicionScp;
     private Integer plazoScp; // meses
+    private Boolean tieneCanalizacion;
     private String canalizacion;
     private String tipoServicio;
+    private String canalizacionObservaciones;
     private LocalDate fechaInformeFinal;
     private LocalDate vencimientoPlazo;
+    private Boolean tieneSobreseimiento;
     private String oficioSobreseimiento;
     private String responsableCierre;
 

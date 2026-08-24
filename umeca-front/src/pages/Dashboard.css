@@ -7,8 +7,8 @@
 
 /* ── SIDEBAR ─────────────────────────────── */
 .sidebar {
-    width: 200px;
-    min-width: 200px;
+    width: 210px;
+    min-width: 210px;
     background-color: #ffffff;
     border-right: 1px solid #e0e0e0;
     display: flex;
@@ -82,9 +82,17 @@
     transition: background 0.2s, border-color 0.2s, color 0.2s;
     display: flex;
     align-items: center;
+    flex-wrap: nowrap;
     gap: 8px;
     min-height: 38px;
     box-sizing: border-box;
+    width: calc(100% - 16px);
+}
+.sidebar-item > span:first-of-type {
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 .sidebar-item:hover {
@@ -102,6 +110,8 @@
     text-align: center;
     line-height: 1.6;
     flex-shrink: 0;
+    margin-left: auto;
+    align-self: center;
 }
 
 .sidebar-item.active {

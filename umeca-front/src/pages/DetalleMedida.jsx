@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { agregarSeguimiento, registrarLevantamiento, registrarRevocacion, registrarAmpliacion, eliminarMedida } from '../api/medidasApi';
+import { agregarSeguimiento, registrarLevantamiento, registrarRevocacion, registrarAmpliacion, eliminarMedida, toggleSobreseimiento } from '../api/medidasApi';
 import { registrarFallecimiento } from '../api/imputadosApi';
 import HistorialRegistro from '../components/HistorialRegistro';
-import PrintOficioMigracion from './PrintOficioMigracion';
 import SeguimientosPanel from '../components/SeguimientosPanel';
 import './FormularioMedida.css';
 import './DetalleMedida.css';
@@ -166,10 +165,22 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
         } catch { setFallError('Error al registrar fallecimiento'); }
         finally { setLoadingFall(false); }
     };
-    // ── Oficio Migración (Fracción V MC) ─────────────────────────────────────
-    const tieneFraccionV = esMC && (m.fracciones || []).includes('V');
-    const detV = detalles['V'] || {};
-    const [showOficioMigracion, setShowOficioMigracion] = useState(false);
+
+    // ── Sobreseimiento toggle ─────────────────────────────────────────────────
+    const [loadingSobreseimiento, setLoadingSobreseimiento] = useState(false);
+
+    const handleToggleSobreseimiento = async () => {
+        setLoadingSobreseimiento(true);
+        try {
+            const nuevoValor = !m.tieneSobreseimiento;
+            const res = await toggleSobreseimiento(m.id, nuevoValor);
+            if (res.data.ok) {
+                onActualizado(res.data.data);
+                showToast(nuevoValor ? 'Sobreseimiento activado' : 'Sobreseimiento desactivado');
+            } else showToast(res.data.message || 'Error al actualizar', 'error');
+        } catch { showToast('Error de conexión', 'error'); }
+        finally { setLoadingSobreseimiento(false); }
+    };
 
     // ── Admin: Eliminar medida ────────────────────────────────────────────────
     const [showConfirmEliminar, setShowConfirmEliminar] = useState(false);
@@ -204,13 +215,6 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
 
     return (
         <>
-        {showOficioMigracion && (
-            <PrintOficioMigracion
-                medida={m}
-                detalleV={detV}
-                onCerrar={() => setShowOficioMigracion(false)}
-            />
-        )}
         <div className="dm-wrapper">
             {/* ── Cabecera ── */}
             <div className="dm-header">
@@ -238,7 +242,39 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                         </h2>
                         <p className="dm-subtitulo">{m.nombreImputado} — {m.causaPenal}</p>
                     </div>
-                    <div className="dm-header-right">
+                    <div className="dm-header-right" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {!esMC && puedeRegistrar && (
+                            <button
+                                onClick={handleToggleSobreseimiento}
+                                disabled={loadingSobreseimiento}
+                                title={m.tieneSobreseimiento ? 'Quitar sobreseimiento' : 'Marcar con sobreseimiento'}
+                                style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                                    background: m.tieneSobreseimiento ? '#7c3aed' : '#ede9fe',
+                                    color: m.tieneSobreseimiento ? '#fff' : '#6d28d9',
+                                    border: `2px solid ${m.tieneSobreseimiento ? '#7c3aed' : '#c4b5fd'}`,
+                                    borderRadius: 20, padding: '5px 14px',
+                                    fontSize: 12, fontWeight: 700, letterSpacing: 0.4,
+                                    cursor: loadingSobreseimiento ? 'wait' : 'pointer',
+                                    transition: 'all 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+                                }}
+                            >
+                                <i className={`bi ${m.tieneSobreseimiento ? 'bi-check2-circle' : 'bi-dash-circle-dotted'}`} />
+                                {m.tieneSobreseimiento ? 'Con sobreseimiento' : 'Sin sobreseimiento'}
+                            </button>
+                        )}
+                        {!esMC && !puedeRegistrar && m.tieneSobreseimiento && (
+                            <span style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 6,
+                                background: '#7c3aed', color: '#fff',
+                                borderRadius: 20, padding: '5px 14px',
+                                fontSize: 12, fontWeight: 700, letterSpacing: 0.4,
+                                boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+                            }}>
+                                <i className="bi bi-check2-circle" />
+                                Con sobreseimiento
+                            </span>
+                        )}
                         <span className={`dm-badge ${ESTADO_CLASE[m.estado]}`}>
                             {ESTADO_LABELS[m.estado] ?? m.estado}
                         </span>
@@ -251,11 +287,6 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                             <i className="bi bi-pencil" /> Editar
                         </button>
                     )}
-                    {tieneFraccionV && !m.imputadoFallecido && !m.imputadoCarpetaCerrada && (
-                        <button className="btn-oficio-migracion" onClick={() => setShowOficioMigracion(true)} title="Generar oficio para el INM">
-                            <i className="bi bi-file-earmark-text" /> Oficio Migración
-                        </button>
-                    )}
                     {puedeRegistrar && esMC && m.estado === 'ACTIVO' && !m.imputadoFallecido && !m.imputadoCarpetaCerrada && (
                         <>
                             {!m.cambiadoAScp && (
@@ -263,9 +294,6 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                                     <i className="bi bi-arrow-left-right" /> Cambiar a SCP
                                 </button>
                             )}
-                            <button className="btn-levantamiento" onClick={() => setShowLev(true)}>
-                                <i className="bi bi-file-earmark-check" /> Levantamiento
-                            </button>
                         </>
                     )}
                     {puedeRegistrar && !esMC && m.estado === 'ACTIVO' && !m.imputadoFallecido && !m.imputadoCarpetaCerrada && (
@@ -275,12 +303,6 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                             </button>
                             <button className="btn-amp" onClick={() => setShowAmpliacion(true)}>
                                 <i className="bi bi-calendar-plus" /> Ampliación
-                            </button>
-                            <button className="btn-levantamiento" onClick={() => setShowLev(true)}>
-                                <i className="bi bi-file-earmark-check" /> Levantamiento
-                            </button>
-                            <button className="btn-rev" onClick={() => setShowRevocacion(true)}>
-                                <i className="bi bi-x-circle" /> Revocación
                             </button>
                         </>
                     )}
@@ -493,82 +515,6 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                 />
             </div>
 
-            {/* ── Modal Levantamiento ──────────────────────────────────────── */}
-            {showLev && (
-                <div className="modal-overlay">
-                    <div className="modal-box" style={{ maxWidth: 480 }}>
-                        <div className="modal-header">
-                            <h3><i className="bi bi-file-earmark-check" /> LEVANTAMIENTO DE MEDIDA CAUTELAR</h3>
-                            <button className="modal-close" onClick={() => { setShowLev(false); setLevError(''); }}>
-                                <i className="bi bi-x-lg" />
-                            </button>
-                        </div>
-                        <div className="modal-form">
-                            <p style={{ fontSize: 13, color: '#4b5563', marginBottom: 12 }}>
-                                Esta acción registrará el levantamiento de la medida cautelar de <strong>{m.nombreImputado}</strong>.
-                                La fecha de levantamiento se registrará automáticamente como el día de hoy.
-                            </p>
-                            <div className="modal-field">
-                                <label>NÚMERO DE OFICIO *</label>
-                                <input type="text" placeholder="Ej. OF-2026-001"
-                                    value={levForm.oficioLevantamiento}
-                                    onChange={e => setLevForm({ ...levForm, oficioLevantamiento: e.target.value })} />
-                            </div>
-                            <div className="modal-field">
-                                <label>FIRMADO POR *</label>
-                                <input type="text" placeholder="Nombre del funcionario que firma"
-                                    value={levForm.firmaLevantamiento}
-                                    onChange={e => setLevForm({ ...levForm, firmaLevantamiento: e.target.value })} />
-                            </div>
-                            <div className="modal-field">
-                                <label>MOTIVO DEL LEVANTAMIENTO *</label>
-                                <textarea rows={3} placeholder="Describa el motivo del levantamiento..."
-                                    value={levForm.motivoLevantamiento}
-                                    onChange={e => setLevForm({ ...levForm, motivoLevantamiento: e.target.value })} />
-                            </div>
-                            <div className="modal-field">
-                                <label>CUMPLIMIENTO *</label>
-                                <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
-                                    <button
-                                        type="button"
-                                        onClick={() => setLevForm({ ...levForm, cumplioLevantamiento: true })}
-                                        style={{
-                                            flex: 1, padding: '10px', borderRadius: '8px', border: '2px solid',
-                                            borderColor: levForm.cumplioLevantamiento === true ? '#16a34a' : '#d1d5db',
-                                            background: levForm.cumplioLevantamiento === true ? '#d1fae5' : '#fff',
-                                            color: levForm.cumplioLevantamiento === true ? '#065f46' : '#6b7280',
-                                            fontWeight: 700, cursor: 'pointer', fontSize: '13px'
-                                        }}
-                                    >
-                                        <i className="bi bi-check-circle-fill" /> Cumplió
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setLevForm({ ...levForm, cumplioLevantamiento: false })}
-                                        style={{
-                                            flex: 1, padding: '10px', borderRadius: '8px', border: '2px solid',
-                                            borderColor: levForm.cumplioLevantamiento === false ? '#dc2626' : '#d1d5db',
-                                            background: levForm.cumplioLevantamiento === false ? '#fee2e2' : '#fff',
-                                            color: levForm.cumplioLevantamiento === false ? '#991b1b' : '#6b7280',
-                                            fontWeight: 700, cursor: 'pointer', fontSize: '13px'
-                                        }}
-                                    >
-                                        <i className="bi bi-x-circle-fill" /> No Cumplió
-                                    </button>
-                                </div>
-                            </div>
-                            {levError && <p className="modal-error">{levError}</p>}
-                            <div className="modal-buttons" style={{ padding: 0 }}>
-                                <button className="btn-cancelar" onClick={() => { setShowLev(false); setLevError(''); }}>Cancelar</button>
-                                <button className="btn-levantamiento" onClick={handleLevantamiento} disabled={loadingLev}>
-                                    {loadingLev ? 'Guardando...' : <><i className="bi bi-check-lg" /> Confirmar Levantamiento</>}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* ── Modal Ampliación ─────────────────────────────────────────── */}
             {showAmpliacion && (
                 <div className="modal-overlay">
@@ -600,44 +546,6 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                                 <button className="btn-cancelar" onClick={() => { setShowAmpliacion(false); setAmpError(''); }}>Cancelar</button>
                                 <button className="btn-amp" onClick={handleAmpliacion} disabled={loadingAmp}>
                                     {loadingAmp ? 'Guardando...' : <><i className="bi bi-check-lg" /> Confirmar Ampliación</>}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* ── Modal Revocación ──────────────────────────────────────────── */}
-            {showRevocacion && (
-                <div className="modal-overlay">
-                    <div className="modal-box" style={{ maxWidth: 460 }}>
-                        <div className="modal-header">
-                            <h3><i className="bi bi-x-circle" /> REVOCACIÓN DE S.C.P.</h3>
-                            <button className="modal-close" onClick={() => { setShowRevocacion(false); setRevError(''); }}>
-                                <i className="bi bi-x-lg" />
-                            </button>
-                        </div>
-                        <div className="modal-form">
-                            <p style={{ fontSize: 13, color: '#4b5563', marginBottom: 12 }}>
-                                Esta acción revocará la Suspensión Condicional del Proceso de <strong>{m.nombreImputado}</strong>. La fecha de revocación se registrará automáticamente.
-                            </p>
-                            <div className="modal-field">
-                                <label>NÚMERO DE OFICIO *</label>
-                                <input type="text" placeholder="Ej. OF-2026-001"
-                                    value={revForm.oficioRevocacion}
-                                    onChange={e => setRevForm({ ...revForm, oficioRevocacion: e.target.value })} />
-                            </div>
-                            <div className="modal-field">
-                                <label>MOTIVO DE LA REVOCACIÓN *</label>
-                                <textarea rows={3} placeholder="Describa el motivo de la revocación..."
-                                    value={revForm.motivoRevocacion}
-                                    onChange={e => setRevForm({ ...revForm, motivoRevocacion: e.target.value })} />
-                            </div>
-                            {revError && <p className="modal-error">{revError}</p>}
-                            <div className="modal-buttons" style={{ padding: 0 }}>
-                                <button className="btn-cancelar" onClick={() => { setShowRevocacion(false); setRevError(''); }}>Cancelar</button>
-                                <button className="btn-rev" onClick={handleRevocacion} disabled={loadingRev}>
-                                    {loadingRev ? 'Guardando...' : <><i className="bi bi-check-lg" /> Confirmar Revocación</>}
                                 </button>
                             </div>
                         </div>

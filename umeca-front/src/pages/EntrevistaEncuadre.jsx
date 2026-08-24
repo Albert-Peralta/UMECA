@@ -6,20 +6,7 @@ import './EntrevistaEncuadre.css';
 import './Imputados.css';
 import FormularioEntrevista from './FormularioEntrevista';
 import DetalleEntrevista from './DetalleEntrevista';
-
-const ESTATUS_CIERRE_LABEL = {
-    CUMPLIMIENTO_DE_CONDICIONES:     'Cumplimiento de las condiciones',
-    CUMPLIMIENTO_DE_REPARACION_DANO: 'Cumplimiento de la reparación del daño',
-    INCUMPLIMIENTO:                  'Incumplimiento',
-    NUEVA_CONDENA:                   'Nueva condena',
-    FALLECIMIENTO_IMPUTADO:          'Fallecimiento del imputado',
-    AUTO_NO_VINCULACION:             'Auto de no vinculación a proceso',
-    SENTENCIA_ABSOLUTORIA:           'Sentencia absolutoria',
-    SENTENCIA_CONDENATORIA:          'Sentencia condenatoria',
-    ARRAIGO_DOMICILIARIO:            'Arraigo domiciliario',
-    CAMBIO_MC_A_SCP:                 'Cambio de MC a SCP',
-    SUSTITUCION_O_MODIFICACION:      'Sustitución o modificación',
-};
+import { ESTATUS_CIERRE_LABEL } from '../constants/estatusCierre';
 
 const EntrevistaEncuadre = () => {
     const { showToast } = useToast();

@@ -51,9 +51,13 @@ public class EntrevistaEncuadreService {
             java.util.Map<String, Object> m = new java.util.LinkedHashMap<>();
             m.put("id",             e.getId());
             m.put("folio",          e.getFolio());
-            m.put("nombre",         e.getNombre());
-            m.put("apPaterno",      e.getApPaterno());
-            m.put("apMaterno",      e.getApMaterno());
+            // Usar nombre del imputado vinculado (puede haber sido editado); fallback al de la entrevista
+            String nombre   = (e.getImputado() != null && e.getImputado().getNombre()   != null) ? e.getImputado().getNombre()   : e.getNombre();
+            String apPat    = (e.getImputado() != null && e.getImputado().getApPaterno() != null) ? e.getImputado().getApPaterno() : e.getApPaterno();
+            String apMat    = (e.getImputado() != null && e.getImputado().getApMaterno() != null) ? e.getImputado().getApMaterno() : e.getApMaterno();
+            m.put("nombre",         nombre);
+            m.put("apPaterno",      apPat);
+            m.put("apMaterno",      apMat);
             m.put("causaPenal",     e.getCausaPenal());
             m.put("fechaRegistro",  e.getFechaRegistro() != null ? e.getFechaRegistro().toString() : null);
             m.put("estadoCivil",    e.getEstadoCivil());
@@ -97,7 +101,14 @@ public class EntrevistaEncuadreService {
     @Transactional(readOnly = true)
     public ApiResponse findById(Long id) {
         return repository.findById(id)
-                .map(e -> new ApiResponse(true, "Entrevista encontrada", e))
+                .map(e -> {
+                    // Forzar carga de colecciones lazy dentro de la transacción
+                    if (e.getDomicilios() != null) e.getDomicilios().size();
+                    if (e.getPersonasHabita() != null) e.getPersonasHabita().size();
+                    if (e.getReferencias() != null) e.getReferencias().size();
+                    if (e.getConsumoSustancias() != null) e.getConsumoSustancias().size();
+                    return new ApiResponse(true, "Entrevista encontrada", e);
+                })
                 .orElse(new ApiResponse(false, "Entrevista no encontrada"));
     }
 
@@ -337,6 +348,11 @@ public class EntrevistaEncuadreService {
                     .ifPresent(existing::setRegistradoPor);
 
             EntrevistaEncuadre updatedEnt = repository.save(existing);
+            // Forzar carga de colecciones lazy antes de salir de la transacción
+            if (updatedEnt.getDomicilios() != null) updatedEnt.getDomicilios().size();
+            if (updatedEnt.getPersonasHabita() != null) updatedEnt.getPersonasHabita().size();
+            if (updatedEnt.getReferencias() != null) updatedEnt.getReferencias().size();
+            if (updatedEnt.getConsumoSustancias() != null) updatedEnt.getConsumoSustancias().size();
             bitacoraService.registrar(Bitacora.Entidad.ENTREVISTA, updatedEnt.getId(),
                     updatedEnt.getNombre() + " " + updatedEnt.getApPaterno(),
                     Bitacora.Accion.EDITAR, descCambios);

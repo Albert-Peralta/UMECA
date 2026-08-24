@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { actualizarEntrevista, eliminarEntrevista } from '../api/entrevistasApi';
+import { actualizarEntrevista, eliminarEntrevista, getEntrevistaById } from '../api/entrevistasApi';
 import { actualizarFotoImputado, getImputadoById } from '../api/imputadosApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -26,6 +26,28 @@ const campoEdit = (label, value, onChange, type = 'text') => (
         <input type={type} value={value || ''} onChange={e => onChange(e.target.value)} />
     </div>
 );
+
+const campoTelEdit = (label, value, onChange) => {
+    const invalido = value && (!/^\d+$/.test(value) || value.length !== 10);
+    return (
+        <div className="de-campo-edit">
+            <label>{label}</label>
+            <input
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                value={value || ''}
+                onChange={e => onChange(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                style={invalido ? { borderColor: '#ef4444', background: '#fff5f5' } : {}}
+            />
+            {invalido && (
+                <span style={{ fontSize: 11, color: '#ef4444', marginTop: 3, display: 'block' }}>
+                    Debe tener exactamente 10 dígitos
+                </span>
+            )}
+        </div>
+    );
+};
 
 const campoSelectEdit = (label, value, onChange, opciones) => (
     <div className="de-campo-edit">
@@ -171,6 +193,29 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
     };
 
     const handleGuardar = async () => {
+        // Validar teléfonos — solo números, exactamente 10 dígitos si se capturaron
+        const telefonos = [
+            { campo: 'Teléfono Casa', valor: form.telefonoCasa },
+            { campo: 'Celular', valor: form.celular },
+            { campo: 'Teléfono Empresa', valor: form.telEmpresa },
+        ];
+        for (const { campo, valor } of telefonos) {
+            if (valor && (!/^\d{10}$/.test(valor))) {
+                setError(`${campo}: debe tener exactamente 10 dígitos numéricos.`);
+                return;
+            }
+        }
+        const telPersonas = personasHabita.filter(p => p.telefono && !/^\d{10}$/.test(p.telefono));
+        if (telPersonas.length > 0) {
+            setError('Teléfono de personas que habitan: todos deben tener exactamente 10 dígitos numéricos.');
+            return;
+        }
+        const telRefs = referencias.filter(r => r.telefono && !/^\d{10}$/.test(r.telefono));
+        if (telRefs.length > 0) {
+            setError('Teléfono de referencias personales: todos deben tener exactamente 10 dígitos numéricos.');
+            return;
+        }
+
         // Validar estatura antes de enviar
         if (form.estatura !== '' && form.estatura !== null && form.estatura !== undefined) {
             const est = Number(form.estatura);
@@ -195,6 +240,17 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
             );
             const res = await actualizarEntrevista(entrevista.id, payload);
             if (res.data.ok) {
+                try {
+                    const fresh = await getEntrevistaById(entrevista.id);
+                    if (fresh.data?.data) {
+                        const actualizada = fresh.data.data;
+                        setForm({ ...actualizada });
+                        setDomicilios(actualizada.domicilios?.length ? [...actualizada.domicilios] : []);
+                        setPersonasHabita(actualizada.personasHabita?.length ? [...actualizada.personasHabita] : []);
+                        setReferencias(actualizada.referencias?.length ? [...actualizada.referencias] : []);
+                        setConsumoSustancias(initConsumo(actualizada.consumoSustancias));
+                    }
+                } catch { /* si falla el fetch, al menos el guardado fue exitoso */ }
                 setEditando(false);
                 showToast('Entrevista actualizada correctamente');
                 document.querySelector('.dashboard-content')?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -380,8 +436,8 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
                         {campoEdit('Nombre(s)', form.nombre, v => set('nombre', v))}
                         {campoEdit('Apellido Paterno', form.apPaterno, v => set('apPaterno', v))}
                         {campoEdit('Apellido Materno', form.apMaterno, v => set('apMaterno', v))}
-                        {campoEdit('Teléfono Casa', form.telefonoCasa, v => set('telefonoCasa', v))}
-                        {campoEdit('Celular', form.celular, v => set('celular', v))}
+                        {campoTelEdit('Teléfono Casa', form.telefonoCasa, v => set('telefonoCasa', v))}
+                        {campoTelEdit('Celular', form.celular, v => set('celular', v))}
                         {campoEdit('Email', form.email, v => set('email', v))}
                         <div className="de-campo-edit">
                             <label>Fecha Nacimiento</label>
@@ -401,25 +457,25 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
                     </>
                 ) : (
                     <>
-                        {campo('Folio', entrevista.folio)}
-                        {campo('Causa Penal', entrevista.causaPenal)}
-                        {campo('Fecha Registro', entrevista.fechaRegistro)}
-                        {campo('Libro', entrevista.libro)}
-                        {campo('Foja', entrevista.foja)}
-                        {campo('Nombre(s)', entrevista.nombre)}
-                        {campo('Apellido Paterno', entrevista.apPaterno)}
-                        {campo('Apellido Materno', entrevista.apMaterno)}
-                        {campo('Teléfono Casa', entrevista.telefonoCasa)}
-                        {campo('Celular', entrevista.celular)}
-                        {campo('Email', entrevista.email)}
-                        {campo('Fecha Nacimiento', entrevista.fechaNacimiento)}
-                        {campo('Edad', entrevista.edad)}
-                        {campo('Municipio', entrevista.municipio)}
-                        {campo('Estado', entrevista.estadoNacimiento)}
-                        {campo('País', entrevista.pais)}
-                        {campo('CURP', entrevista.curp)}
-                        {campo('Enfermedad', entrevista.enfermedad)}
-                        {campo('Grado Estudios', entrevista.gradoEstudios)}
+                        {campo('Folio', form.folio)}
+                        {campo('Causa Penal', form.causaPenal)}
+                        {campo('Fecha Registro', form.fechaRegistro)}
+                        {campo('Libro', form.libro)}
+                        {campo('Foja', form.foja)}
+                        {campo('Nombre(s)', form.nombre)}
+                        {campo('Apellido Paterno', form.apPaterno)}
+                        {campo('Apellido Materno', form.apMaterno)}
+                        {campo('Teléfono Casa', form.telefonoCasa)}
+                        {campo('Celular', form.celular)}
+                        {campo('Email', form.email)}
+                        {campo('Fecha Nacimiento', form.fechaNacimiento)}
+                        {campo('Edad', form.edad)}
+                        {campo('Municipio', form.municipio)}
+                        {campo('Estado', form.estadoNacimiento)}
+                        {campo('País', form.pais)}
+                        {campo('CURP', form.curp)}
+                        {campo('Enfermedad', form.enfermedad)}
+                        {campo('Grado Estudios', form.gradoEstudios)}
                     </>
                 )}
             </div>
@@ -479,16 +535,16 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
                     </>
                 ) : (
                     <>
-                        {campo('Género', entrevista.genero)}
-                        {campo('Complexión', entrevista.complexion)}
-                        {campo('Estatura', entrevista.estatura ? `${entrevista.estatura} cm` : null)}
-                        {campo('Color de Ojos', entrevista.colorOjos)}
-                        {campo('Cejas', entrevista.cejas)}
-                        {campo('Tez de Piel', entrevista.tezPiel)}
-                        {campo('Color de Cabello', entrevista.colorCabello)}
-                        {campo('Tamaño de Labios', entrevista.tamLabios)}
-                        {campo('Señas en la Cara', entrevista.senasCara)}
-                        {campo('Tatuajes/Cicatrices', entrevista.tieneTatuajes ? 'Sí' : 'No')}
+                        {campo('Género', form.genero)}
+                        {campo('Complexión', form.complexion)}
+                        {campo('Estatura', form.estatura ? `${form.estatura} cm` : null)}
+                        {campo('Color de Ojos', form.colorOjos)}
+                        {campo('Cejas', form.cejas)}
+                        {campo('Tez de Piel', form.tezPiel)}
+                        {campo('Color de Cabello', form.colorCabello)}
+                        {campo('Tamaño de Labios', form.tamLabios)}
+                        {campo('Señas en la Cara', form.senasCara)}
+                        {campo('Tatuajes/Cicatrices', form.tieneTatuajes ? 'Sí' : 'No')}
                         {entrevista.tieneTatuajes && entrevista.tatuajesJson && (() => {
                             try {
                                 const lista = JSON.parse(entrevista.tatuajesJson);
@@ -508,8 +564,8 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
                                 );
                             } catch { return null; }
                         })()}
-                        {campo('Alias', entrevista.alias)}
-                        {campo('Documentos Migratorios', entrevista.documentosMigratorios)}
+                        {campo('Alias', form.alias)}
+                        {campo('Documentos Migratorios', form.documentosMigratorios)}
                     </>
                 )}
             </div>
@@ -535,7 +591,7 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
                     </>
                 ) : (
                     <>
-                        {campo('Estado Civil', entrevista.estadoCivil)}
+                        {campo('Estado Civil', form.estadoCivil)}
                         <div className="de-campo">
                             <span className="de-label">Grupos minoritarios</span>
                             {entrevista.grupoVulnerable
@@ -683,7 +739,7 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
                                         <td><input value={p.nombre || ''} onChange={e => setPer(i, 'nombre', e.target.value)} /></td>
                                         <td><input value={p.parentesco || ''} onChange={e => setPer(i, 'parentesco', e.target.value)} /></td>
                                         <td><input type="number" value={p.edad || ''} onChange={e => setPer(i, 'edad', e.target.value)} /></td>
-                                        <td><input value={p.telefono || ''} onChange={e => setPer(i, 'telefono', e.target.value)} /></td>
+                                        <td><input type="tel" inputMode="numeric" maxLength={10} value={p.telefono || ''} onChange={e => setPer(i, 'telefono', e.target.value.replace(/\D/g, '').slice(0, 10))} style={(p.telefono && (p.telefono.length !== 10)) ? { borderColor: '#ef4444' } : {}} /></td>
                                         <td><input value={p.escolaridad || ''} onChange={e => setPer(i, 'escolaridad', e.target.value)} /></td>
                                         <td><input value={p.ocupacion || ''} onChange={e => setPer(i, 'ocupacion', e.target.value)} /></td>
                                         <td><button className="de-btn-remove" onClick={() => removePer(i)}>✕</button></td>
@@ -730,7 +786,7 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
                                         <td><input value={r.nombre || ''} onChange={e => setRef(i, 'nombre', e.target.value)} /></td>
                                         <td><input value={r.parentesco || ''} onChange={e => setRef(i, 'parentesco', e.target.value)} /></td>
                                         <td><input type="number" value={r.edad || ''} onChange={e => setRef(i, 'edad', e.target.value)} /></td>
-                                        <td><input value={r.telefono || ''} onChange={e => setRef(i, 'telefono', e.target.value)} /></td>
+                                        <td><input type="tel" inputMode="numeric" maxLength={10} value={r.telefono || ''} onChange={e => setRef(i, 'telefono', e.target.value.replace(/\D/g, '').slice(0, 10))} style={(r.telefono && (r.telefono.length !== 10)) ? { borderColor: '#ef4444' } : {}} /></td>
                                         <td><input value={r.direccion || ''} onChange={e => setRef(i, 'direccion', e.target.value)} /></td>
                                         <td><button className="de-btn-remove" onClick={() => removeRef(i)}>✕</button></td>
                                     </>
@@ -768,10 +824,10 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
                     </>
                 ) : (
                     <>
-                        {campo('¿Conoce a la víctima?', entrevista.conoceVictima ? 'Sí' : 'No')}
-                        {campo('Tel. Víctima', entrevista.telVictima)}
-                        {campo('Nombre Víctima', entrevista.nombreVictima)}
-                        {campo('Domicilio Víctima', entrevista.domicilioVictima)}
+                        {campo('¿Conoce a la víctima?', form.conoceVictima ? 'Sí' : 'No')}
+                        {campo('Tel. Víctima', form.telVictima)}
+                        {campo('Nombre Víctima', form.nombreVictima)}
+                        {campo('Domicilio Víctima', form.domicilioVictima)}
                     </>
                 )}
             </div>
@@ -782,7 +838,7 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
                 {editando ? (
                     <>
                         {campoEdit('Empresa', form.empresa, v => set('empresa', v))}
-                        {campoEdit('Teléfono Empresa', form.telEmpresa, v => set('telEmpresa', v))}
+                        {campoTelEdit('Teléfono Empresa', form.telEmpresa, v => set('telEmpresa', v))}
                         {campoEdit('Salario Mensual', form.salarioMensual, v => set('salarioMensual', v), 'number')}
                         {campoEdit('Puesto', form.puesto, v => set('puesto', v))}
                         {campoEdit('Nombre del Jefe', form.nombreJefe, v => set('nombreJefe', v))}
@@ -795,14 +851,14 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
                     </>
                 ) : (
                     <>
-                        {campo('Empresa', entrevista.empresa)}
-                        {campo('Teléfono Empresa', entrevista.telEmpresa)}
-                        {campo('Salario Mensual', entrevista.salarioMensual)}
-                        {campo('Puesto', entrevista.puesto)}
-                        {campo('Nombre del Jefe', entrevista.nombreJefe)}
-                        {campo('Horario', entrevista.horarioTrabajo)}
-                        {campo('Domicilio Trabajo', entrevista.domicilioTrabajo)}
-                        {campo('Último Empleo', entrevista.ultimoEmpleo)}
+                        {campo('Empresa', form.empresa)}
+                        {campo('Teléfono Empresa', form.telEmpresa)}
+                        {campo('Salario Mensual', form.salarioMensual)}
+                        {campo('Puesto', form.puesto)}
+                        {campo('Nombre del Jefe', form.nombreJefe)}
+                        {campo('Horario', form.horarioTrabajo)}
+                        {campo('Domicilio Trabajo', form.domicilioTrabajo)}
+                        {campo('Último Empleo', form.ultimoEmpleo)}
                     </>
                 )}
             </div>

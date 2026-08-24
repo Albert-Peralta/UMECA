@@ -37,3 +37,6 @@ export const eliminarMedida = (id) => api.delete(`/medidas/${id}`);
 
 export const cambiarCumplimiento = (id, valor) =>
     api.patch(`/medidas/${id}/cumplimiento`, null, { params: { valor } });
+
+export const toggleSobreseimiento = (id, valor) =>
+    api.patch(`/medidas/${id}/sobreseimiento`, null, { params: { valor } });

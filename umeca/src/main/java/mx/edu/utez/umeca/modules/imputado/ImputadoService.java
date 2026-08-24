@@ -360,6 +360,9 @@ public class ImputadoService {
             existing.setUbicacionFisica(datos.getUbicacionFisica());
             // La causa penal no se actualiza: es el identificador del caso
             Imputado updated = imputadoRepository.save(existing);
+            // Propagar el nombre a todas las entrevistas ligadas
+            entrevistaRepository.actualizarNombrePorImputado(
+                    updated.getId(), updated.getNombre(), updated.getApPaterno(), updated.getApMaterno());
             bitacoraService.registrar(Bitacora.Entidad.IMPUTADO, updated.getId(),
                     updated.getNombre() + " " + updated.getApPaterno(),
                     Bitacora.Accion.EDITAR, descCambios);

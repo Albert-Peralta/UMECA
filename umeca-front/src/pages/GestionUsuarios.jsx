@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { getUsuarios, crearUsuario, actualizarUsuario, toggleUsuario } from '../api/usuariosApi';
 import { exportarBackupZip } from '../api/backupApi';
+import { getModulosExtra, guardarModulosExtra } from '../api/modulosExtraApi';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import './GestionUsuarios.css';
 
@@ -32,7 +34,38 @@ const initialForm = {
     rol: '', zona: 'XOCHITEPEC'
 };
 
+// Todos los módulos del sistema
+const TODOS_MODULOS = [
+    { modulo: 'ENTREVISTA',       label: 'Entrevista de Encuadre',  grupo: 'Supervisión' },
+    { modulo: 'MEDIDAS',          label: 'Medidas y Suspensiones',   grupo: 'Supervisión' },
+    { modulo: 'SUPERVISION',      label: 'Supervisión',              grupo: 'Supervisión' },
+    { modulo: 'EVALUACION',       label: 'Evaluación de Riesgos',    grupo: 'Evaluación'  },
+    { modulo: 'CONSULTAS',        label: 'Consulta de Registros',    grupo: 'Evaluación'  },
+    { modulo: 'SUSPENSION',       label: 'Suspensión Condicional',   grupo: 'Evaluación'  },
+    { modulo: 'CORRESPONDENCIA',  label: 'Correspondencia',          grupo: 'Oficios'     },
+    { modulo: 'CONTROL_OFICIOS',  label: 'Control de Oficios',       grupo: 'Oficios'     },
+    { modulo: 'ESTADISTICAS',     label: 'Estadísticas',             grupo: 'General'     },
+    { modulo: 'EXPEDIENTES',      label: 'Expedientes Anteriores',   grupo: 'Histórico'   },
+];
+
+// Módulos que ya vienen incluidos por defecto en cada rol
+const MODULOS_POR_ROL = {
+    ADMINISTRADOR:   ['ENTREVISTA','MEDIDAS','SUPERVISION','EVALUACION','CONSULTAS','SUSPENSION','CORRESPONDENCIA','CONTROL_OFICIOS','ESTADISTICAS','EXPEDIENTES'],
+    SUPERVISION:     ['ENTREVISTA','MEDIDAS','SUPERVISION','EVALUACION','CONSULTAS','CORRESPONDENCIA','CONTROL_OFICIOS','EXPEDIENTES'],
+    EVALUADOR_RIESGO:['ENTREVISTA','MEDIDAS','SUPERVISION','EVALUACION','CONSULTAS','SUSPENSION','CORRESPONDENCIA','CONTROL_OFICIOS','EXPEDIENTES'],
+    CORRESPONDENCIA: ['ENTREVISTA','CORRESPONDENCIA','CONTROL_OFICIOS','ESTADISTICAS'],
+};
+
+// Filtra los módulos que ya tiene el rol para mostrar solo los extras posibles
+const modulosDisponiblesParaRol = (rol) => {
+    const base = new Set(MODULOS_POR_ROL[rol] || []);
+    return TODOS_MODULOS.filter(m => !base.has(m.modulo));
+};
+
 const GestionUsuarios = () => {
+    const { user: usuarioActual } = useAuth();
+    const esSuperAdmin = usuarioActual?.rol === 'SUPERADMIN';
+
     const [usuarios, setUsuarios] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [form, setForm] = useState(initialForm);
@@ -42,6 +75,50 @@ const GestionUsuarios = () => {
     const [errores, setErrores] = useState({});
     const [showPassword, setShowPassword] = useState(false);
     const { showToast } = useToast();
+
+    // Modal de módulos extra
+    const [showModulos, setShowModulos] = useState(false);
+    const [usuarioModulos, setUsuarioModulos] = useState(null); // { id, nombre, rol }
+    const [modulosActivos, setModulosActivos] = useState([]); // [{ modulo, puedeVer, puedeCrear, puedeEditar }]
+    const [guardandoModulos, setGuardandoModulos] = useState(false);
+
+    const abrirModulos = async (u) => {
+        setUsuarioModulos(u);
+        setShowModulos(true);
+        try {
+            const res = await getModulosExtra(u.id);
+            if (res.data.ok) setModulosActivos(res.data.data || []);
+            else setModulosActivos([]);
+        } catch { setModulosActivos([]); }
+    };
+
+    const toggleModulo = (modulo) => {
+        setModulosActivos(prev => {
+            const existe = prev.find(m => m.modulo === modulo);
+            if (existe) return prev.filter(m => m.modulo !== modulo);
+            return [...prev, { modulo, puedeVer: true, puedeCrear: false, puedeEditar: false }];
+        });
+    };
+
+    const togglePermiso = (modulo, campo) => {
+        setModulosActivos(prev => prev.map(m =>
+            m.modulo === modulo ? { ...m, [campo]: !m[campo] } : m
+        ));
+    };
+
+    const handleGuardarModulos = async () => {
+        setGuardandoModulos(true);
+        try {
+            const res = await guardarModulosExtra(usuarioModulos.id, modulosActivos);
+            if (res.data.ok) {
+                showToast('Módulos actualizados correctamente');
+                setShowModulos(false);
+            } else {
+                showToast(res.data.message || 'Error al guardar', 'error');
+            }
+        } catch { showToast('Error al conectar con el servidor', 'error'); }
+        finally { setGuardandoModulos(false); }
+    };
 
     useEffect(() => { cargarUsuarios(); }, []);
 
@@ -177,6 +254,7 @@ const GestionUsuarios = () => {
     };
 
     return (
+        <>
         <div className="gu-container">
             <div className="gu-header">
                 <span>Mostrando {usuariosFiltrados.length} de {usuarios.length} usuarios</span>
@@ -245,6 +323,11 @@ const GestionUsuarios = () => {
                                 </td>
                                 <td className="gu-acciones">
                                     <button className="gu-btn-editar" onClick={() => handleEditar(u)}>Editar</button>
+                                    {esSuperAdmin && u.rol !== 'SUPERADMIN' && (
+                                        <button className="gu-btn-modulos" onClick={() => abrirModulos(u)}>
+                                            <i className="bi bi-grid-3x3-gap"></i> Módulos
+                                        </button>
+                                    )}
                                     <button className={`gu-btn-toggle ${u.activo ? 'gu-btn-desactivar' : 'gu-btn-activar'}`}
                                         onClick={() => handleToggle(u.id)}>
                                         {u.activo ? 'Desactivar' : 'Activar'}
@@ -372,6 +455,75 @@ const GestionUsuarios = () => {
                 </div>
             )}
         </div>
+
+        {/* ── Modal Módulos Extra ── */}
+        {showModulos && usuarioModulos && (
+            <div className="gu-modal-overlay">
+                <div className="gu-modal gu-modal-modulos">
+                    <div className="gu-modulos-header">
+                        <div>
+                            <h2><i className="bi bi-grid-3x3-gap"></i> Módulos Extra</h2>
+                            <p className="gu-modulos-sub">
+                                {usuarioModulos.nombre} {usuarioModulos.apPaterno} —
+                                <span className="gu-modulos-rol"> {usuarioModulos.rol}</span>
+                            </p>
+                        </div>
+                        <button className="gu-modulos-close" onClick={() => setShowModulos(false)}>
+                            <i className="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                    <p className="gu-modulos-hint">
+                        <i className="bi bi-info-circle"></i>
+                        Activa módulos adicionales al rol base. Los módulos propios del rol no aparecen aquí.
+                    </p>
+                    <div className="gu-modulos-lista">
+                        {modulosDisponiblesParaRol(usuarioModulos.rol).length === 0 ? (
+                            <div style={{ textAlign: 'center', color: '#6b7280', padding: '24px 0', fontSize: 14 }}>
+                                <i className="bi bi-check-circle" style={{ fontSize: 28, color: '#10b981', display: 'block', marginBottom: 8 }}></i>
+                                Este rol ya tiene acceso a todos los módulos disponibles.
+                            </div>
+                        ) : Object.entries(
+                            modulosDisponiblesParaRol(usuarioModulos.rol).reduce((acc, m) => {
+                                if (!acc[m.grupo]) acc[m.grupo] = [];
+                                acc[m.grupo].push(m);
+                                return acc;
+                            }, {})
+                        ).map(([grupo, items]) => (
+                            <div key={grupo} className="gu-modulos-grupo">
+                                <div className="gu-modulos-grupo-titulo">{grupo}</div>
+                                {items.map(({ modulo, label }) => {
+                                    const activo = modulosActivos.find(m => m.modulo === modulo);
+                                    return (
+                                        <div key={modulo} className={`gu-modulo-fila${activo ? ' activo' : ''}`}>
+                                            <label className="gu-modulo-check">
+                                                <input type="checkbox" checked={!!activo}
+                                                    onChange={() => toggleModulo(modulo)} />
+                                                <span>{label}</span>
+                                            </label>
+                                            {activo && (
+                                                <div className="gu-modulo-permisos">
+                                                    <label><input type="checkbox" checked={activo.puedeCrear}
+                                                        onChange={() => togglePermiso(modulo, 'puedeCrear')} /> Crear</label>
+                                                    <label><input type="checkbox" checked={activo.puedeEditar}
+                                                        onChange={() => togglePermiso(modulo, 'puedeEditar')} /> Editar</label>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ))}
+                    </div>
+                    <div className="gu-modal-actions">
+                        <button className="gu-btn-cancelar" onClick={() => setShowModulos(false)}>Cancelar</button>
+                        <button className="gu-btn-guardar" onClick={handleGuardarModulos} disabled={guardandoModulos}>
+                            {guardandoModulos ? 'Guardando...' : 'Guardar Módulos'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+        </>
     );
 };
 

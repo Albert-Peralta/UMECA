@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getImputados, getImputadoById, actualizarFotoImputado, registrarFallecimiento, registrarCierreCarpeta, revertirCierreCarpeta } from '../api/imputadosApi';
+import { getImputados, getImputadoById, actualizarImputado, actualizarFotoImputado, registrarFallecimiento, registrarCierreCarpeta, revertirCierreCarpeta } from '../api/imputadosApi';
 import { getSeguimientosPorImputado } from '../api/seguimientosApi';
 import { cambiarCumplimiento } from '../api/medidasApi';
 import { useAuth } from '../context/AuthContext';
@@ -16,10 +16,14 @@ const ITEMS_POR_PAGINA = 50;
 // MC: Auto no vinculación, Arraigo, Cambio MC→SCP
 // SCP: Nueva condena
 const ESTATUS_SOLO_MEDIDA = new Set([
-    'AUTO_NO_VINCULACION',
-    'ARRAIGO_DOMICILIARIO',
-    'CAMBIO_MC_A_SCP',
-    'NUEVA_CONDENA',
+    'CAMBIO_MEDIDA_SCP',
+    'LEVANTAMIENTO_MEDIDA',
+    'PRISION_PREVENTIVA',
+    'ACUERDO_REPARATORIO',
+    'NO_VINCULACION',
+    'SENTENCIA_ABSOLUTORIA',
+    'CUMPLIMIENTO_TOTAL_CONDICIONES',
+    'REVOCACION_SCP_INCUMPLIMIENTO',
 ]);
 
 const estatusEntrevistaConfig = {
@@ -111,6 +115,46 @@ const Imputados = ({ onNavigarEntrevista }) => {
     const [cierreConfirmando, setCierreConfirmando] = useState(false);
     const [confirmRevertir, setConfirmRevertir] = useState(false);
     const [reviertiendo, setReviertiendo] = useState(false);
+
+    // Editar datos básicos
+    const esAdmin = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN';
+    const [showEditar, setShowEditar] = useState(false);
+    const [formEditar, setFormEditar] = useState({ nombre: '', apPaterno: '', apMaterno: '' });
+    const [editarConfirmando, setEditarConfirmando] = useState(false);
+    const [guardandoEditar, setGuardandoEditar] = useState(false);
+    const [editarMsg, setEditarMsg] = useState(null);
+
+    const handleGuardarEdicion = async () => {
+        if (!formEditar.nombre.trim() || !formEditar.apPaterno.trim()) {
+            setEditarMsg({ tipo: 'error', texto: 'Nombre y apellido paterno son requeridos' });
+            return;
+        }
+        setGuardandoEditar(true);
+        try {
+            const res = await actualizarImputado(perfil.id, {
+                nombre: formEditar.nombre.trim(),
+                apPaterno: formEditar.apPaterno.trim(),
+                apMaterno: formEditar.apMaterno.trim() || null,
+                causaPenal: perfil.causaPenal,
+                delito: perfil.delito,
+                ubicacionFisica: perfil.ubicacionFisica,
+            });
+            if (res.data.ok) {
+                const resPerfil = await getImputadoById(perfil.id);
+                if (resPerfil.data.ok) setPerfil(resPerfil.data.data);
+                await cargarDatos();
+                setShowEditar(false);
+                setEditarConfirmando(false);
+                showToast('Datos del imputado actualizados correctamente');
+            } else {
+                setEditarMsg({ tipo: 'error', texto: res.data.message || 'No se pudo actualizar' });
+            }
+        } catch {
+            setEditarMsg({ tipo: 'error', texto: 'Error al conectar con el servidor' });
+        } finally {
+            setGuardandoEditar(false);
+        }
+    };
 
     const handleRevertirCierre = async () => {
         setReviertiendo(true);
@@ -319,7 +363,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
         const riesgoLabel = { FLEXIBLE: 'Bajo Riesgo', ESTRICTO: 'Medio Riesgo', DIFICIL_CUMPLIR: 'Alto Riesgo' };
         const estatusEntLabel = { PENDIENTE: 'Pendiente', EN_REVISION: 'En Revisión', COMPLETADO: 'Completado' };
         const estatusEvalLabel = { PENDIENTE: 'Pendiente', TRABAJANDO: 'En Proceso', FINALIZADO: 'Finalizado' };
-        const estadoMedidaLabel = { ACTIVO: 'Activo', SUSPENDIDO: 'Suspendido', FINALIZADO: 'Finalizado', LEVANTADO: 'Levantado', REVOCADO: 'Revocado' };
+        const estadoMedidaLabel = { ACTIVO: 'Activo', SUSPENDIDO: 'Suspendido', FINALIZADO: 'Finalizado' };
 
         const filaEntrevistas = (perfil.entrevistas || []).map(e => `
             <tr><td>${e.folio}</td><td>${e.fechaRegistro ?? '—'}</td><td>${e.tipoSeguimiento ?? '—'}</td>
@@ -466,9 +510,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
                 <span className="imp-leyenda-titulo">Estado de medida:</span>
                 <span className="imp-leyenda-item"><span className="medida-estado-dot medida-estado-activo"></span> Activo</span>
                 <span className="imp-leyenda-item"><span className="medida-estado-dot medida-estado-suspendido"></span> Suspendido</span>
-                <span className="imp-leyenda-item"><span className="medida-estado-dot medida-estado-levantado"></span> Levantado</span>
                 <span className="imp-leyenda-item"><span className="medida-estado-dot medida-estado-finalizado"></span> Finalizado</span>
-                <span className="imp-leyenda-item"><span className="medida-estado-dot medida-estado-revocado"></span> Revocado</span>
             </div>
 
             <div className="historico-tabla-wrapper">
@@ -1019,8 +1061,6 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                             ACTIVO:     { label: 'Activo',     cls: 'badge-activo' },
                                             SUSPENDIDO: { label: 'Suspendido', cls: 'badge-suspendido' },
                                             FINALIZADO: { label: 'Finalizado', cls: 'badge-finalizado' },
-                                            LEVANTADO:  { label: 'Levantado',  cls: 'badge-levantado' },
-                                            REVOCADO:   { label: 'Revocado',   cls: 'badge-revocado' },
                                         };
                                         return !perfil.medidas?.length ? (
                                             <div className="exp-empty">
@@ -1161,6 +1201,20 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                             <i className="bi bi-heartbreak"></i> Registrar Fallecimiento
                                         </button>
                                     )}
+                                    {esAdmin && (
+                                        <button className="exp-action-btn exp-btn-editar-datos" onClick={() => {
+                                            setFormEditar({
+                                                nombre: perfil.nombre || '',
+                                                apPaterno: perfil.apPaterno || '',
+                                                apMaterno: perfil.apMaterno || '',
+                                            });
+                                            setEditarConfirmando(false);
+                                            setEditarMsg(null);
+                                            setShowEditar(true);
+                                        }}>
+                                            <i className="bi bi-pencil-square"></i> Editar Datos
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -1223,17 +1277,17 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                                 >
                                                     <option value="">— Seleccionar estatus —</option>
                                                     {esSCP ? (<>
-                                                        <option value="CUMPLIMIENTO_DE_CONDICIONES">Cumplimiento de las condiciones</option>
-                                                        <option value="CUMPLIMIENTO_DE_REPARACION_DANO">Cumplimiento de la reparación del daño</option>
-                                                        <option value="INCUMPLIMIENTO">Incumplimiento</option>
-                                                        <option value="NUEVA_CONDENA">Nueva condena</option>
-                                                        <option value="FALLECIMIENTO_IMPUTADO">Fallecimiento del imputado</option>
+                                                        <option value="CUMPLIMIENTO_TOTAL_CONDICIONES">Cumplimiento total de condiciones</option>
+                                                        <option value="FALLECIMIENTO_IMPUTADO">Fallecimiento</option>
+                                                        <option value="REVOCACION_SCP_INCUMPLIMIENTO">Revocación de la SCP por incumplimiento</option>
                                                     </>) : (<>
-                                                        <option value="AUTO_NO_VINCULACION">Auto de no vinculación a proceso</option>
+                                                        <option value="CAMBIO_MEDIDA_SCP">Cambio de medida (modificación a SCP)</option>
+                                                        <option value="LEVANTAMIENTO_MEDIDA">Levantamiento de medida</option>
+                                                        <option value="PRISION_PREVENTIVA">Prisión preventiva (modificación)</option>
+                                                        <option value="ACUERDO_REPARATORIO">Acuerdo reparatorio</option>
+                                                        <option value="NO_VINCULACION">No vinculación</option>
+                                                        <option value="FALLECIMIENTO_MC">Fallecimiento</option>
                                                         <option value="SENTENCIA_ABSOLUTORIA">Sentencia absolutoria</option>
-                                                        <option value="SENTENCIA_CONDENATORIA">Sentencia condenatoria</option>
-                                                        <option value="ARRAIGO_DOMICILIARIO">Arraigo domiciliario</option>
-                                                        <option value="CAMBIO_MC_A_SCP">Cambio de MC a SCP</option>
                                                     </>)}
                                                 </select>
                                             );
@@ -1433,6 +1487,104 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                     ? <><i className="bi bi-arrow-repeat imp-spin"></i> Guardando…</>
                                     : <><i className="bi bi-heartbreak-fill"></i> Confirmar Fallecimiento</>}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Modal Editar Datos ── */}
+            {showEditar && perfil && (
+                <div className="fall-overlay">
+                    <div className="fall-modal">
+                        <div className="fall-header fall-header-editar">
+                            <div className="fall-header-icon fall-header-icon-editar">
+                                <i className="bi bi-pencil-square"></i>
+                            </div>
+                            <div>
+                                <h3 className="fall-header-title">{editarConfirmando ? 'Confirmar cambios' : 'Editar Datos del Imputado'}</h3>
+                                <p className="fall-header-sub">{perfil.nombreCompleto}</p>
+                            </div>
+                            <button className="fall-close" onClick={() => { setShowEditar(false); setEditarConfirmando(false); }}>
+                                <i className="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+                        <div className="fall-body">
+                            {!editarConfirmando ? (
+                                <>
+                                    <div className="editar-hint">
+                                        <i className="bi bi-info-circle-fill"></i>
+                                        Solo se pueden editar nombre y apellidos. La causa penal no se modifica.
+                                    </div>
+                                    <div className="editar-fields">
+                                        <div className="editar-field">
+                                            <label>Nombre(s) <span className="req">*</span></label>
+                                            <input type="text" placeholder="Nombre(s)" value={formEditar.nombre}
+                                                onChange={e => setFormEditar(p => ({ ...p, nombre: e.target.value }))} />
+                                        </div>
+                                        <div className="editar-field">
+                                            <label>Apellido Paterno <span className="req">*</span></label>
+                                            <input type="text" placeholder="Apellido paterno" value={formEditar.apPaterno}
+                                                onChange={e => setFormEditar(p => ({ ...p, apPaterno: e.target.value }))} />
+                                        </div>
+                                        <div className="editar-field">
+                                            <label>Apellido Materno</label>
+                                            <input type="text" placeholder="Apellido materno (opcional)" value={formEditar.apMaterno}
+                                                onChange={e => setFormEditar(p => ({ ...p, apMaterno: e.target.value }))} />
+                                        </div>
+                                    </div>
+                                    {editarMsg && (
+                                        <div className={`fall-msg fall-msg-${editarMsg.tipo}`} style={{ marginTop: 14 }}>{editarMsg.texto}</div>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    <div className="editar-confirm-box">
+                                        <div className="editar-confirm-row">
+                                            <span className="editar-confirm-label">Nuevo</span>
+                                            <span className="editar-confirm-val">
+                                                {[formEditar.nombre, formEditar.apPaterno, formEditar.apMaterno].filter(Boolean).join(' ')}
+                                            </span>
+                                        </div>
+                                        <div className="editar-confirm-row">
+                                            <span className="editar-confirm-label">Anterior</span>
+                                            <span className="editar-confirm-old">{perfil.nombreCompleto}</span>
+                                        </div>
+                                    </div>
+                                    <p className="editar-confirm-nota">
+                                        <i className="bi bi-arrow-repeat"></i>
+                                        El cambio se reflejará en todos los módulos donde aparece este imputado.
+                                    </p>
+                                </>
+                            )}
+                        </div>
+                        <div className="fall-footer">
+                            {!editarConfirmando ? (
+                                <>
+                                    <button className="fall-btn-cancelar" onClick={() => setShowEditar(false)}>Cancelar</button>
+                                    <button className="fall-btn-editar"
+                                        onClick={() => {
+                                            if (!formEditar.nombre.trim() || !formEditar.apPaterno.trim()) {
+                                                setEditarMsg({ tipo: 'error', texto: 'Nombre y apellido paterno son requeridos' });
+                                                return;
+                                            }
+                                            setEditarMsg(null);
+                                            setEditarConfirmando(true);
+                                        }}>
+                                        <i className="bi bi-arrow-right"></i> Continuar
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <button className="fall-btn-cancelar" onClick={() => setEditarConfirmando(false)}>
+                                        <i className="bi bi-arrow-left"></i> Volver
+                                    </button>
+                                    <button className="fall-btn-editar" onClick={handleGuardarEdicion} disabled={guardandoEditar}>
+                                        {guardandoEditar
+                                            ? <><i className="bi bi-hourglass-split"></i> Guardando...</>
+                                            : <><i className="bi bi-check-lg"></i> Confirmar Cambios</>}
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

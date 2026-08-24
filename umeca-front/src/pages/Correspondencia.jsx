@@ -31,6 +31,7 @@ export default function Correspondencia() {
     const [lista,    setLista]    = useState([]);
     const [buscar,          setBuscar]          = useState('');
     const [filtroPrioridad, setFiltroPrioridad] = useState('');
+    const [filtroEstado,    setFiltroEstado]    = useState('');
     const [pagina,          setPagina]          = useState(1);
     const [loading,  setLoading]  = useState(false);
 
@@ -101,7 +102,8 @@ export default function Correspondencia() {
         const coincideTexto = !buscar || [r.noTurno, r.noOficio, r.remitente, r.asunto, r.asignadoANombre]
             .some(v => v?.toLowerCase().includes(buscar.toLowerCase()));
         const coincidePrioridad = !filtroPrioridad || r.prioridad === filtroPrioridad;
-        return coincideTexto && coincidePrioridad;
+        const coincideEstado    = !filtroEstado    || r.estado    === filtroEstado;
+        return coincideTexto && coincidePrioridad && coincideEstado;
     });
     const totalPags = Math.max(1, Math.ceil(filtrada.length / POR_PAGINA));
     const pagActual = filtrada.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
@@ -747,6 +749,16 @@ export default function Correspondencia() {
                 >
                     <option value="">Todas las prioridades</option>
                     {PRIORIDADES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                </select>
+                <select
+                    className="corr-filtro-prioridad"
+                    value={filtroEstado}
+                    onChange={e => { setFiltroEstado(e.target.value); setPagina(1); }}
+                >
+                    <option value="">Todos los estados</option>
+                    {Object.entries(ESTADO_CONFIG).map(([k, v]) => (
+                        <option key={k} value={k}>{v.label}</option>
+                    ))}
                 </select>
                 {/* Contador con filtro de periodo — solo admin y correspondencia */}
                 {puedeRegistrar && <div className="corr-hoy-wrap" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setShowContMenu(false); }} tabIndex={-1}>

@@ -69,10 +69,10 @@ const FORM_BASE = {
     delitosJson: '',
     fechaFormulacion: '', fechaVinculacionProceso: '', fechaEntrevistaEvaluacion: '',
     // SCP
-    fechaImposicionScp: '', plazoScp: '', canalizacion: '', tipoServicio: '',
-    fechaCanalizacion: '', presentacionPeriodica: '', noBiometrico: '', noLibro: '', noPagina: '',
+    fechaImposicionScp: '', plazoScp: '', presentacionPeriodica: '',
+    tieneCanalizacion: false, canalizacion: '', tipoServicio: '', fechaCanalizacion: '', canalizacionObservaciones: '',
     descripcionInforme: '',
-    fechaInformeFinal: '', vencimientoPlazo: '', oficioSobreseimiento: '', responsableCierre: '',
+    fechaInformeFinal: '', vencimientoPlazo: '', tieneSobreseimiento: false, oficioSobreseimiento: '', responsableCierre: '',
     estatusFinal: '',
     // conclusión
     advertencia: '', observaciones: '', responsableSeguimiento: '',
@@ -107,7 +107,11 @@ const FormularioSCP = ({ medidaInicial, onVolver, onGuardado }) => {
         if (medidaInicial) {
             const sanitized = Object.fromEntries(
                 Object.entries({ ...FORM_BASE, ...medidaInicial })
-                    .map(([k, v]) => [k, v === null ? '' : v])
+                    .map(([k, v]) => {
+                        if (k === 'tieneSobreseimiento') return [k, !!v];
+                        if (k === 'tieneCanalizacion') return [k, !!v];
+                        return [k, v === null ? '' : v];
+                    })
             );
             return sanitized;
         }
@@ -260,6 +264,10 @@ const FormularioSCP = ({ medidaInicial, onVolver, onGuardado }) => {
                 const el = document.getElementById('fm-fracciones');
                 if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
+            return;
+        }
+        if ((form.canalizacionObservaciones || '').length > 700) {
+            setError('Las observaciones de canalización exceden el límite de 700 caracteres. Reduce el texto para continuar.');
             return;
         }
         setErrores({});
@@ -444,51 +452,132 @@ const FormularioSCP = ({ medidaInicial, onVolver, onGuardado }) => {
                 <Field label="Plazo de la S.C.P. (meses)">
                     <input type="number" min="1" max="120" value={form.plazoScp} onChange={e => set('plazoScp', e.target.value)} placeholder="Ej: 12" />
                 </Field>
-                <Field label="Canalización">
-                    <input type="text" value={form.canalizacion} onChange={e => set('canalizacion', e.target.value)} />
-                </Field>
-                <Field label="Tipo de servicio">
-                    <input type="text" value={form.tipoServicio} onChange={e => set('tipoServicio', e.target.value)} />
-                </Field>
-                <Field label="Fecha de canalización">
-                    <input type="date" value={form.fechaCanalizacion} onChange={e => set('fechaCanalizacion', e.target.value)} />
-                </Field>
                 <Field label="Presentación periódica">
                     <input type="text" value={form.presentacionPeriodica} onChange={e => set('presentacionPeriodica', e.target.value)} />
                 </Field>
-                <Field label="No. de biométrico">
-                    <input type="text" value={form.noBiometrico} onChange={e => set('noBiometrico', e.target.value)} placeholder="Ej: BIO-001" />
+            </div>
+
+            <div className="fm-grid-4">
+                <Field label="Vencimiento del plazo de la S.C.P.">
+                    <input type="date" value={form.vencimientoPlazo} onChange={e => set('vencimientoPlazo', e.target.value)} />
                 </Field>
-                <Field label="No. de libro">
-                    <input type="text" value={form.noLibro} onChange={e => set('noLibro', e.target.value)} placeholder="Ej: 001" />
-                </Field>
-                <Field label="No. de página">
-                    <input type="text" value={form.noPagina} onChange={e => set('noPagina', e.target.value)} placeholder="Ej: 45" />
+                <Field label="Responsable de cierre de carpeta">
+                    <input type="text" value={form.responsableCierre} onChange={e => set('responsableCierre', e.target.value)} />
                 </Field>
             </div>
+
             <div className="fm-grid-1">
                 <Field label="Último informe S.C.P." full>
                     <textarea rows={3} value={form.descripcionInforme} onChange={e => set('descripcionInforme', e.target.value)} placeholder="Descripción del último informe de suspensión condicional..." />
                 </Field>
             </div>
-            <div className="fm-grid-4">
-                <Field label="Vencimiento del plazo de la S.C.P.">
-                    <input type="date" value={form.vencimientoPlazo} onChange={e => set('vencimientoPlazo', e.target.value)} />
-                </Field>
-                <Field label="Oficio de sobreseimiento">
-                    <input type="text" value={form.oficioSobreseimiento} onChange={e => set('oficioSobreseimiento', e.target.value)} placeholder="Especificar..." />
-                </Field>
-                <Field label="Responsable de cierre de carpeta">
-                    <input type="text" value={form.responsableCierre} onChange={e => set('responsableCierre', e.target.value)} />
-                </Field>
-                {/* Estatus final solo editable si ya se ha impuesto la S.C.P. -------------------------------------
-                <Field label="Estatus final">
-                    <select value={form.estatusFinal} onChange={e => set('estatusFinal', e.target.value)}>
-                        <option value="">Seleccionar...</option>
-                        <option value="TOTAL">Total</option>
-                        <option value="PARCIAL">Parcial</option>
-                    </select>
-                </Field>*/}
+
+            {/* ── SECCIÓN: CANALIZACIÓN ── */}
+            <div style={{
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: 10,
+                margin: '18px 24px 0',
+                overflow: 'hidden',
+            }}>
+                {/* Header de sección con switch integrado */}
+                <div style={{
+                    background: 'linear-gradient(90deg, #1e3a5f 0%, #2d5986 100%)',
+                    padding: '12px 20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                }}>
+                    <span style={{ color: '#fff', fontWeight: 700, fontSize: 13, letterSpacing: 1, textTransform: 'uppercase' }}>
+                        Canalización
+                    </span>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', margin: 0 }}>
+                        <span style={{ fontSize: 12, color: '#cbd5e1', fontWeight: 600 }}>
+                            {form.tieneCanalizacion ? 'Activa' : 'Sin canalización'}
+                        </span>
+                        <div
+                            onClick={() => set('tieneCanalizacion', !form.tieneCanalizacion)}
+                            style={{
+                                width: 44, height: 24, borderRadius: 12, cursor: 'pointer',
+                                background: form.tieneCanalizacion ? '#22c55e' : '#475569',
+                                position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+                            }}
+                        >
+                            <div style={{
+                                position: 'absolute', top: 3, left: form.tieneCanalizacion ? 23 : 3,
+                                width: 18, height: 18, borderRadius: '50%', background: '#fff',
+                                transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.25)'
+                            }} />
+                        </div>
+                    </label>
+                </div>
+
+                {/* Contenido colapsable */}
+                {form.tieneCanalizacion ? (
+                    <div style={{ padding: '16px 20px 20px' }}>
+                        <div className="fm-grid-4" style={{ margin: 0 }}>
+                            <Field label="Canalización">
+                                <input type="text" value={form.canalizacion} onChange={e => set('canalizacion', e.target.value)} />
+                            </Field>
+                            <Field label="Tipo de servicio">
+                                <input type="text" value={form.tipoServicio} onChange={e => set('tipoServicio', e.target.value)} />
+                            </Field>
+                            <Field label="Fecha de canalización">
+                                <input type="date" value={form.fechaCanalizacion} onChange={e => set('fechaCanalizacion', e.target.value)} />
+                            </Field>
+                        </div>
+                        <div style={{ marginTop: 14 }}>
+                            <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: 0.5, textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
+                                Observaciones de canalización
+                            </label>
+                            {(() => {
+                                const len = (form.canalizacionObservaciones || '').length;
+                                const excedido = len > 700;
+                                const cerca = len >= 600 && len <= 700;
+                                const color = excedido ? '#ef4444' : cerca ? '#f59e0b' : '#cbd5e1';
+                                const bg    = excedido ? '#fff5f5' : '#fff';
+                                return (
+                                    <>
+                                        <textarea
+                                            rows={3}
+                                            value={form.canalizacionObservaciones || ''}
+                                            onChange={e => set('canalizacionObservaciones', e.target.value)}
+                                            placeholder="Observaciones sobre la canalización..."
+                                            style={{
+                                                width: '100%', resize: 'vertical', borderRadius: 6, padding: '8px 10px', fontSize: 13,
+                                                border: `1px solid ${color}`, outline: 'none', boxSizing: 'border-box',
+                                                background: bg, transition: 'border-color 0.2s, background 0.2s',
+                                            }}
+                                        />
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                                            {excedido ? (
+                                                <span style={{ fontSize: 11, color: '#ef4444', fontWeight: 600 }}>
+                                                    <i className="bi bi-exclamation-triangle-fill" style={{ marginRight: 4 }} />
+                                                    Límite de 700 caracteres excedido — reduce el texto para poder guardar
+                                                </span>
+                                            ) : cerca ? (
+                                                <span style={{ fontSize: 11, color: '#b45309', fontWeight: 600 }}>
+                                                    <i className="bi bi-info-circle-fill" style={{ marginRight: 4 }} />
+                                                    Acercándote al límite máximo de 700 caracteres
+                                                </span>
+                                            ) : <span />}
+                                            <span style={{
+                                                fontSize: 11, fontWeight: excedido ? 700 : 400,
+                                                color: excedido ? '#ef4444' : cerca ? '#b45309' : '#94a3b8',
+                                            }}>
+                                                {len} / 700
+                                            </span>
+                                        </div>
+                                    </>
+                                );
+                            })()}
+                        </div>
+                    </div>
+                ) : (
+                    <div style={{ padding: '14px 20px', color: '#94a3b8', fontSize: 13, fontStyle: 'italic' }}>
+                        Activa la canalización para registrar los datos correspondientes.
+                    </div>
+                )}
             </div>
 
             {/* ── SECCIÓN 3: CONDICIONES DE SUSPENSIÓN ── */}
@@ -568,7 +657,6 @@ const FormularioSCP = ({ medidaInicial, onVolver, onGuardado }) => {
                     <select value={form.estado} onChange={e => set('estado', e.target.value)}>
                         <option value="ACTIVO">Activo</option>
                         <option value="SUSPENDIDO">Suspendido</option>
-                        <option value="FINALIZADO">Finalizado</option>
                     </select>
                 </Field>
                 <Field label="Fecha de inicio">

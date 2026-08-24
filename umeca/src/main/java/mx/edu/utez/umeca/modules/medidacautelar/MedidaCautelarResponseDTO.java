@@ -60,10 +60,13 @@ public class MedidaCautelarResponseDTO {
     // SCP específico
     private LocalDate fechaImposicionScp;
     private Integer plazoScp; // meses
+    private Boolean tieneCanalizacion;
     private String canalizacion;
+    private String canalizacionObservaciones;
     private String tipoServicio;
     private LocalDate fechaInformeFinal;
     private LocalDate vencimientoPlazo;
+    private Boolean tieneSobreseimiento;
     private String oficioSobreseimiento;
     private String responsableCierre;
 
@@ -186,10 +189,13 @@ public class MedidaCautelarResponseDTO {
         // SCP específico
         dto.setFechaImposicionScp(m.getFechaImposicionScp());
         dto.setPlazoScp(m.getPlazoScp());
+        dto.setTieneCanalizacion(Boolean.TRUE.equals(m.getTieneCanalizacion()));
         dto.setCanalizacion(m.getCanalizacion());
+        dto.setCanalizacionObservaciones(m.getCanalizacionObservaciones());
         dto.setTipoServicio(m.getTipoServicio());
         dto.setFechaInformeFinal(m.getFechaInformeFinal());
         dto.setVencimientoPlazo(m.getVencimientoPlazo());
+        dto.setTieneSobreseimiento(Boolean.TRUE.equals(m.getTieneSobreseimiento()));
         dto.setOficioSobreseimiento(m.getOficioSobreseimiento());
         dto.setResponsableCierre(m.getResponsableCierre());
 

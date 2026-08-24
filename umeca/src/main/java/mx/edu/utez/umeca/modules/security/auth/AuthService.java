@@ -8,6 +8,8 @@ import mx.edu.utez.umeca.modules.security.config.JwtService;
 import mx.edu.utez.umeca.modules.security.mail.MailService;
 import mx.edu.utez.umeca.modules.security.user.User;
 import mx.edu.utez.umeca.modules.security.user.UserRepository;
+import mx.edu.utez.umeca.modules.moduloextra.UsuarioModuloExtraRepository;
+import mx.edu.utez.umeca.modules.moduloextra.UsuarioModuloExtraDTO;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.DisabledException;
@@ -30,6 +32,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final MailService mailService;
     private final BitacoraRepository bitacoraRepo;
+    private final UsuarioModuloExtraRepository moduloExtraRepository;
 
     public ApiResponse login(AuthDTO dto) {
         try {
@@ -66,6 +69,8 @@ public class AuthService {
             data.put("zona", user.getZona());
             data.put("username", user.getUsername());
             data.put("primerLogin", user.isPrimerLogin());
+            data.put("modulosExtra", moduloExtraRepository.findByUsuarioId(user.getId())
+                    .stream().map(UsuarioModuloExtraDTO::from).toList());
 
             return new ApiResponse(true, "Inicio de sesión exitoso", data);
 

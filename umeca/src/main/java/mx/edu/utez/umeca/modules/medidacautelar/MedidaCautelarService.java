@@ -224,6 +224,20 @@ public class MedidaCautelarService {
     }
 
     @Transactional
+    public ApiResponse toggleSobreseimiento(Long id, boolean valor) {
+        return repository.findById(id).map(m -> {
+            m.setTieneSobreseimiento(valor);
+            MedidaCautelar saved = repository.save(m);
+            String nombre = saved.getImputado() != null
+                    ? saved.getImputado().getNombre() + " " + saved.getImputado().getApPaterno() : "—";
+            bitacoraService.registrar(Bitacora.Entidad.MEDIDA_CAUTELAR, saved.getId(), nombre,
+                    Bitacora.Accion.EDITAR,
+                    "Sobreseimiento " + (valor ? "activado" : "desactivado"));
+            return new ApiResponse(true, "Sobreseimiento actualizado", MedidaCautelarResponseDTO.from(saved));
+        }).orElse(new ApiResponse(false, "Registro no encontrado"));
+    }
+
+    @Transactional
     public ApiResponse agregarSeguimiento(Long medidaId, SeguimientoMedidaDTO dto) {
         return repository.findById(medidaId).map(medida -> {
             SeguimientoMedida seg = new SeguimientoMedida();
@@ -344,10 +358,13 @@ public class MedidaCautelarService {
         // SCP
         m.setFechaImposicionScp(dto.getFechaImposicionScp());
         m.setPlazoScp(dto.getPlazoScp());
+        m.setTieneCanalizacion(Boolean.TRUE.equals(dto.getTieneCanalizacion()));
         m.setCanalizacion(dto.getCanalizacion());
+        m.setCanalizacionObservaciones(dto.getCanalizacionObservaciones());
         m.setTipoServicio(dto.getTipoServicio());
         m.setFechaInformeFinal(dto.getFechaInformeFinal());
         m.setVencimientoPlazo(dto.getVencimientoPlazo());
+        m.setTieneSobreseimiento(Boolean.TRUE.equals(dto.getTieneSobreseimiento()));
         m.setOficioSobreseimiento(dto.getOficioSobreseimiento());
         m.setResponsableCierre(dto.getResponsableCierre());
 

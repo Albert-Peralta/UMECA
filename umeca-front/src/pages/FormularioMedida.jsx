@@ -45,7 +45,6 @@ const DETALLES_MC = {
     I:    [
         { key: 'periodicidad',       label: 'Periodicidad', type: 'select', options: ['Diaria','Semanal','Quincenal','Mensual'] },
         { key: 'lugarPresentacion',  label: 'Lugar de presentación', full: true },
-        { key: 'autoridadPresenta',  label: 'Autoridad ante quien se presenta', full: true },
     ],
     II:   [
         { key: 'tipoGarantia',    label: 'Tipo de garantía' },
@@ -140,7 +139,7 @@ const FORM_BASE = {
     fechaCumplimientoAcuerdo: '', estatusFinal: '', fechaTermino: '',
     // SCP
     fechaImposicionScp: '', plazoScp: '', canalizacion: '', tipoServicio: '',
-    fechaInformeFinal: '', vencimientoPlazo: '', oficioSobreseimiento: '', responsableCierre: '',
+    fechaInformeFinal: '', vencimientoPlazo: '', tieneSobreseimiento: false, oficioSobreseimiento: '', responsableCierre: '',
     // info adicional
     advertencia: '', observaciones: '', responsableSeguimiento: '',
     observacionesGenerales: '', fechaProximaRevision: '', vigenciaInicio: '', vigenciaFin: '',
@@ -176,7 +175,10 @@ const FormularioMedida = ({ medidaInicial, onVolver, onGuardado }) => {
             // Reemplaza null por '' para evitar inputs controlados con value=null
             const sanitized = Object.fromEntries(
                 Object.entries({ ...FORM_BASE, ...medidaInicial })
-                    .map(([k, v]) => [k, v === null ? '' : v])
+                    .map(([k, v]) => {
+                        if (k === 'tieneSobreseimiento') return [k, !!v];
+                        return [k, v === null ? '' : v];
+                    })
             );
             return sanitized;
         }
@@ -521,15 +523,6 @@ const FormularioMedida = ({ medidaInicial, onVolver, onGuardado }) => {
                         <Field label="Fecha de canalización">
                             <input type="date" value={form.fechaCanalizacion} onChange={e => set('fechaCanalizacion', e.target.value)} />
                         </Field>
-                        <Field label="No. de biométrico">
-                            <input type="text" value={form.noBiometrico} onChange={e => set('noBiometrico', e.target.value)} placeholder="Ej: BIO-001" />
-                        </Field>
-                        <Field label="No. de libro">
-                            <input type="text" value={form.noLibro} onChange={e => set('noLibro', e.target.value)} placeholder="Ej: 001" />
-                        </Field>
-                        <Field label="No. de página">
-                            <input type="text" value={form.noPagina} onChange={e => set('noPagina', e.target.value)} placeholder="Ej: 45" />
-                        </Field>
                         <Field label="Presentación periódica">
                             <input type="text" value={form.presentacionPeriodica} onChange={e => set('presentacionPeriodica', e.target.value)} />
                         </Field>
@@ -591,15 +584,6 @@ const FormularioMedida = ({ medidaInicial, onVolver, onGuardado }) => {
                         <Field label="Presentación periódica">
                             <input type="text" value={form.presentacionPeriodica} onChange={e => set('presentacionPeriodica', e.target.value)} />
                         </Field>
-                        <Field label="No. de biométrico">
-                            <input type="text" value={form.noBiometrico} onChange={e => set('noBiometrico', e.target.value)} placeholder="Ej: BIO-001" />
-                        </Field>
-                        <Field label="No. de libro">
-                            <input type="text" value={form.noLibro} onChange={e => set('noLibro', e.target.value)} placeholder="Ej: 001" />
-                        </Field>
-                        <Field label="No. de página">
-                            <input type="text" value={form.noPagina} onChange={e => set('noPagina', e.target.value)} placeholder="Ej: 45" />
-                        </Field>
                     </div>
                     <div className="fm-grid-1">
                         <Field label="Último informe S.C.P." full>
@@ -610,9 +594,32 @@ const FormularioMedida = ({ medidaInicial, onVolver, onGuardado }) => {
                         <Field label="Vencimiento del plazo de la S.C.P.">
                             <input type="date" value={form.vencimientoPlazo} onChange={e => set('vencimientoPlazo', e.target.value)} />
                         </Field>
-                        <Field label="Oficio de sobreseimiento">
-                            <input type="text" value={form.oficioSobreseimiento} onChange={e => set('oficioSobreseimiento', e.target.value)} placeholder="Especificar..." />
+                        <Field label="¿Cuenta con sobreseimiento?">
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginTop: 4 }}>
+                                <div
+                                    onClick={() => set('tieneSobreseimiento', !form.tieneSobreseimiento)}
+                                    style={{
+                                        width: 44, height: 24, borderRadius: 12, cursor: 'pointer',
+                                        background: form.tieneSobreseimiento ? '#16a34a' : '#d1d5db',
+                                        position: 'relative', transition: 'background 0.2s',
+                                    }}
+                                >
+                                    <div style={{
+                                        position: 'absolute', top: 3, left: form.tieneSobreseimiento ? 23 : 3,
+                                        width: 18, height: 18, borderRadius: '50%', background: '#fff',
+                                        transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                                    }} />
+                                </div>
+                                <span style={{ fontSize: 13, color: form.tieneSobreseimiento ? '#15803d' : '#6b7280', fontWeight: 600 }}>
+                                    {form.tieneSobreseimiento ? 'Sí' : 'No'}
+                                </span>
+                            </label>
                         </Field>
+                        {form.tieneSobreseimiento && (
+                            <Field label="Oficio de sobreseimiento">
+                                <input type="text" value={form.oficioSobreseimiento} onChange={e => set('oficioSobreseimiento', e.target.value)} placeholder="Especificar..." />
+                            </Field>
+                        )}
                         <Field label="Responsable de cierre de carpeta">
                             <input type="text" value={form.responsableCierre} onChange={e => set('responsableCierre', e.target.value)} />
                         </Field>
@@ -708,7 +715,6 @@ const FormularioMedida = ({ medidaInicial, onVolver, onGuardado }) => {
                     <select value={form.estado} onChange={e => set('estado', e.target.value)}>
                         <option value="ACTIVO">Activo</option>
                         <option value="SUSPENDIDO">Suspendido</option>
-                        <option value="FINALIZADO">Finalizado</option>
                     </select>
                 </Field>
                 <Field label="Fecha de inicio">

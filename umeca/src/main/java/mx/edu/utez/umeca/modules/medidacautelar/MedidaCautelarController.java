@@ -65,6 +65,14 @@ public class MedidaCautelarController {
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
     }
 
+    @PatchMapping("/{id}/sobreseimiento")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION')")
+    public ResponseEntity<ApiResponse> toggleSobreseimiento(@PathVariable Long id,
+                                                             @RequestParam boolean valor) {
+        ApiResponse res = service.toggleSobreseimiento(id, valor);
+        return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
+    }
+
     @PostMapping("/{id}/revocacion")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION')")
     public ResponseEntity<ApiResponse> revocacion(@PathVariable Long id,
