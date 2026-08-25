@@ -130,7 +130,7 @@ public class CorrespondenciaController {
 
     /** Personal: cambiar estado (LEIDO, EN_ESPERA, FINALIZADO) */
     @PatchMapping("/{id}/estado")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO','ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO','ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> cambiarEstado(@PathVariable Long id, @RequestParam String estado) {
         ApiResponse res = service.cambiarEstado(id, estado);
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
