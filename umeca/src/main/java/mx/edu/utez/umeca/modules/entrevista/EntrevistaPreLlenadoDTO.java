@@ -24,8 +24,13 @@ public class EntrevistaPreLlenadoDTO {
         EntrevistaPreLlenadoDTO dto = new EntrevistaPreLlenadoDTO();
         dto.setId(e.getId());
         dto.setFolio(e.getFolio());
-        dto.setNombreCompleto(e.getNombre() + " " + e.getApPaterno()
-                + (e.getApMaterno() != null ? " " + e.getApMaterno() : ""));
+        String nom = (e.getNombre() != null && !e.getNombre().isBlank()) ? e.getNombre()
+                : (e.getImputado() != null ? e.getImputado().getNombre() : "");
+        String pat = (e.getApPaterno() != null && !e.getApPaterno().isBlank()) ? e.getApPaterno()
+                : (e.getImputado() != null ? e.getImputado().getApPaterno() : "");
+        String mat = (e.getApMaterno() != null && !e.getApMaterno().isBlank()) ? e.getApMaterno()
+                : (e.getImputado() != null ? e.getImputado().getApMaterno() : null);
+        dto.setNombreCompleto(nom + " " + pat + (mat != null && !mat.isBlank() ? " " + mat : ""));
         dto.setCausaPenal(e.getCausaPenal());
         dto.setTipoSeguimiento(e.getTipoSeguimiento() != null ? e.getTipoSeguimiento().name() : null);
         dto.setImputadoId(e.getImputado() != null ? e.getImputado().getId() : null);

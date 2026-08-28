@@ -54,6 +54,7 @@ public class EvaluacionRiesgoService {
     }
 
     /** Búsqueda por nombre, apellido o causa penal (texto libre). */
+    @Transactional(readOnly = true)
     public ApiResponse buscar(String termino) {
         List<EvaluacionRiesgoResponseDTO> lista = evaluacionRepository
                 .buscar(termino)
@@ -104,6 +105,7 @@ public class EvaluacionRiesgoService {
         ev.setNombreSolicitanteTexto(dto.getNombreSolicitante());
         ev.setCargoSolicitante(dto.getCargo());
         ev.setDependenciaSolicitante(dto.getDependencia());
+        ev.setCausaPenal(dto.getCausaPenal());
         ev.setSolicitante(solicitante);
         ev.setImputado(imputado);
         // Si quien crea tiene rol de evaluador, se auto-asigna
@@ -339,6 +341,7 @@ public class EvaluacionRiesgoService {
         ev.setHoraInicio(dto.getHoraInicio());
         ev.setLugarEntrevista(dto.getLugarEntrevista());
         ev.setEdad(dto.getEdad());
+        ev.setCausaPenal(dto.getCausaPenal());
         ev.setSolicitante(solicitante);
         ev.setImputado(imputado);
         ev.setEvaluador(solicitante);

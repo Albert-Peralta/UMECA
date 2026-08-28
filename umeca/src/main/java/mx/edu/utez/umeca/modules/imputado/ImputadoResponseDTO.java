@@ -43,6 +43,7 @@ public class ImputadoResponseDTO {
     private Boolean vieneDeScp;        // la medida activa viene de conversión SCP→MC
     private String cumplimientoMedidaActiva; // "CUMPLIMIENTO" | "INCUMPLIMIENTO" | null
     private String zona;               // zona de la última entrevista del imputado
+    private String ultimaEntrevistaEstado;
 
     // Resúmenes relacionados
     private List<EntrevistaResumen> entrevistas;
@@ -56,6 +57,7 @@ public class ImputadoResponseDTO {
     public static class EntrevistaResumen {
         private Long id;
         private String folio;
+        private String causaPenal;
         private LocalDate fechaRegistro;
         private String estado;
         private String tipoSeguimiento;
@@ -65,6 +67,7 @@ public class ImputadoResponseDTO {
             EntrevistaResumen r = new EntrevistaResumen();
             r.setId(e.getId());
             r.setFolio(e.getFolio());
+            r.setCausaPenal(e.getCausaPenal());
             r.setFechaRegistro(e.getFechaRegistro());
             r.setEstado(e.getEstado().name());
             r.setTipoSeguimiento(e.getTipoSeguimiento() != null ? e.getTipoSeguimiento().name() : null);

@@ -46,8 +46,8 @@ const EntrevistaEncuadre = () => {
         try {
             const res = await getEntrevistaById(id);
             setEntrevistaSeleccionada(res.data.data);
-        } catch (e) {
-            // silenced
+        } catch {
+            showToast('No se pudo cargar la entrevista. Verifica la conexión.', 'error');
         }
     };
 
@@ -107,7 +107,6 @@ const EntrevistaEncuadre = () => {
                     </span>
                     <div className="ee-stats-badges">
                         <span className="ee-badge-completado">Completadas: {entrevistas.filter(e => e.estado === 'COMPLETADO' && !e.imputado?.fallecido).length}</span>
-                        <span className="ee-badge-revision">En Revisión: {entrevistas.filter(e => e.estado === 'EN_REVISION' && !e.imputado?.fallecido).length}</span>
                         <span className="ee-badge-pendiente">Pendientes: {entrevistas.filter(e => e.estado === 'PENDIENTE' && !e.imputado?.fallecido).length}</span>
                         {entrevistas.filter(e => e.imputado?.fallecido).length > 0 && (
                             <span className="imp-badge-fallecido" style={{ fontSize: '11px', padding: '3px 8px' }}>
@@ -153,7 +152,6 @@ const EntrevistaEncuadre = () => {
                 <select className="ee-select" value={filtroEstado} onChange={e => { setFiltroEstado(e.target.value); setPagina(1); }}>
                     <option value="">Todos los estados</option>
                     <option value="PENDIENTE">Pendiente</option>
-                    <option value="EN_REVISION">En Revisión</option>
                     <option value="COMPLETADO">Completado</option>
                 </select>
             </div>

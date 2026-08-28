@@ -272,6 +272,18 @@ ${tablaIdent}
                     <button className="ped-btn-cerrar" style={{ background: 'rgba(255,255,255,.12)', fontSize: 12 }} onClick={handleRestaurar} title="Restaurar texto original">
                         <i className="bi bi-arrow-counterclockwise" /> Restaurar
                     </button>
+                    {localStorage.getItem('volverExpedienteId') && (
+                        <button className="ped-btn-cerrar" style={{ background: 'rgba(255,255,255,.18)' }} onClick={() => {
+                            const id = localStorage.getItem('volverExpedienteId');
+                            localStorage.removeItem('volverExpedienteId');
+                            localStorage.setItem('abrirExpedienteId', id);
+                            localStorage.setItem('abrirExpedienteTab', 'evaluaciones');
+                            onCerrar();
+                            window.dispatchEvent(new CustomEvent('navigate', { detail: 'imputados' }));
+                        }}>
+                            <i className="bi bi-person-vcard" /> Volver al Expediente
+                        </button>
+                    )}
                     <button className="ped-btn-cerrar" onClick={onCerrar}>
                         <i className="bi bi-x-lg" /> Cerrar
                     </button>

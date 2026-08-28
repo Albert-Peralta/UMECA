@@ -23,21 +23,21 @@ const CAMPOS_SUPERVISION = [
     { key: 'firmasRecabadasSuper',    label: 'Firmas recabadas',                    tipo: null, manual: true },
     { key: 'entrevistaEncuadreSuper', label: 'Entrevista de encuadre',              tipo: null, manual: true },
     { key: 'calendarioSuper',         label: 'Calendario',                          tipo: null, manual: true },
-    { key: 'otroSuper',               label: 'Otro',                                tipo: 'OTRO_SUPERVISION' },
+    { key: 'capturaCarpetas',         label: 'Captura de carpetas',                 tipo: null, manual: true },
+    { key: 'capturaOficiosImposicion',label: 'Captura de oficios de imposición',    tipo: null, manual: true },
 ];
 
 const CAMPOS_EVALUACION = [
-    { key: 'oficiosRegistros',        label: 'Oficios de registros',          tipo: 'OFICIO_REGISTRO',    manual: true },
-    { key: 'opinionTecnicaFC',        label: 'Opinión técnica F.C.',           tipo: 'OPINION_TECNICA_FC' },
-    { key: 'opinionTecnicaFF',        label: 'Opinión técnica F.F.',           tipo: 'OPINION_TECNICA_FF' },
-    { key: 'negacionesFC',            label: 'Negaciones F.C.',                tipo: 'NEGACION_FC' },
-    { key: 'negacionesFF',            label: 'Negaciones F.F.',                tipo: 'NEGACION_FF' },
-    { key: 'informesFC',              label: 'Informes F.C.',                  tipo: 'INFORME_FC' },
-    { key: 'informesFF',              label: 'Informes F.F.',                  tipo: 'INFORME_FF' },
-    { key: 'firmasRecabadasEval',     label: 'Firmas recabadas',               tipo: null, manual: true },
-    { key: 'entrevistaEncuadreEval',  label: 'Entrevista de encuadre',         tipo: null, manual: true },
-    { key: 'entrevistaEvaluacionEval',label: 'Entrevista de evaluación',       tipo: null, manual: true },
-    { key: 'otro',                    label: 'Otro',                           tipo: 'OTRO' },
+    { key: 'oficiosRegistros',         label: 'Oficios de registros',         tipo: null, manual: true },
+    { key: 'opinionTecnicaFC',         label: 'Opinión técnica F.C.',          tipo: null, manual: true },
+    { key: 'opinionTecnicaFF',         label: 'Opinión técnica F.F.',          tipo: null, manual: true },
+    { key: 'negacionesFC',             label: 'Negaciones F.C.',               tipo: null, manual: true },
+    { key: 'negacionesFF',             label: 'Negaciones F.F.',               tipo: null, manual: true },
+    { key: 'informesFC',               label: 'Informes F.C.',                 tipo: null, manual: true },
+    { key: 'informesFF',               label: 'Informes F.F.',                 tipo: null, manual: true },
+    { key: 'firmasRecabadasEval',      label: 'Firmas recabadas',              tipo: null, manual: true },
+    { key: 'entrevistaEncuadreEval',   label: 'Entrevista de encuadre',        tipo: null, manual: true },
+    { key: 'entrevistaEvaluacionEval', label: 'Entrevista de evaluación',      tipo: null, manual: true },
 ];
 
 const CAMPOS_CORRESPONDENCIA = [
@@ -89,9 +89,16 @@ export default function ReporteDiario() {
     // manualesGuardados: valores confirmados (afectan totales)
     // manualesEditando:  valores en edición (solo afectan inputs)
     const CAMPOS_MANUALES_KEYS = [
-        'oficiosRegistros',
+        // Supervisión manuales
         'firmasRecabadasSuper', 'entrevistaEncuadreSuper', 'calendarioSuper',
+        'capturaCarpetas', 'capturaOficiosImposicion',
+        // Evaluación — todos manuales
+        'oficiosRegistros',
+        'opinionTecnicaFC', 'opinionTecnicaFF',
+        'negacionesFC', 'negacionesFF',
+        'informesFC', 'informesFF',
         'firmasRecabadasEval', 'entrevistaEncuadreEval', 'entrevistaEvaluacionEval',
+        // Correspondencia
         'totalOficiosRecibidos', 'nuevosCasosMC', 'nuevosCasosSCP',
         'sobreseimientos', 'levantamientoMedida', 'oficiosDiversosCorr',
     ];
@@ -305,11 +312,13 @@ export default function ReporteDiario() {
             const changedKeys = CAMPOS_MANUALES_KEYS.filter(
                 k => (manualesEditando[k] ?? 0) !== (manualesGuardados[k] ?? 0)
             );
-            await Promise.all(changedKeys.map(k => {
+            // Secuencial (no paralelo) para evitar race condition cuando el registro aún no existe:
+            // si se crean varias peticiones en paralelo todas ven "no existe" y la última sobreescribe las demás.
+            for (const k of changedKeys) {
                 const valor = manualesEditando[k] ?? 0;
-                if (k === 'oficiosRegistros') return actualizarOficiosRegistro(fechaPropia, valor);
-                return actualizarCampoManual(fechaPropia, k, valor);
-            }));
+                if (k === 'oficiosRegistros') await actualizarOficiosRegistro(fechaPropia, valor);
+                else await actualizarCampoManual(fechaPropia, k, valor);
+            }
             setManualesGuardados({ ...manualesEditando });
             showToast('Reporte guardado correctamente');
             // Refrescar tabla consolidada solo para roles con acceso
@@ -355,19 +364,21 @@ export default function ReporteDiario() {
                     {titulo}
                     <span className="rd-seccion-total-badge">{total} registros</span>
                 </div>
-                <div className="rd-campos-grid">
-                    {campos.filter(c => !c.manual).map(c => {
-                        const val = datosAuto[c.key] || 0;
-                        return (
-                            <div key={c.key} className={`rd-campo rd-campo-readonly ${val > 0 ? 'rd-campo-activo' : ''}`}>
-                                <label>{c.label}</label>
-                                <div className="rd-valor-auto">
-                                    {cargandoAuto ? <span className="rd-cargando-mini">…</span> : <span className="rd-num-grande">{val}</span>}
+                {campos.some(c => !c.manual) && (
+                    <div className="rd-campos-grid">
+                        {campos.filter(c => !c.manual).map(c => {
+                            const val = datosAuto[c.key] || 0;
+                            return (
+                                <div key={c.key} className={`rd-campo rd-campo-readonly ${val > 0 ? 'rd-campo-activo' : ''}`}>
+                                    <label>{c.label}</label>
+                                    <div className="rd-valor-auto">
+                                        {cargandoAuto ? <span className="rd-cargando-mini">…</span> : <span className="rd-num-grande">{val}</span>}
+                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                            );
+                        })}
+                    </div>
+                )}
                 {campos.some(c => c.manual) && (
                     <div className="rd-campos-manuales-fila">
                         {campos.filter(c => c.manual).map(c => renderCampoManual(c))}
@@ -400,9 +411,9 @@ export default function ReporteDiario() {
 
     // ── Chips resumen ─────────────────────────────────────────────────────────
     const resumenEvalChips = (datos, manuales = {}) => {
-        const v = k => datos[k] || 0;
-        const fc = v('opinionTecnicaFC') + v('negacionesFC') + v('informesFC');
-        const ff = v('opinionTecnicaFF') + v('negacionesFF') + v('informesFF');
+        const m = k => manuales[k] || 0;
+        const fc = m('opinionTecnicaFC') + m('negacionesFC') + m('informesFC');
+        const ff = m('opinionTecnicaFF') + m('negacionesFF') + m('informesFF');
         const camposRol = esSuper ? CAMPOS_SUPERVISION : esEval ? CAMPOS_EVALUACION : esCorr ? CAMPOS_CORRESPONDENCIA : TODOS_CAMPOS;
         const total = camposRol.reduce((s, c) => s + (c.manual ? (manuales[c.key] || 0) : (datos[c.key] || 0)), 0);
         return (
@@ -454,12 +465,7 @@ export default function ReporteDiario() {
                     <div className="rd-fecha-resumen">
                         <div className="rd-fecha-wrap">
                             <label>Fecha</label>
-                            <input
-                                type="date"
-                                value={fechaPropia}
-                                onChange={e => setFechaPropia(e.target.value)}
-                                className="rd-fecha-input"
-                            />
+                            <span className="rd-fecha-fija">{new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
                         </div>
                         <p className="rd-info-auto">
                             <i className="bi bi-info-circle" />
@@ -559,12 +565,7 @@ export default function ReporteDiario() {
                             <div className="rd-fecha-resumen" style={{ paddingTop: 16 }}>
                                 <div className="rd-fecha-wrap">
                                     <label>Fecha</label>
-                                    <input
-                                        type="date"
-                                        value={fechaPropia}
-                                        onChange={e => setFechaPropia(e.target.value)}
-                                        className="rd-fecha-input"
-                                    />
+                                    <span className="rd-fecha-fija">{new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
                                 </div>
                             </div>
                             {resumenEvalChips({}, manualesGuardados)}
@@ -616,6 +617,11 @@ export default function ReporteDiario() {
                                             <span className="rd-hist-zona-count">
                                                 {Object.values(usuarios).reduce((s, v) => s + v.segs.length, 0)} seguimientos
                                             </span>
+                                            {Object.values(usuarios).reduce((s, v) => s + v.manuales.length, 0) > 0 && (
+                                                <span className="rd-hist-zona-count" style={{ background: '#4a6fa5', marginLeft: 4 }}>
+                                                    {Object.values(usuarios).reduce((s, v) => s + v.manuales.length, 0)} manuales
+                                                </span>
+                                            )}
                                         </div>
                                         {Object.entries(usuarios).map(([nombreUsuario, { segs, manuales }]) => {
                                             const initials = nombreUsuario.split(' ').slice(0,2).map(p => p[0]).join('').toUpperCase();
@@ -627,7 +633,14 @@ export default function ReporteDiario() {
                                                         <div className="rd-hist-usuario-nombre">{nombreUsuario}</div>
                                                         <div className="rd-hist-usuario-meta">{zona}</div>
                                                     </div>
-                                                    <span className="rd-hist-usuario-count">{segs.length} seguimiento{segs.length !== 1 ? 's' : ''}</span>
+                                                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                                        <span className="rd-hist-usuario-count">{segs.length} seguimiento{segs.length !== 1 ? 's' : ''}</span>
+                                                        {manuales.length > 0 && (
+                                                            <span className="rd-hist-usuario-count" style={{ background: '#dbeafe', color: '#1e40af', border: '1px solid #93c5fd' }}>
+                                                                {manuales.length} manual{manuales.length !== 1 ? 'es' : ''}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                                 {segs.length > 0 && (
                                                 <div className="rd-hist-segs">
@@ -668,10 +681,14 @@ export default function ReporteDiario() {
                                                     )}
                                                 </div>
                                                 )}
-                                                {manuales.length > 0 && (
+                                                {manuales.length > 0 && (() => {
+                                                    const keyMan = `man-${zona}-${nombreUsuario}`;
+                                                    const expandidoMan = expandidos[keyMan];
+                                                    const visibles = expandidoMan ? manuales : manuales.slice(0, LIMITE_SEGS);
+                                                    return (
                                                     <div className="rd-hist-manual-wrap">
                                                         <div className="rd-hist-manual-titulo"><i className="bi bi-pencil-square" /> Registros manuales</div>
-                                                        {manuales.map((e, i) => (
+                                                        {visibles.map((e, i) => (
                                                             <div key={i} className="rd-hist-seg-item">
                                                                 <span className="rd-hist-seg-dot rd-hist-dot-manual" />
                                                                 <div className="rd-hist-seg-body">
@@ -683,8 +700,17 @@ export default function ReporteDiario() {
                                                                 </div>
                                                             </div>
                                                         ))}
+                                                        {manuales.length > LIMITE_SEGS && (
+                                                            <button className="rd-hist-ver-mas" onClick={() => toggleExpandido(keyMan)}>
+                                                                {expandidoMan
+                                                                    ? <><i className="bi bi-chevron-up" /> Ver menos</>
+                                                                    : <><i className="bi bi-chevron-down" /> Ver {manuales.length - LIMITE_SEGS} más</>
+                                                                }
+                                                            </button>
+                                                        )}
                                                     </div>
-                                                )}
+                                                    );
+                                                })()}
                                             </div>
                                             );
                                         })}

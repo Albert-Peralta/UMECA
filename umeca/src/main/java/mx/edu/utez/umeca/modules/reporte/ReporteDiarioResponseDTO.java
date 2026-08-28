@@ -56,6 +56,8 @@ public class ReporteDiarioResponseDTO {
     private int firmasRecabadasSuper;
     private int entrevistaEncuadreSuper;
     private int calendarioSuper;
+    private int capturaCarpetas;
+    private int capturaOficiosImposicion;
 
     // Manuales EVALUACIÓN
     private int firmasRecabadasEval;
@@ -109,6 +111,8 @@ public class ReporteDiarioResponseDTO {
         dto.setFirmasRecabadasSuper(r.getFirmasRecabadasSuper());
         dto.setEntrevistaEncuadreSuper(r.getEntrevistaEncuadreSuper());
         dto.setCalendarioSuper(r.getCalendarioSuper());
+        dto.setCapturaCarpetas(r.getCapturaCarpetas());
+        dto.setCapturaOficiosImposicion(r.getCapturaOficiosImposicion());
         dto.setFirmasRecabadasEval(r.getFirmasRecabadasEval());
         dto.setEntrevistaEncuadreEval(r.getEntrevistaEncuadreEval());
         dto.setEntrevistaEvaluacionEval(r.getEntrevistaEvaluacionEval());

@@ -130,16 +130,6 @@ public class EntrevistaEncuadreService {
             entrevista.setEdad(edad); // auto-calcular
         }
 
-        var estados = List.of(EntrevistaEncuadre.Estado.PENDIENTE, EntrevistaEncuadre.Estado.EN_REVISION);
-        var activa = entrevista.getApMaterno() != null && !entrevista.getApMaterno().isBlank()
-                ? repository.findFirstByNombreIgnoreCaseAndApPaternoIgnoreCaseAndApMaternoIgnoreCaseAndEstadoIn(
-                        entrevista.getNombre(), entrevista.getApPaterno(), entrevista.getApMaterno(), estados)
-                : repository.findFirstByNombreIgnoreCaseAndApPaternoIgnoreCaseAndApMaternoIsNullAndEstadoIn(
-                        entrevista.getNombre(), entrevista.getApPaterno(), estados);
-        if (activa.isPresent()) {
-            return new ApiResponse(false,
-                    "Ya existe una entrevista activa para esta persona (" + activa.get().getFolio() + ")");
-        }
 
         String anio = String.valueOf(LocalDate.now().getYear());
         String prefix = "ENT-" + anio + "-";
@@ -153,7 +143,8 @@ public class EntrevistaEncuadreService {
                 .or(() -> userRepository.findByEmail(usernameOrEmail))
                 .ifPresent(entrevista::setRegistradoPor);
 
-        entrevista.setEstado(EntrevistaEncuadre.Estado.PENDIENTE);
+        if (entrevista.getEstado() == null)
+            entrevista.setEstado(EntrevistaEncuadre.Estado.PENDIENTE);
 
         // Si viene imputadoId o imputadoSelId se vincula al existente; si no, se crea uno nuevo
         Long idVinculado = entrevista.getImputadoSelId() != null
@@ -363,6 +354,8 @@ public class EntrevistaEncuadreService {
     @Transactional
     public ApiResponse delete(Long id) {
         return repository.findById(id).map(e -> {
+            if (medidaRepository.countByEntrevistaId(id) > 0)
+                return new ApiResponse(false, "No se puede eliminar: la entrevista tiene medidas cautelares o SCP vinculadas.");
             String nombreDel = e.getNombre() + " " + e.getApPaterno();
             bitacoraService.registrar(Bitacora.Entidad.ENTREVISTA, id, nombreDel,
                     Bitacora.Accion.ELIMINAR, "Entrevista eliminada — folio: " + e.getFolio());

@@ -480,7 +480,7 @@
     display: flex;
     gap: 0;
     border-bottom: 2px solid #e5e7eb;
-    padding: 0 24px;
+    padding: 0 12px;
     margin-top: 16px;
     background: #fff;
     flex-shrink: 0;
@@ -489,32 +489,41 @@
 .exp-tab {
     background: none;
     border: none;
-    border-bottom: 2px solid transparent;
+    border-bottom: 3px solid transparent;
     margin-bottom: -2px;
-    padding: 12px 16px;
-    font-size: 0.84rem;
-    font-weight: 600;
-    color: #6b7280;
+    padding: 10px 10px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #4b5563;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 6px;
-    transition: color 0.15s, border-color 0.15s;
+    gap: 5px;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
     white-space: nowrap;
+    border-radius: 6px 6px 0 0;
+    flex: 1;
+    justify-content: center;
 }
-.exp-tab:hover { color: #376842; }
-.exp-tab-active {
+.exp-tab:hover {
     color: #376842;
+    background: #f0faf1;
+}
+.exp-tab-active {
+    color: #1f4d2e;
     border-bottom-color: #376842;
+    background: #f0faf1;
 }
 
 .exp-tab-count {
-    background: #e5e7eb;
-    color: #374151;
+    background: #d1d5db;
+    color: #1f2937;
     border-radius: 10px;
-    padding: 1px 7px;
-    font-size: 0.72rem;
-    font-weight: 700;
+    padding: 2px 7px;
+    font-size: 0.71rem;
+    font-weight: 800;
+    min-width: 20px;
+    text-align: center;
 }
 .exp-tab-active .exp-tab-count {
     background: #376842;
@@ -625,25 +634,27 @@
 
 /* ── Footer de acciones ── */
 .exp-footer {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    padding: 14px 24px 20px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 7px;
+    padding: 14px 18px 24px;
     border-top: 1px solid #e5e7eb;
     background: #fff;
     flex-shrink: 0;
 }
 
 .exp-action-btn {
-    display: inline-flex;
+    display: flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
-    padding: 8px 16px;
+    padding: 9px 12px;
     border-radius: 8px;
-    font-size: 0.83rem;
+    font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
     border: none;
+    white-space: nowrap;
     transition: opacity 0.15s, transform 0.1s;
 }
 .exp-action-btn:active { transform: scale(.97); }
@@ -1483,3 +1494,34 @@
 }
 .fall-btn-editar:hover:not(:disabled) { background: #1e40af; }
 .fall-btn-editar:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Eliminar modal ── */
+.fall-modal-eliminar { max-width: 380px; }
+.fall-modal-eliminar .fall-body {
+    display: block;
+    padding: 24px 28px;
+    text-align: center;
+}
+.fall-header-eliminar { background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 100%); }
+.fall-header-icon-eliminar { background: rgba(255,255,255,0.15); color: #fff; }
+.fall-header-eliminar .fall-header-title { color: #fff; }
+.fall-header-eliminar .fall-header-sub { color: rgba(255,255,255,0.75); }
+.fall-header-eliminar .fall-close { color: rgba(255,255,255,0.8); }
+.fall-header-eliminar .fall-close:hover { color: #fff; background: rgba(255,255,255,0.15); }
+
+.fall-btn-eliminar {
+    padding: 10px 22px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: #dc2626;
+    color: #fff;
+    transition: background 0.15s;
+}
+.fall-btn-eliminar:hover:not(:disabled) { background: #b91c1c; }
+.fall-btn-eliminar:disabled { opacity: 0.6; cursor: not-allowed; }

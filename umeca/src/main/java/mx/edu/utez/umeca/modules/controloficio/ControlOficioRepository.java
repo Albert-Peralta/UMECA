@@ -10,7 +10,7 @@ public interface ControlOficioRepository extends JpaRepository<ControlOficio, Lo
 
     List<ControlOficio> findAllByOrderByNumeroSecuencialDesc();
 
-    @Query(value = "SELECT COALESCE(MAX(numero_secuencial), 3259) FROM control_oficios FOR UPDATE", nativeQuery = true)
+    @Query(value = "SELECT COALESCE(MAX(numero_secuencial), 3299) FROM control_oficios FOR UPDATE", nativeQuery = true)
     int findMaxSecuencial();
 
     @Query("SELECT COUNT(c) FROM ControlOficio c WHERE c.estado = 'PENDIENTE'")

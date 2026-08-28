@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { puedeCrear as _puedeCrear, puedeEditar as _puedeEditar } from '../utils/permisos';
 import { useToast } from '../context/ToastContext';
-import { getEvaluaciones, buscarEvaluaciones, getEvaluacionById, asignarEvaluador, asignarResultado, crearNegacion } from '../api/evaluacionesApi';
-import { getImputadosPorCausaPenal } from '../api/imputadosApi';
+import { getEvaluaciones, buscarEvaluaciones, getEvaluacionById, asignarEvaluador, asignarResultado, crearNegacion, eliminarEvaluacion } from '../api/evaluacionesApi';
+import { getImputadosPorCausaPenal, getImputados, getImputadoById } from '../api/imputadosApi';
 import FormularioEvaluacion from './FormularioEvaluacion';
 import DetalleEvaluacion from './DetalleEvaluacion';
 import PrintNegacion from './PrintNegacion';
@@ -47,6 +47,10 @@ const EvaluacionRiesgos = () => {
     const [pagina, setPagina] = useState(1);
     const [cargando, setCargando] = useState(true);
 
+    // Modal confirmación eliminar
+    const [confirmEliminar, setConfirmEliminar] = useState(null); // { id, label }
+    const [eliminando, setEliminando] = useState(false);
+
     // Modal cargar resultado
     const [showModal, setShowModal] = useState(false);
     const [seleccionada, setSeleccionada] = useState(null);
@@ -69,17 +73,89 @@ const EvaluacionRiesgos = () => {
     const [showPrintNegacion, setShowPrintNegacion] = useState(false);
     const [negacionParaImprimir, setNegacionParaImprimir] = useState(null);
     const impVacio = () => ({ nombreImputado: '', apPaternoImputado: '', apMaternoImputado: '', edad: '', imputadoId: null });
-    const negacionVacio = {
+    const getNegacionVacio = () => ({
         causaPenal: '',
         imputados: [impVacio()],
         dependencia: '', cargo: '',
         nombreSolicitante: '', fechaSolicitud: '', horaInicio: '', lugarEntrevista: ''
-    };
-    const [negacionData, setNegacionData] = useState(negacionVacio);
+    });
+    const [negacionData, setNegacionData] = useState(getNegacionVacio);
     const [negacionErrores, setNegacionErrores] = useState({});
 
     // Sugerencias inline por índice de imputado
     const [sugerenciasPorIdx, setSugerenciasPorIdx] = useState({});
+    const [negBusqPorIdx, setNegBusqPorIdx] = useState({});   // búsqueda de imputado por tarjeta
+    const [negOptsporIdx, setNegOptsPorIdx] = useState({});   // resultados del buscador por tarjeta
+    const [negDupPorIdx, setNegDupPorIdx] = useState({});     // imputado duplicado detectado por tarjeta
+    const [negDupEntsPorIdx, setNegDupEntsPorIdx] = useState({}); // entrevistas del duplicado por tarjeta
+
+    const normalizar = str => (str || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+
+    // Clave estable para detectar cambios en los imputados de la negación sin crear nueva referencia en cada render
+    const negacionImputadosKey = useMemo(
+        () => negacionData.imputados.map(i => `${i.nombreImputado}|${i.apPaternoImputado}|${i.apMaternoImputado}|${i.imputadoId}`).join(','),
+        [negacionData.imputados]
+    );
+
+    // Detecta duplicado automáticamente al llenar nombre + apellido paterno en cada tarjeta
+    useEffect(() => {
+        if (!showModalNegacion) return;
+        negacionData.imputados.forEach(async (imp, idx) => {
+            if (imp.imputadoId) return; // ya vinculado, no buscar
+            const nombre = normalizar(imp.nombreImputado);
+            const apPaterno = normalizar(imp.apPaternoImputado);
+            const apMaterno = normalizar(imp.apMaternoImputado);
+            if (nombre.length < 2 || apPaterno.length < 2) {
+                setNegDupPorIdx(p => ({ ...p, [idx]: null }));
+                setNegDupEntsPorIdx(p => ({ ...p, [idx]: [] }));
+                return;
+            }
+            try {
+                const res = await getImputados(imp.nombreImputado.trim());
+                if (!res.data.ok) return;
+                const encontrado = (res.data.data || []).find(i => {
+                    if (i.fallecido || i.carpetaCerrada) return false;
+                    if (normalizar(i.nombre) !== nombre) return false;
+                    if (normalizar(i.apPaterno) !== apPaterno) return false;
+                    if (apMaterno.length >= 2 && normalizar(i.apMaterno) !== apMaterno) return false;
+                    return true;
+                });
+                setNegDupPorIdx(p => ({ ...p, [idx]: encontrado || null }));
+                if (encontrado) {
+                    const detRes = await getImputadoById(encontrado.id);
+                    if (detRes.data.ok) setNegDupEntsPorIdx(p => ({ ...p, [idx]: detRes.data.data.entrevistas || [] }));
+                } else {
+                    setNegDupEntsPorIdx(p => ({ ...p, [idx]: [] }));
+                }
+            } catch { /* sin bloqueo */ }
+        });
+    }, [negacionImputadosKey, showModalNegacion]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const buscarImpNeg = async (idx, q) => {
+        setNegBusqPorIdx(p => ({ ...p, [idx]: q }));
+        if (q.trim().length < 2) { setNegOptsPorIdx(p => ({ ...p, [idx]: [] })); return; }
+        try {
+            const res = await getImputados(q.trim());
+            if (res.data.ok) setNegOptsPorIdx(p => ({ ...p, [idx]: (res.data.data || []).filter(i => !i.fallecido && !i.carpetaCerrada) }));
+        } catch { /* sin resultados */ }
+    };
+
+    const seleccionarImpNeg = (idx, imp) => {
+        setImputado(idx, 'imputadoId', imp.id);
+        setImputado(idx, 'nombreImputado', imp.nombre || '');
+        setImputado(idx, 'apPaternoImputado', imp.apPaterno || '');
+        setImputado(idx, 'apMaternoImputado', imp.apMaterno || '');
+        // No auto-llenar causa penal — el usuario la captura manualmente en el campo correspondiente
+        setNegBusqPorIdx(p => ({ ...p, [idx]: '' }));
+        setNegOptsPorIdx(p => ({ ...p, [idx]: [] }));
+    };
+
+    const limpiarImpNeg = (idx) => {
+        setImputado(idx, 'imputadoId', null);
+        setImputado(idx, 'nombreImputado', '');
+        setImputado(idx, 'apPaternoImputado', '');
+        setImputado(idx, 'apMaternoImputado', '');
+    };
 
     const handleCausaPenalBlur = async (causaPenal) => {
         if (!causaPenal?.trim()) return;
@@ -101,8 +177,14 @@ const EvaluacionRiesgos = () => {
     const agregarImputado = () =>
         setNegacionData(p => ({ ...p, imputados: [...p.imputados, impVacio()] }));
 
-    const eliminarImputado = (idx) =>
+    const eliminarImputado = (idx) => {
         setNegacionData(p => ({ ...p, imputados: p.imputados.filter((_, i) => i !== idx) }));
+        // Limpiar estados de búsqueda y duplicado del índice eliminado y reindexar
+        setNegBusqPorIdx(p => { const n = {}; Object.entries(p).forEach(([k, v]) => { const ki = Number(k); if (ki < idx) n[ki] = v; else if (ki > idx) n[ki - 1] = v; }); return n; });
+        setNegOptsPorIdx(p => { const n = {}; Object.entries(p).forEach(([k, v]) => { const ki = Number(k); if (ki < idx) n[ki] = v; else if (ki > idx) n[ki - 1] = v; }); return n; });
+        setNegDupPorIdx(p => { const n = {}; Object.entries(p).forEach(([k, v]) => { const ki = Number(k); if (ki < idx) n[ki] = v; else if (ki > idx) n[ki - 1] = v; }); return n; });
+        setNegDupEntsPorIdx(p => { const n = {}; Object.entries(p).forEach(([k, v]) => { const ki = Number(k); if (ki < idx) n[ki] = v; else if (ki > idx) n[ki - 1] = v; }); return n; });
+    };
 
     // Valida campos obligatorios del formulario de negación antes de generar el documento.
     const validarNegacion = () => {
@@ -127,7 +209,27 @@ const EvaluacionRiesgos = () => {
         if (preset) {
             localStorage.removeItem('verEvaluacionId');
             getEvaluacionById(Number(preset)).then(res => {
-                if (res.data.ok) { setDetalle(res.data.data); setShowDetalle(true); }
+                if (res.data.ok) {
+                    const data = res.data.data;
+                    if (data.tipoDocumento === 'NEGACION') {
+                        setNegacionParaImprimir({
+                            nombreImputado:    data.nombreImputado || '',
+                            apPaternoImputado: data.apPaternoImputado || '',
+                            apMaternoImputado: data.apMaternoImputado || '',
+                            edad:              data.edad || '',
+                            causaPenal:        data.causaPenal || '',
+                            dependencia:       data.dependencia || '',
+                            cargo:             data.cargo || '',
+                            nombreSolicitante: data.nombreSolicitante || '',
+                            fechaSolicitud:    data.fechaSolicitud || '',
+                            horaInicio:        data.horaInicio || '',
+                            lugarEntrevista:   data.lugarEntrevista || '',
+                        });
+                        setShowPrintNegacion(true);
+                    } else {
+                        setDetalle(data); setShowDetalle(true);
+                    }
+                }
             }).catch(err => console.warn('No se pudo abrir evaluación desde expediente:', err));
         }
     }, []);
@@ -236,11 +338,18 @@ const EvaluacionRiesgos = () => {
                     }
                     setVolverADetalle(false);
                 }}
-                onGuardado={() => {
+                onGuardado={async () => {
                     cargarDatos();
                     showToast('Evaluación guardada correctamente');
                     setShowFormulario(false);
                     setVolverADetalle(false);
+                    // Recargar detalle fresco desde backend para mostrar datos actualizados
+                    if (evalEdicion?.id) {
+                        try {
+                            const res = await getEvaluacionById(evalEdicion.id);
+                            if (res.data.ok) setDetalle(res.data.data);
+                        } catch { /* si falla, el detalle anterior sigue visible */ }
+                    }
                     setShowDetalle(true);
                     document.querySelector('.dashboard-content')?.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
@@ -306,7 +415,7 @@ const EvaluacionRiesgos = () => {
                         <i className="bi bi-plus-lg"></i> Nueva Evaluación
                     </button>
                     <button className="btn-nueva-eval" style={{ background: '#c0392b', borderColor: '#c0392b' }}
-                        onClick={() => { setNegacionData(negacionVacio); setNegacionErrores({}); setShowModalNegacion(true); }}>
+                        onClick={() => { setNegacionData(getNegacionVacio()); setNegacionErrores({}); setSugerenciasPorIdx({}); setNegBusqPorIdx({}); setNegOptsPorIdx({}); setNegDupPorIdx({}); setNegDupEntsPorIdx({}); setShowModalNegacion(true); }}>
                         <i className="bi bi-file-earmark-x"></i> Negación
                     </button>
                 </>)}
@@ -398,6 +507,7 @@ const EvaluacionRiesgos = () => {
                                             )}
                                         </td>
                                         <td className="eval-acciones-col">
+                                          <div>
                                             <button className="btn-ver-eval" title="Ver detalle" onClick={async () => {
                                                 try {
                                                     const res = await getEvaluacionById(item.id);
@@ -431,6 +541,14 @@ const EvaluacionRiesgos = () => {
                                                     <i className="bi bi-upload"></i>
                                                 </button>
                                             )}
+                                            {(user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN') && (
+                                                <button className="btn-ver-eval" title="Eliminar registro"
+                                                    style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5' }}
+                                                    onClick={() => setConfirmEliminar({ id: item.id, label: item.nombreCompletoImputado || item.nombreImputado || 'este registro' })}>
+                                                    <i className="bi bi-trash3"></i>
+                                                </button>
+                                            )}
+                                          </div>
                                         </td>
                                     </tr>
                                 ))
@@ -534,7 +652,7 @@ const EvaluacionRiesgos = () => {
                             <h3 style={{ margin: 0, color: '#fff', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
                                 <i className="bi bi-file-earmark-x" /> Negación de Información
                             </h3>
-                            <button onClick={() => { setShowModalNegacion(false); setNegacionData(negacionVacio); setNegacionErrores({}); setSugerenciasPorIdx({}); }}
+                            <button onClick={() => { setShowModalNegacion(false); setNegacionData(getNegacionVacio()); setNegacionErrores({}); setSugerenciasPorIdx({}); setNegBusqPorIdx({}); setNegOptsPorIdx({}); setNegDupPorIdx({}); setNegDupEntsPorIdx({}); }}
                                 style={{ background: 'rgba(255,255,255,.2)', border: 'none', color: '#fff', width: 30, height: 30, borderRadius: 6, cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 ×
                             </button>
@@ -571,7 +689,10 @@ const EvaluacionRiesgos = () => {
                                             <button onClick={() => {
                                                 setNegacionData(p => {
                                                     const imps = [...p.imputados];
-                                                    imps[si] = { ...imps[si], imputadoId: s.id, nombreImputado: s.nombre || '', apPaternoImputado: s.apPaterno || '', apMaternoImputado: s.apMaterno || '' };
+                                                    // Asignar al primer imputado sin vincular, o al índice 0 si todos ya están vinculados
+                                                    const targetIdx = imps.findIndex(imp => !imp.imputadoId);
+                                                    const idx = targetIdx >= 0 ? targetIdx : 0;
+                                                    imps[idx] = { ...imps[idx], imputadoId: s.id, nombreImputado: s.nombre || '', apPaternoImputado: s.apPaterno || '', apMaternoImputado: s.apMaterno || '' };
                                                     return { ...p, imputados: imps };
                                                 });
                                                 setSugerenciasPorIdx(p => ({ ...p, causa: [] }));
@@ -601,6 +722,74 @@ const EvaluacionRiesgos = () => {
                                             </button>
                                         )}
                                     </div>
+
+                                    {/* Aviso de duplicado detectado automáticamente */}
+                                    {negDupPorIdx[idx] && !imp.imputadoId && (
+                                        <div style={{ border: '1px solid #dc2626', background: '#fef2f2', borderRadius: 8, padding: '10px 12px', marginBottom: 8, fontSize: 12 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                                                <i className="bi bi-exclamation-triangle-fill" style={{ color: '#dc2626' }} />
+                                                <strong style={{ color: '#991b1b' }}>Este imputado ya está registrado en el sistema.</strong>
+                                                <button onMouseDown={() => seleccionarImpNeg(idx, negDupPorIdx[idx])}
+                                                    style={{ marginLeft: 'auto', background: '#2d6a4f', color: '#fff', border: 'none', borderRadius: 5, padding: '3px 10px', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
+                                                    <i className="bi bi-link-45deg" /> Vincular
+                                                </button>
+                                                <button onMouseDown={() => setNegDupPorIdx(p => ({ ...p, [idx]: null }))}
+                                                    style={{ background: '#fff', color: '#555', border: '1px solid #fca5a5', borderRadius: 5, padding: '3px 8px', fontSize: 11, cursor: 'pointer' }}>
+                                                    Son diferentes
+                                                </button>
+                                            </div>
+                                            {(negDupEntsPorIdx[idx] || []).length > 0 && (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 3, borderTop: '1px solid #fca5a5', paddingTop: 6 }}>
+                                                    {(negDupEntsPorIdx[idx] || []).map(ent => (
+                                                        <div key={ent.id} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fff1f1', borderRadius: 4, padding: '3px 8px', flexWrap: 'wrap' }}>
+                                                            <span style={{ fontWeight: 700, color: '#7f1d1d', fontSize: 11 }}>{ent.folio}</span>
+                                                            <span style={{ color: '#6b7280', fontSize: 10 }}>|</span>
+                                                            <span style={{ color: '#374151', fontSize: 11 }}>{ent.causaPenal || 'Sin causa'}</span>
+                                                            <span style={{ color: '#6b7280', fontSize: 10 }}>|</span>
+                                                            <span style={{ fontWeight: 600, fontSize: 10, color: ent.estado === 'COMPLETADO' ? '#065f46' : '#92400e', background: ent.estado === 'COMPLETADO' ? '#d1fae5' : '#fef3c7', borderRadius: 3, padding: '1px 5px' }}>{ent.estado}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Buscador de imputado existente */}
+                                    {!imp.imputadoId ? (
+                                        <div style={{ position: 'relative', marginBottom: 10 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #ddd', borderRadius: 6, overflow: 'hidden', background: '#fafafa' }}>
+                                                <i className="bi bi-search" style={{ padding: '0 8px', color: '#888', fontSize: 13 }} />
+                                                <input
+                                                    placeholder="Buscar imputado ya registrado..."
+                                                    value={negBusqPorIdx[idx] || ''}
+                                                    onChange={e => buscarImpNeg(idx, e.target.value)}
+                                                    onBlur={() => setTimeout(() => setNegOptsPorIdx(p => ({ ...p, [idx]: [] })), 200)}
+                                                    style={{ flex: 1, border: 'none', outline: 'none', padding: '7px 8px', fontSize: 12, background: 'transparent' }}
+                                                />
+                                            </div>
+                                            {(negOptsporIdx[idx] || []).length > 0 && (
+                                                <ul style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 999, background: '#fff', border: '1px solid #ddd', borderRadius: 6, boxShadow: '0 4px 12px rgba(0,0,0,.1)', listStyle: 'none', margin: 0, padding: 0, maxHeight: 180, overflowY: 'auto' }}>
+                                                    {(negOptsporIdx[idx] || []).map(s => (
+                                                        <li key={s.id} onMouseDown={() => seleccionarImpNeg(idx, s)}
+                                                            style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #f0f0f0', fontSize: 12 }}
+                                                            onMouseEnter={e => e.currentTarget.style.background = '#f0f8f1'}
+                                                            onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
+                                                            <div style={{ fontWeight: 600, color: '#1e293b' }}>{s.nombre} {s.apPaterno} {s.apMaterno || ''}</div>
+                                                            <div style={{ color: '#6b7280', fontSize: 11 }}>{s.causaPenal} {(s.totalEntrevistas ?? 0) > 0 ? `• ${s.totalEntrevistas} entrevista(s)` : '• Sin entrevista'}</div>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f0faf4', border: '1px solid #a7d7b8', borderRadius: 6, padding: '6px 10px', marginBottom: 10, fontSize: 12 }}>
+                                            <i className="bi bi-person-check-fill" style={{ color: '#2d6a4f' }} />
+                                            <span style={{ color: '#2d6a4f', fontWeight: 600 }}>Imputado vinculado al expediente</span>
+                                            <button onMouseDown={() => limpiarImpNeg(idx)} style={{ marginLeft: 'auto', background: 'none', border: '1px solid #a7d7b8', borderRadius: 4, fontSize: 11, cursor: 'pointer', color: '#555', padding: '2px 8px' }}>
+                                                <i className="bi bi-x-circle" /> Cambiar
+                                            </button>
+                                        </div>
+                                    )}
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 8, marginBottom: 8 }}>
                                         {[
@@ -673,7 +862,7 @@ const EvaluacionRiesgos = () => {
 
                         {/* Footer */}
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '14px 24px', borderTop: '1px solid #eee', background: '#fafafa', borderRadius: '0 0 12px 12px' }}>
-                            <button onClick={() => { setShowModalNegacion(false); setNegacionData(negacionVacio); setNegacionErrores({}); setSugerenciasPorIdx({}); }}
+                            <button onClick={() => { setShowModalNegacion(false); setNegacionData(getNegacionVacio()); setNegacionErrores({}); setSugerenciasPorIdx({}); setNegBusqPorIdx({}); setNegOptsPorIdx({}); setNegDupPorIdx({}); setNegDupEntsPorIdx({}); }}
                                 style={{ background: 'none', border: '1px solid #ccc', borderRadius: 8, padding: '8px 20px', cursor: 'pointer', fontSize: 13, color: '#555' }}>
                                 Cancelar
                             </button>
@@ -701,13 +890,13 @@ const EvaluacionRiesgos = () => {
                                     cargarDatos();
                                     setNegacionParaImprimir({ ...negacionData });
                                     setShowModalNegacion(false);
-                                    setNegacionData(negacionVacio);
+                                    setNegacionData(getNegacionVacio());
                                     setSugerenciasPorIdx({});
                                     setShowPrintNegacion(true);
                                 } catch (e) {
                                     showToast('No se pudo guardar el registro de negación', 'error');
                                     setShowModalNegacion(false);
-                                    setNegacionData(negacionVacio);
+                                    setNegacionData(getNegacionVacio());
                                     setSugerenciasPorIdx({});
                                 }
                             }}
@@ -721,6 +910,44 @@ const EvaluacionRiesgos = () => {
 
             {showPrintNegacion && (
                 <PrintNegacion evaluacion={negacionParaImprimir} onCerrar={() => { setShowPrintNegacion(false); setNegacionParaImprimir(null); }} />
+            )}
+
+            {/* ── Modal confirmar eliminar ── */}
+            {confirmEliminar && (
+                <div className="modal-overlay" onClick={() => { if (!eliminando) setConfirmEliminar(null); }}>
+                    <div className="modal-box" style={{ width: 'min(420px, 92vw)', textAlign: 'center', padding: '32px 28px' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', border: '2px solid #fca5a5' }}>
+                            <i className="bi bi-trash3" style={{ fontSize: 24, color: '#dc2626' }} />
+                        </div>
+                        <h3 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 700, color: '#1a1a2e' }}>¿Eliminar registro?</h3>
+                        <p style={{ margin: '0 0 24px', fontSize: 14, color: '#6b7280', lineHeight: 1.5 }}>
+                            Se eliminará el registro de <strong style={{ color: '#374151' }}>{confirmEliminar.label}</strong>.<br />Esta acción no se puede deshacer.
+                        </p>
+                        <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+                            <button
+                                disabled={eliminando}
+                                onClick={() => setConfirmEliminar(null)}
+                                style={{ flex: 1, padding: '9px 0', borderRadius: 8, border: '1px solid #d1d5db', background: '#fff', color: '#374151', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+                                Cancelar
+                            </button>
+                            <button
+                                disabled={eliminando}
+                                onClick={async () => {
+                                    setEliminando(true);
+                                    try {
+                                        const res = await eliminarEvaluacion(confirmEliminar.id);
+                                        if (res.data.ok) { cargarDatos(); showToast('Registro eliminado', 'success'); }
+                                        else showToast('No se pudo eliminar', 'error');
+                                    } catch { showToast('Error al eliminar', 'error'); }
+                                    setEliminando(false);
+                                    setConfirmEliminar(null);
+                                }}
+                                style={{ flex: 1, padding: '9px 0', borderRadius: 8, border: 'none', background: eliminando ? '#f87171' : '#dc2626', color: '#fff', fontWeight: 700, fontSize: 14, cursor: eliminando ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                                {eliminando ? <><i className="bi bi-hourglass-split" /> Eliminando…</> : <><i className="bi bi-trash3" /> Eliminar</>}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
         </div>

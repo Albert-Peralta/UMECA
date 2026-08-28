@@ -41,14 +41,6 @@ export const TIPOS_ACTIVIDAD = [
     { value: 'VISITA_DOMICILIARIA',     label: 'Visita domiciliaria',              grupo: 'SUPERVISIÓN' },
     { value: 'AUDIENCIA_TTA',           label: 'Audiencia TTA',                    grupo: 'SUPERVISIÓN' },
     { value: 'LLAMADA_TELEFONICA',      label: 'Llamada telefónica',               grupo: 'SUPERVISIÓN' },
-    // Evaluación
-    { value: 'OFICIO_REGISTRO',         label: 'Oficio de registro',               grupo: 'EVALUACIÓN' },
-    { value: 'OPINION_TECNICA_FC',      label: 'Opinión técnica F.C.',             grupo: 'EVALUACIÓN' },
-    { value: 'OPINION_TECNICA_FF',      label: 'Opinión técnica F.F.',             grupo: 'EVALUACIÓN' },
-    { value: 'NEGACION_FC',             label: 'Negación F.C.',                    grupo: 'EVALUACIÓN' },
-    { value: 'NEGACION_FF',             label: 'Negación F.F.',                    grupo: 'EVALUACIÓN' },
-    { value: 'INFORME_FC',              label: 'Informe F.C.',                     grupo: 'EVALUACIÓN' },
-    { value: 'INFORME_FF',              label: 'Informe F.F.',                     grupo: 'EVALUACIÓN' },
     // Correspondencia
     { value: 'OFICIO_RECIBIDO',         label: 'Total de oficios recibidos',       grupo: 'CORRESPONDENCIA' },
     { value: 'NUEVO_CASO_MC',           label: 'Nuevos Casos M.C.',               grupo: 'CORRESPONDENCIA' },
@@ -56,7 +48,4 @@ export const TIPOS_ACTIVIDAD = [
     { value: 'SOBRESEIMIENTO',          label: 'Sobreseimientos',                 grupo: 'CORRESPONDENCIA' },
     { value: 'LEVANTAMIENTO_MEDIDA',    label: 'Levantamiento de medida',         grupo: 'CORRESPONDENCIA' },
     { value: 'OFICIO_DIVERSO_CORR',     label: 'Oficios emitidos diversos',       grupo: 'CORRESPONDENCIA' },
-    // Otro por rol
-    { value: 'OTRO_SUPERVISION',        label: 'Otro',                             grupo: 'SUPERVISIÓN' },
-    { value: 'OTRO',                    label: 'Otro',                             grupo: 'EVALUACIÓN' },
 ];

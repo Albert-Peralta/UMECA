@@ -103,7 +103,7 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
             const res = await eliminarEntrevista(entrevista.id);
             if (res.data.ok) { showToast('Entrevista eliminada'); onVolver(); }
             else showToast(res.data.message || 'Error al eliminar', 'error');
-        } catch { showToast('Error de conexión', 'error'); }
+        } catch (err) { showToast(err?.response?.data?.message || 'Error de conexión', 'error'); }
         finally { setLoadingAdmin(false); setShowConfirmEliminar(false); }
     };
 
@@ -414,7 +414,6 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
                     {editando && (
                         <select value={form.estado} onChange={e => set('estado', e.target.value)} className="de-select-estado">
                             <option value="PENDIENTE">Pendiente</option>
-                            <option value="EN_REVISION">En Revisión</option>
                             <option value="COMPLETADO">Completado</option>
                         </select>
                     )}

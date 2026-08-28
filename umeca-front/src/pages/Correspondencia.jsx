@@ -136,7 +136,7 @@ export default function Correspondencia() {
         if (!form.remitente?.trim()) errs.remitente = 'El remitente es requerido';
         if (!form.asunto?.trim())    errs.asunto    = 'El asunto es requerido';
         if (!form.prioridad)         errs.prioridad = 'Selecciona la prioridad';
-        if (!modoEditar && !archivo) errs.archivo   = 'El archivo PDF es obligatorio';
+        if (!modoEditar && !archivo) errs.archivo   = 'El archivo adjunto es obligatorio';
         setErroresCampo(errs);
         const primerCampo = Object.keys(errs)[0];
         if (primerCampo) {
@@ -428,7 +428,7 @@ export default function Correspondencia() {
                         </button>
                     </div>
                     <div id="corr-field-archivo" className={`corr-field corr-field-full ${erroresCampo.archivo ? 'corr-field-error' : ''}`}>
-                        <label><i className="bi bi-file-earmark-pdf" /> Archivo PDF {!modoEditar && '*'}</label>
+                        <label><i className="bi bi-file-earmark-arrow-up" /> Archivo adjunto {!modoEditar && '*'}</label>
                         <label
                             className={`corr-dropzone ${erroresCampo.archivo ? 'corr-dropzone-error' : ''} ${dragging ? 'corr-dropzone-dragging' : ''}`}
                             onDragOver={e => { e.preventDefault(); setDragging(true); }}
@@ -438,21 +438,22 @@ export default function Correspondencia() {
                                 e.preventDefault();
                                 setDragging(false);
                                 const file = e.dataTransfer.files[0];
-                                if (file && file.type === 'application/pdf') {
+                                const TIPOS_VALIDOS = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+                                if (file && TIPOS_VALIDOS.includes(file.type)) {
                                     setArchivo(file);
                                     setErroresCampo(er => ({ ...er, archivo: '' }));
                                 }
                             }}
                         >
-                            <input type="file" accept="application/pdf"
+                            <input type="file" accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
                                 onChange={e => { setArchivo(e.target.files[0] || null); setErroresCampo(er => ({ ...er, archivo: '' })); }} />
                             {archivo ? (
                                 <>
-                                    <i className="bi bi-file-earmark-pdf-fill corr-dropzone-icon corr-dropzone-icon-ok" />
+                                    <i className={`bi ${archivo.type.startsWith('image/') ? 'bi-file-earmark-image-fill' : 'bi-file-earmark-pdf-fill'} corr-dropzone-icon corr-dropzone-icon-ok`} />
                                     <span className="corr-dropzone-nombre">{archivo.name}</span>
                                     <span className="corr-dropzone-sub">
                                         {modoEditar
-                                            ? '✅ Este archivo reemplazará al PDF actual al guardar'
+                                            ? '✅ Este archivo reemplazará al adjunto actual al guardar'
                                             : 'Haz clic para cambiar el archivo'}
                                     </span>
                                     {modoEditar && registroEditar?.archivoPdf && (
@@ -460,23 +461,23 @@ export default function Correspondencia() {
                                             className="corr-btn-quitar-pdf"
                                             onClick={e => { e.preventDefault(); e.stopPropagation(); setArchivo(null); }}
                                         >
-                                            <i className="bi bi-arrow-counterclockwise" /> Restaurar PDF original
+                                            <i className="bi bi-arrow-counterclockwise" /> Restaurar archivo original
                                         </button>
                                     )}
                                 </>
                             ) : modoEditar && registroEditar?.archivoPdf ? (
                                 <>
-                                    <i className="bi bi-file-earmark-pdf-fill corr-dropzone-icon" style={{ color: '#2d6a4f' }} />
+                                    <i className="bi bi-file-earmark-fill corr-dropzone-icon" style={{ color: '#2d6a4f' }} />
                                     <span className="corr-dropzone-nombre">
                                         {registroEditar.archivoPdf.split('/').pop().split('_').slice(1).join('_') || registroEditar.archivoPdf.split('/').pop()}
                                     </span>
-                                    <span className="corr-dropzone-sub">📎 PDF actual · Haz clic para reemplazarlo por uno nuevo</span>
+                                    <span className="corr-dropzone-sub">📎 Archivo actual · Haz clic para reemplazarlo</span>
                                 </>
                             ) : (
                                 <>
                                     <i className={`bi ${dragging ? 'bi-box-arrow-in-down' : 'bi-cloud-upload'} corr-dropzone-icon`} />
                                     <span className="corr-dropzone-titulo">{dragging ? 'Suelta el archivo aquí' : 'Arrastra o haz clic para subir'}</span>
-                                    <span className="corr-dropzone-sub">Solo archivos PDF · {modoEditar ? 'Sin PDF adjunto actualmente' : 'Obligatorio'}</span>
+                                    <span className="corr-dropzone-sub">PDF · JPG · PNG · WEBP · {modoEditar ? 'Sin archivo adjunto actualmente' : 'Obligatorio'}</span>
                                 </>
                             )}
                         </label>
@@ -536,18 +537,35 @@ export default function Correspondencia() {
     }
 
     // ── Abrir PDF con token ─────────────────────────────────────────────────
-    const abrirPdf = async (ruta) => {
+    const esImagen = (ruta) => /\.(jpe?g|png|webp|gif)$/i.test(ruta || '');
+
+    const getMimeImagen = (ruta) => {
+        const ext = (ruta || '').split('.').pop().toLowerCase();
+        return { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif' }[ext] || 'image/jpeg';
+    };
+
+    const abrirArchivo = async (ruta) => {
         setLoadingPdf(true);
         try {
             const token = localStorage.getItem('token');
             const base = `http://${window.location.hostname}:8089/api`;
             const url = `${base}/correspondencia/pdf?ruta=${encodeURIComponent(ruta)}`;
             const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-            if (!res.ok) { showToast('No se pudo cargar el PDF', 'error'); return; }
+            if (!res.ok) { showToast('No se pudo cargar el archivo', 'error'); return; }
             const blob = await res.blob();
-            const blobUrl = URL.createObjectURL(blob);
-            window.open(blobUrl, '_blank');
-        } catch { showToast('Error al abrir el PDF', 'error'); }
+
+            if (esImagen(ruta)) {
+                // Para imágenes: crear página HTML wrapper para evitar el visor de PDF del navegador
+                const imgBlob = new Blob([blob], { type: getMimeImagen(ruta) });
+                const imgUrl = URL.createObjectURL(imgBlob);
+                const html = `<!DOCTYPE html><html><head><title>Imagen adjunta</title><style>*{margin:0;padding:0}body{background:#111;display:flex;justify-content:center;align-items:center;min-height:100vh}img{max-width:100vw;max-height:100vh;object-fit:contain}</style></head><body><img src="${imgUrl}"></body></html>`;
+                const htmlBlob = new Blob([html], { type: 'text/html' });
+                window.open(URL.createObjectURL(htmlBlob), '_blank');
+            } else {
+                const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+                window.open(URL.createObjectURL(pdfBlob), '_blank');
+            }
+        } catch { showToast('Error al abrir el archivo', 'error'); }
         finally { setLoadingPdf(false); }
     };
 
@@ -642,13 +660,15 @@ export default function Correspondencia() {
                         </span>
                     </div>
 
-                    {/* PDF — botón de acción */}
+                    {/* Archivo adjunto — botón de acción */}
                     {registro.archivoPdf && (
                         <div style={{ marginTop: '1rem' }}>
-                            <button className="corr-btn-pdf-action" onClick={() => abrirPdf(registro.archivoPdf)} disabled={loadingPdf}>
+                            <button className="corr-btn-pdf-action" onClick={() => abrirArchivo(registro.archivoPdf)} disabled={loadingPdf}>
                                 {loadingPdf
-                                    ? <><span className="corr-pdf-spinner" /> Cargando PDF...</>
-                                    : <><i className="bi bi-file-earmark-pdf-fill" /> Ver documento PDF</>
+                                    ? <><span className="corr-pdf-spinner" /> Cargando...</>
+                                    : esImagen(registro.archivoPdf)
+                                        ? <><i className="bi bi-file-earmark-image-fill" /> Ver imagen</>
+                                        : <><i className="bi bi-file-earmark-pdf-fill" /> Ver documento PDF</>
                                 }
                             </button>
                         </div>

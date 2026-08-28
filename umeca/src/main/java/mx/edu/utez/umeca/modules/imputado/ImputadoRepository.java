@@ -16,6 +16,13 @@ public interface ImputadoRepository extends JpaRepository<Imputado, Long> {
     List<Imputado> findByNombreContainingIgnoreCaseOrApPaternoContainingIgnoreCase(
             String nombre, String apPaterno);
 
+    @Query("""
+        SELECT i FROM Imputado i
+        WHERE LOWER(CONCAT(i.nombre, ' ', i.apPaterno, ' ', COALESCE(i.apMaterno, ''))) LIKE LOWER(CONCAT('%', :termino, '%'))
+           OR LOWER(i.causaPenal) LIKE LOWER(CONCAT('%', :termino, '%'))
+    """)
+    List<Imputado> buscarPorTermino(@Param("termino") String termino);
+
     boolean existsByCausaPenal(String causaPenal);
 
     /** @deprecated Usar {@link #findAllByCausaPenal(String)} — una causa penal puede tener varios imputados. */

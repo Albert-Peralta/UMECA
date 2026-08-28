@@ -9,6 +9,8 @@ import java.util.List;
 
 @Repository
 public interface MedidaCautelarRepository extends JpaRepository<MedidaCautelar, Long> {
+    long countByImputadoId(Long imputadoId);
+    long countByEntrevistaId(Long entrevistaId);
 
     List<MedidaCautelar> findAllByOrderByCreatedAtDesc();
 

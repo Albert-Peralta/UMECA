@@ -53,6 +53,8 @@ public class ReporteDiarioDTO {
     private int firmasRecabadasSuper;
     private int entrevistaEncuadreSuper;
     private int calendarioSuper;
+    private int capturaCarpetas;
+    private int capturaOficiosImposicion;
 
     // Manuales EVALUACIÓN
     private int firmasRecabadasEval;

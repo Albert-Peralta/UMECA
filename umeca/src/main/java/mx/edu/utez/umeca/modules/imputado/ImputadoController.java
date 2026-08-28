@@ -64,7 +64,8 @@ public class ImputadoController {
             @RequestBody(required = false) Map<String, String> body) {
         LocalDate fecha = null;
         if (body != null && body.get("fechaFallecimiento") != null) {
-            fecha = LocalDate.parse(body.get("fechaFallecimiento"));
+            try { fecha = LocalDate.parse(body.get("fechaFallecimiento")); }
+            catch (Exception ignored) { return ResponseEntity.badRequest().body(new ApiResponse(false, "Formato de fecha inválido")); }
         }
         String quienAviso          = body != null ? body.get("quienAviso") : null;
         String parentesco          = body != null ? body.get("parentescoInformante") : null;
@@ -95,6 +96,13 @@ public class ImputadoController {
     @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
     public ResponseEntity<ApiResponse> revertirCierreCarpeta(@PathVariable Long id) {
         ApiResponse res = service.revertirCierreCarpeta(id);
+        return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
+    public ResponseEntity<ApiResponse> eliminar(@PathVariable Long id) {
+        ApiResponse res = service.eliminar(id);
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
     }
 

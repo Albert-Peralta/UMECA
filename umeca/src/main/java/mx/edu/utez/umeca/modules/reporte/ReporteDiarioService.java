@@ -93,10 +93,18 @@ public class ReporteDiarioService {
             r.setUsuario(user);
         }
         switch (campo) {
-            case "firmasRecabadasSuper"     -> r.setFirmasRecabadasSuper(valor);
-            case "entrevistaEncuadreSuper"  -> r.setEntrevistaEncuadreSuper(valor);
-            case "calendarioSuper"          -> r.setCalendarioSuper(valor);
-            case "firmasRecabadasEval"      -> r.setFirmasRecabadasEval(valor);
+            case "firmasRecabadasSuper"       -> r.setFirmasRecabadasSuper(valor);
+            case "entrevistaEncuadreSuper"   -> r.setEntrevistaEncuadreSuper(valor);
+            case "calendarioSuper"           -> r.setCalendarioSuper(valor);
+            case "capturaCarpetas"           -> r.setCapturaCarpetas(valor);
+            case "capturaOficiosImposicion"  -> r.setCapturaOficiosImposicion(valor);
+            case "opinionTecnicaFC"          -> r.setOpinionTecnicaFC(valor);
+            case "opinionTecnicaFF"          -> r.setOpinionTecnicaFF(valor);
+            case "negacionesFC"              -> r.setNegacionesFC(valor);
+            case "negacionesFF"              -> r.setNegacionesFF(valor);
+            case "informesFC"               -> r.setInformesFC(valor);
+            case "informesFF"               -> r.setInformesFF(valor);
+            case "firmasRecabadasEval"       -> r.setFirmasRecabadasEval(valor);
             case "entrevistaEncuadreEval"   -> r.setEntrevistaEncuadreEval(valor);
             case "entrevistaEvaluacionEval" -> r.setEntrevistaEvaluacionEval(valor);
             case "totalOficiosRecibidos"    -> r.setTotalOficiosRecibidos(valor);
@@ -135,6 +143,7 @@ public class ReporteDiarioService {
         List<ReporteDiario> lista = repo.findByRangoFecha(inicio, fin);
         // Agrupar por zona y sumar
         Map<String, ReporteDiarioResponseDTO> consolidado = lista.stream()
+            .filter(r -> r.getZona() != null) // excluir registros sin zona para evitar NPE
             .collect(Collectors.groupingBy(
                 r -> r.getZona().name(),
                 Collectors.collectingAndThen(
@@ -153,7 +162,7 @@ public class ReporteDiarioService {
     public ApiResponse getLista(LocalDate inicio, LocalDate fin) {
         User user = usuarioActual();
         List<ReporteDiario> lista;
-        if (user.getRol() == User.Rol.ADMINISTRADOR) {
+        if (user.getRol() == User.Rol.ADMINISTRADOR || user.getRol() == User.Rol.SUPERADMIN) {
             lista = repo.findByRangoFecha(inicio, fin);
         } else {
             lista = repo.findByRangoFechaYZona(inicio, fin, user.getZona());
@@ -168,7 +177,8 @@ public class ReporteDiarioService {
     private ReporteDiarioResponseDTO sumarPorZona(List<ReporteDiario> lista) {
         ReporteDiarioResponseDTO total = new ReporteDiarioResponseDTO();
         if (lista.isEmpty()) return total;
-        total.setZona(lista.get(0).getZona().name());
+        ReporteDiario primero = lista.get(0);
+        total.setZona(primero.getZona() != null ? primero.getZona().name() : "—");
 
         total.setFirmasRecabadas(         lista.stream().mapToInt(ReporteDiario::getFirmasRecabadas).sum());
         total.setNuevosCasosMC(           lista.stream().mapToInt(ReporteDiario::getNuevosCasosMC).sum());
@@ -203,6 +213,8 @@ public class ReporteDiarioService {
         total.setFirmasRecabadasSuper(    lista.stream().mapToInt(ReporteDiario::getFirmasRecabadasSuper).sum());
         total.setEntrevistaEncuadreSuper( lista.stream().mapToInt(ReporteDiario::getEntrevistaEncuadreSuper).sum());
         total.setCalendarioSuper(         lista.stream().mapToInt(ReporteDiario::getCalendarioSuper).sum());
+        total.setCapturaCarpetas(         lista.stream().mapToInt(ReporteDiario::getCapturaCarpetas).sum());
+        total.setCapturaOficiosImposicion(lista.stream().mapToInt(ReporteDiario::getCapturaOficiosImposicion).sum());
         total.setFirmasRecabadasEval(     lista.stream().mapToInt(ReporteDiario::getFirmasRecabadasEval).sum());
         total.setEntrevistaEncuadreEval(  lista.stream().mapToInt(ReporteDiario::getEntrevistaEncuadreEval).sum());
         total.setEntrevistaEvaluacionEval(lista.stream().mapToInt(ReporteDiario::getEntrevistaEvaluacionEval).sum());
@@ -286,6 +298,8 @@ public class ReporteDiarioService {
         r.setFirmasRecabadasSuper(dto.getFirmasRecabadasSuper());
         r.setEntrevistaEncuadreSuper(dto.getEntrevistaEncuadreSuper());
         r.setCalendarioSuper(dto.getCalendarioSuper());
+        r.setCapturaCarpetas(dto.getCapturaCarpetas());
+        r.setCapturaOficiosImposicion(dto.getCapturaOficiosImposicion());
         r.setFirmasRecabadasEval(dto.getFirmasRecabadasEval());
         r.setEntrevistaEncuadreEval(dto.getEntrevistaEncuadreEval());
         r.setEntrevistaEvaluacionEval(dto.getEntrevistaEvaluacionEval());

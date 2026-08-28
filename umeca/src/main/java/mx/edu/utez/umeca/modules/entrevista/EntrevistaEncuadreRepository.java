@@ -15,7 +15,7 @@ public interface EntrevistaEncuadreRepository extends JpaRepository<EntrevistaEn
     long countByFolioStartingWith(String prefix);
 
     /** Devuelve el número secuencial más alto del folio para un prefijo dado, o 0 si no hay ninguno. */
-    @Query("SELECT COALESCE(MAX(CAST(SUBSTRING(e.folio, LENGTH(:prefix) + 1) AS integer)), 0) FROM EntrevistaEncuadre e WHERE e.folio LIKE CONCAT(:prefix, '%')")
+    @Query(value = "SELECT COALESCE(MAX(CAST(SUBSTRING(e.folio, LENGTH(:prefix) + 1) AS SIGNED)), 0) FROM entrevistas_encuadre e WHERE e.folio LIKE CONCAT(:prefix, '%')", nativeQuery = true)
     long findMaxSecuencialByPrefix(@Param("prefix") String prefix);
     @Query("SELECT e FROM EntrevistaEncuadre e WHERE e.imputado.id = :imputadoId")
     List<EntrevistaEncuadre> findByImputadoId(@Param("imputadoId") Long imputadoId);
@@ -65,9 +65,22 @@ public interface EntrevistaEncuadreRepository extends JpaRepository<EntrevistaEn
     """)
     List<Object[]> zonasPorImputados(@Param("ids") List<Long> ids);
 
+    /** Para la lista de imputados: estado de la entrevista más reciente por imputado. */
+    @Query("""
+        SELECT e.imputado.id, e.estado
+        FROM EntrevistaEncuadre e
+        WHERE e.imputado.id IN :ids
+          AND e.createdAt = (
+              SELECT MAX(e2.createdAt) FROM EntrevistaEncuadre e2
+              WHERE e2.imputado.id = e.imputado.id
+          )
+        GROUP BY e.imputado.id, e.estado
+    """)
+    List<Object[]> ultimaEntrevistaPorImputados(@Param("ids") List<Long> ids);
+
     @Query("""
         SELECT e FROM EntrevistaEncuadre e
-        LEFT JOIN e.imputado i
+        LEFT JOIN FETCH e.imputado i
         WHERE e.tipoSeguimiento IS NOT NULL
           AND i IS NOT NULL AND i.fallecido = false AND i.carpetaCerrada = false
           AND (
@@ -75,7 +88,10 @@ public interface EntrevistaEncuadreRepository extends JpaRepository<EntrevistaEn
             LOWER(e.apPaterno) LIKE LOWER(CONCAT('%',:q,'%')) OR
             LOWER(e.causaPenal) LIKE LOWER(CONCAT('%',:q,'%')) OR
             LOWER(COALESCE(i.nombre,'')) LIKE LOWER(CONCAT('%',:q,'%')) OR
-            LOWER(COALESCE(i.causaPenal,'')) LIKE LOWER(CONCAT('%',:q,'%'))
+            LOWER(COALESCE(i.apPaterno,'')) LIKE LOWER(CONCAT('%',:q,'%')) OR
+            LOWER(COALESCE(i.causaPenal,'')) LIKE LOWER(CONCAT('%',:q,'%')) OR
+            LOWER(CONCAT(COALESCE(e.nombre,''),' ',COALESCE(e.apPaterno,''),' ',COALESCE(e.apMaterno,''))) LIKE LOWER(CONCAT('%',:q,'%')) OR
+            LOWER(CONCAT(COALESCE(i.nombre,''),' ',COALESCE(i.apPaterno,''),' ',COALESCE(i.apMaterno,''))) LIKE LOWER(CONCAT('%',:q,'%'))
           )
         ORDER BY e.createdAt DESC
     """)

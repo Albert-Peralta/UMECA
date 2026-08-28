@@ -10,6 +10,7 @@ import { getEstadisticas, exportarEstadisticasExcel } from '../api/estadisticasA
 import { getConsultas } from '../api/consultasApi';
 import { getEstadisticasCorrespondencia } from '../api/correspondenciaApi';
 import { getReporteConsolidado, TIPOS_ACTIVIDAD } from '../api/seguimientosApi';
+import { getConsolidado as getConsolidadoRD } from '../api/reporteDiarioApi';
 import './Estadisticas.css';
 
 ChartJS.register(
@@ -187,6 +188,7 @@ const Estadisticas = () => {
     const [consultas,  setConsultas]  = useState([]);
     const [corrStats,  setCorrStats]  = useState(null);
     const [segConsolidado, setSegConsolidado] = useState({});
+    const [rdConsolidado,  setRdConsolidado]  = useState({});
     const [zonaFiltro, setZonaFiltro]  = useState('TODAS'); // 'TODAS' | 'XOCHITEPEC' | 'CUAUTLA' | 'JOJUTLA'
 
     // ── Calcula desde/hasta según el modo activo ──────────────────────────────
@@ -226,10 +228,12 @@ const Estadisticas = () => {
         Promise.all([
             getEstadisticas(desde, hasta, zonaFiltro),
             getReporteConsolidado(desde, hasta),
+            getConsolidadoRD({ inicio: desde, fin: hasta }).catch(() => ({ data: { ok: false } })),
         ])
-            .then(([rEst, rSeg]) => {
+            .then(([rEst, rSeg, rRD]) => {
                 if (rEst.data.ok) setDatos(rEst.data.data);
                 if (rSeg.data.ok) setSegConsolidado(rSeg.data.data || {});
+                if (rRD.data.ok)  setRdConsolidado(rRD.data.data || {});
             })
             .catch(console.error)
             .finally(() => setCargando(false));
@@ -535,75 +539,146 @@ const Estadisticas = () => {
                     const coloresFiltrados = zonasFiltradas.map(z => ZONA_COLORES[ZONAS.indexOf(z)]);
 
                     const tiposSuper = TIPOS_ACTIVIDAD.filter(t => t.grupo === 'SUPERVISIÓN');
-                    const tiposEval  = TIPOS_ACTIVIDAD.filter(t => t.grupo === 'EVALUACIÓN');
 
+                    // Campos compartidos (aparecen en Super y Eval → se suman en General)
+                    const GENERAL_MANUALES = [
+                        {
+                            label: 'Firmas recabadas',
+                            keys: ['firmasRecabadasSuper', 'firmasRecabadasEval'],
+                        },
+                        {
+                            label: 'Entrevista de encuadre',
+                            keys: ['entrevistaEncuadreSuper', 'entrevistaEncuadreEval'],
+                        },
+                    ];
+
+                    // Campos exclusivos de supervisión
+                    const SUPER_MANUALES = [
+                        { key: 'calendarioSuper',          label: 'Calendario' },
+                        { key: 'capturaCarpetas',          label: 'Captura de carpetas' },
+                        { key: 'capturaOficiosImposicion', label: 'Cap. oficios imposición' },
+                    ];
+
+                    // Campos exclusivos de evaluación
+                    const EVAL_MANUALES = [
+                        { key: 'oficiosRegistros',         label: 'Oficios de registros' },
+                        { key: 'opinionTecnicaFC',         label: 'Opinión técnica F.C.' },
+                        { key: 'opinionTecnicaFF',         label: 'Opinión técnica F.F.' },
+                        { key: 'negacionesFC',             label: 'Negaciones F.C.' },
+                        { key: 'negacionesFF',             label: 'Negaciones F.F.' },
+                        { key: 'informesFC',               label: 'Informes F.C.' },
+                        { key: 'informesFF',               label: 'Informes F.F.' },
+                        { key: 'entrevistaEvaluacionEval', label: 'Entrevista de evaluación' },
+                    ];
+
+                    // Campos de correspondencia (de ReporteDiario)
+                    const CORR_MANUALES = [
+                        { key: 'totalOficiosRecibidos', label: 'Oficios recibidos' },
+                        { key: 'nuevosCasosMC',         label: 'Nuevos Casos M.C.' },
+                        { key: 'nuevosCasosSCP',        label: 'Nuevos Casos S.C.P.' },
+                        { key: 'sobreseimientos',       label: 'Sobreseimientos' },
+                        { key: 'levantamientoMedida',   label: 'Levantamiento medida' },
+                        { key: 'oficiosDiversosCorr',   label: 'Oficios diversos' },
+                    ];
+
+                    const rdPorZona = (zona, key) => Number(rdConsolidado[zona]?.[key] ?? 0);
+
+                    // Suma de campos generales (multi-key) por zona
+                    const generalPorZona = (zona, item) =>
+                        item.keys.reduce((s, k) => s + rdPorZona(zona, k), 0);
+
+                    const totGeneral = zonasFiltradas.map(z =>
+                        GENERAL_MANUALES.reduce((s, item) => s + generalPorZona(z, item), 0)
+                    );
                     const totSuper = zonasFiltradas.map(z =>
                         tiposSuper.reduce((s, t) => s + Number(segConsolidado[z]?.[t.value] ?? 0), 0)
+                        + SUPER_MANUALES.reduce((s, m) => s + rdPorZona(z, m.key), 0)
                     );
                     const totEval = zonasFiltradas.map(z =>
-                        tiposEval.reduce((s, t) => s + Number(segConsolidado[z]?.[t.value] ?? 0), 0)
+                        EVAL_MANUALES.reduce((s, m) => s + rdPorZona(z, m.key), 0)
+                    );
+                    const totCorr = zonasFiltradas.map(z =>
+                        CORR_MANUALES.reduce((s, m) => s + rdPorZona(z, m.key), 0)
                     );
 
                     const totalPorZona = ZONAS.map(z =>
                         TIPOS_ACTIVIDAD.reduce((s, t) => s + (segConsolidado[z]?.[t.value] ?? 0), 0)
+                        + GENERAL_MANUALES.reduce((s, item) => s + generalPorZona(z, item), 0)
+                        + SUPER_MANUALES.reduce((s, m) => s + rdPorZona(z, m.key), 0)
+                        + EVAL_MANUALES.reduce((s, m) => s + rdPorZona(z, m.key), 0)
+                        + CORR_MANUALES.reduce((s, m) => s + rdPorZona(z, m.key), 0)
                     );
                     const totalSeg = totalPorZona.reduce((a, b) => a + b, 0);
 
-                    const buildSegChart = (tipos, color) => {
-                        const tiposFiltrados = tipos.filter(t =>
-                            ZONAS.reduce((s, z) => s + Number(segConsolidado[z]?.[t.value] ?? 0), 0) > 0
-                        );
-                        if (tiposFiltrados.length === 0) return null;
-                        const data = zonasFiltradas.length === 1 ? {
-                            labels: tiposFiltrados.map(t => t.label),
-                            datasets: [{
-                                label: zonasFiltradas[0],
-                                data: tiposFiltrados.map(t => Number(segConsolidado[zonasFiltradas[0]]?.[t.value] ?? 0)),
-                                backgroundColor: coloresFiltrados[0] + 'cc',
-                                borderRadius: 8, borderWidth: 0,
-                            }],
-                        } : {
-                            labels: tiposFiltrados.map(t => t.label),
-                            datasets: zonasFiltradas.map((z, zi) => ({
-                                label: z.charAt(0) + z.slice(1).toLowerCase(),
-                                data: tiposFiltrados.map(t => Number(segConsolidado[z]?.[t.value] ?? 0)),
-                                backgroundColor: coloresFiltrados[zi] + 'cc',
-                                borderRadius: 6, borderWidth: 0,
-                            })),
-                        };
-                        const opts = {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            barPercentage: 0.42,
-                            categoryPercentage: 0.65,
-                            layout: { padding: { top: 28 } },
-                            plugins: {
-                                legend: { display: zonasFiltradas.length > 1, position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
-                                tooltip: { enabled: false },
-                                datalabels: {
-                                    anchor: 'end', align: 'end', offset: -2,
-                                    font: { size: 12, weight: 'bold' },
-                                    color: '#374151',
-                                    formatter: v => (v == null || v === 0) ? '' : v,
-                                },
+                    const chartOpts = {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        barPercentage: 0.42,
+                        categoryPercentage: 0.65,
+                        layout: { padding: { top: 28 } },
+                        plugins: {
+                            legend: { display: zonasFiltradas.length > 1, position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
+                            tooltip: { enabled: false },
+                            datalabels: {
+                                anchor: 'end', align: 'end', offset: -2,
+                                font: { size: 12, weight: 'bold' },
+                                color: '#374151',
+                                formatter: v => (v == null || v === 0) ? '' : v,
                             },
-                            scales: {
-                                x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10, weight: '500' }, color: '#6b7280', maxRotation: 25, minRotation: 0 } },
-                                y: { display: false, beginAtZero: true, grace: '20%' },
-                            },
-                        };
-                        return { data, opts };
+                        },
+                        scales: {
+                            x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10, weight: '500' }, color: '#6b7280', maxRotation: 25, minRotation: 0 } },
+                            y: { display: false, beginAtZero: true, grace: '20%' },
+                        },
                     };
 
-                    const superChart = buildSegChart(tiposSuper, COLORES.morado);
-                    const evalChart  = buildSegChart(tiposEval,  COLORES.verde);
+                    // Builder para campos simples (clave única por zona)
+                    const buildChart = (tiposSeg, manuales) => {
+                        const itemsSeg = tiposSeg.filter(t =>
+                            ZONAS.reduce((s, z) => s + Number(segConsolidado[z]?.[t.value] ?? 0), 0) > 0
+                        );
+                        const itemsMan = manuales.filter(m =>
+                            ZONAS.reduce((s, z) => s + rdPorZona(z, m.key), 0) > 0
+                        );
+                        const allLabels = [...itemsSeg.map(t => t.label), ...itemsMan.map(m => m.label)];
+                        if (allLabels.length === 0) return null;
+                        const data = {
+                            labels: allLabels,
+                            datasets: zonasFiltradas.length === 1
+                                ? [{ label: zonasFiltradas[0], data: [...itemsSeg.map(t => Number(segConsolidado[zonasFiltradas[0]]?.[t.value] ?? 0)), ...itemsMan.map(m => rdPorZona(zonasFiltradas[0], m.key))], backgroundColor: coloresFiltrados[0] + 'cc', borderRadius: 8, borderWidth: 0 }]
+                                : zonasFiltradas.map((z, zi) => ({ label: z.charAt(0) + z.slice(1).toLowerCase(), data: [...itemsSeg.map(t => Number(segConsolidado[z]?.[t.value] ?? 0)), ...itemsMan.map(m => rdPorZona(z, m.key))], backgroundColor: coloresFiltrados[zi] + 'cc', borderRadius: 6, borderWidth: 0 })),
+                        };
+                        return { data, opts: chartOpts };
+                    };
+
+                    // Builder para campos generales (multi-key sumados)
+                    const buildGeneralChart = (items) => {
+                        const activos = items.filter(item =>
+                            ZONAS.reduce((s, z) => s + generalPorZona(z, item), 0) > 0
+                        );
+                        if (activos.length === 0) return null;
+                        const data = {
+                            labels: activos.map(item => item.label),
+                            datasets: zonasFiltradas.length === 1
+                                ? [{ label: zonasFiltradas[0], data: activos.map(item => generalPorZona(zonasFiltradas[0], item)), backgroundColor: coloresFiltrados[0] + 'cc', borderRadius: 8, borderWidth: 0 }]
+                                : zonasFiltradas.map((z, zi) => ({ label: z.charAt(0) + z.slice(1).toLowerCase(), data: activos.map(item => generalPorZona(z, item)), backgroundColor: coloresFiltrados[zi] + 'cc', borderRadius: 6, borderWidth: 0 })),
+                        };
+                        return { data, opts: chartOpts };
+                    };
+
+                    const generalChart = buildGeneralChart(GENERAL_MANUALES);
+                    const superChart   = buildChart(tiposSuper, SUPER_MANUALES);
+                    const evalChart    = buildChart([], EVAL_MANUALES);
+                    const corrChart    = buildChart([], CORR_MANUALES);
+
+                    const Separador = () => <div style={{ margin: '28px 28px 0', borderTop: '1.5px solid #e5e7eb' }} />;
 
                     return (<>
                         <div className="est-card est-card-wide">
                             <div className="est-seg-header">
                                 <div className="est-seg-header-info">
                                     <span className="est-seg-titulo">Actividad de Seguimientos por Zona</span>
-                                    <span className="est-seg-sub">{subtituloFiltro} · Todas las actividades (supervisión + evaluación)</span>
+                                    <span className="est-seg-sub">{subtituloFiltro} · Supervisión · Evaluación · Correspondencia</span>
                                 </div>
                                 <div className="est-seg-chips">
                                     <span className="est-seg-chips-label">Actividades totales por zona</span>
@@ -622,7 +697,20 @@ const Estadisticas = () => {
                                 </div>
                             </div>
 
-                            {/* Supervisión — full width */}
+                            {/* General — campos compartidos sumados */}
+                            {generalChart && <>
+                                <div className="est-seg-bloque" style={{ marginTop: 20 }}>
+                                    <div className="est-seg-bloque-titulo">
+                                        <i className="bi bi-diagram-3-fill" style={{ color: COLORES.azul }} />
+                                        <span>General</span>
+                                        <span className="est-seg-grafica-total">{totGeneral.reduce((a,b)=>a+b,0)} actividades</span>
+                                    </div>
+                                    <div style={{ height: 220 }}><Bar data={generalChart.data} options={generalChart.opts} /></div>
+                                </div>
+                                <Separador />
+                            </>}
+
+                            {/* Supervisión */}
                             <div className="est-seg-bloque" style={{ marginTop: 20 }}>
                                 <div className="est-seg-bloque-titulo">
                                     <i className="bi bi-telephone-fill" style={{ color: COLORES.morado }} />
@@ -635,10 +723,9 @@ const Estadisticas = () => {
                                 }
                             </div>
 
-                            {/* Separador */}
-                            <div style={{ margin: '28px 28px 0', borderTop: '1.5px solid #e5e7eb' }} />
+                            <Separador />
 
-                            {/* Evaluación — full width */}
+                            {/* Evaluación */}
                             <div className="est-seg-bloque" style={{ marginTop: 20 }}>
                                 <div className="est-seg-bloque-titulo">
                                     <i className="bi bi-clipboard2-pulse-fill" style={{ color: COLORES.verde }} />
@@ -647,6 +734,21 @@ const Estadisticas = () => {
                                 </div>
                                 {evalChart
                                     ? <div style={{ height: 240, paddingBottom: 16 }}><Bar data={evalChart.data} options={evalChart.opts} /></div>
+                                    : <p className="est-seg-vacio">Sin actividades registradas</p>
+                                }
+                            </div>
+
+                            <Separador />
+
+                            {/* Correspondencia */}
+                            <div className="est-seg-bloque" style={{ marginTop: 20 }}>
+                                <div className="est-seg-bloque-titulo">
+                                    <i className="bi bi-envelope-paper-fill" style={{ color: COLORES.naranja }} />
+                                    <span>Correspondencia</span>
+                                    <span className="est-seg-grafica-total">{totCorr.reduce((a,b)=>a+b,0)} actividades</span>
+                                </div>
+                                {corrChart
+                                    ? <div style={{ height: 240, paddingBottom: 16 }}><Bar data={corrChart.data} options={corrChart.opts} /></div>
                                     : <p className="est-seg-vacio">Sin actividades registradas</p>
                                 }
                             </div>
@@ -673,12 +775,12 @@ const Estadisticas = () => {
                         </div>
                     </GraficaCard>
 
-                    {/* Por prioridad — siempre 3 segmentos */}
+                    {/* Por prioridad — 5 segmentos */}
                     <GraficaCard titulo="Oficios por prioridad" subtitulo={`Distribución por prioridad · ${anioFiltro}`}>
                         <div className="est-dona-wrap">
                             <Bar options={barCatOpts()} data={{
-                                labels: ['Normal', 'Urgente', 'De Conocimiento'],
-                                datasets: [{ data: [byPrio('NORMAL'), byPrio('URGENTE'), byPrio('DE_CONOCIMIENTO')], backgroundColor: [COLORES.gris, COLORES.rojo, COLORES.azulClaro], borderRadius: 8, borderWidth: 0 }],
+                                labels: ['Normal', 'Urgente', 'De Conocimiento', 'Turno', 'Circular'],
+                                datasets: [{ data: [byPrio('NORMAL'), byPrio('URGENTE'), byPrio('DE_CONOCIMIENTO'), byPrio('TURNO'), byPrio('CIRCULAR')], backgroundColor: [COLORES.gris, COLORES.rojo, COLORES.azulClaro, COLORES.naranja, COLORES.morado], borderRadius: 8, borderWidth: 0 }],
                             }} />
                         </div>
                     </GraficaCard>

@@ -4,7 +4,7 @@ import { useToast } from '../context/ToastContext';
 import { useFormGuard } from '../context/FormGuardContext';
 import { crearEvaluacion, actualizarEvaluacion, getEvaluacionesByImputado } from '../api/evaluacionesApi';
 import { getImputados, getImputadoById, getImputadosPorCausaPenal } from '../api/imputadosApi';
-import { getEntrevistaById } from '../api/entrevistasApi';
+import { getEntrevistaById, buscarEntrevistasParaMedida } from '../api/entrevistasApi';
 import './FormularioEvaluacion.css';
 
 const SUSTANCIAS = ['Alcohol', 'Tabaco', 'Marihuana', 'Cocaína', 'Pastillas', 'Otras'];
@@ -185,16 +185,18 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
     };
     return { ...FORM_BASE };
   });
-  const [domAnteriores, setDomAnteriores] = useState(
-    esEdicion && evaluacion.domiciliosAnterioresJson
-      ? JSON.parse(evaluacion.domiciliosAnterioresJson)
-      : [{ ...DOM_ANT_FILA }]
-  );
-  const [empleosAnt, setEmpleosAnt] = useState(
-    esEdicion && evaluacion.empleosAnterioresJson
-      ? JSON.parse(evaluacion.empleosAnterioresJson)
-      : [{ ...EMPLEO_ANT_FILA }]
-  );
+  const [domAnteriores, setDomAnteriores] = useState(() => {
+    if (esEdicion && evaluacion.domiciliosAnterioresJson) {
+      try { return JSON.parse(evaluacion.domiciliosAnterioresJson); } catch { /* JSON corrupto — usar default */ }
+    }
+    return [{ ...DOM_ANT_FILA }];
+  });
+  const [empleosAnt, setEmpleosAnt] = useState(() => {
+    if (esEdicion && evaluacion.empleosAnterioresJson) {
+      try { return JSON.parse(evaluacion.empleosAnterioresJson); } catch { /* JSON corrupto — usar default */ }
+    }
+    return [{ ...EMPLEO_ANT_FILA }];
+  });
   const [personasHabita, setPersonasHabita] = useState([]);
   const [referencias, setReferencias] = useState([]);
   const [sustancias, setSustancias] = useState([...SUSTANCIAS_INIT]);
@@ -300,16 +302,11 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
     const d = new Date(); d.setFullYear(d.getFullYear() - 18); return d.toISOString().split('T')[0];
   })();
 
-  // Carga sugerencias al enfocar: imputados con entrevista pero sin evaluación (pendientes de evaluar)
+  // Carga sugerencias al enfocar: entrevistas recientes para evaluar
   useEffect(() => {
     if (!esEdicion) {
-      getImputados().then(res => {
-        if (res.data.ok) {
-          const activos = (res.data.data || []).filter(i => !i.fallecido && !i.carpetaCerrada);
-          const sinEval = activos.filter(i => (i.totalEntrevistas ?? 0) > 0 && (i.totalEvaluaciones ?? 0) === 0);
-          const conEval = activos.filter(i => (i.totalEntrevistas ?? 0) > 0 && (i.totalEvaluaciones ?? 0) > 0);
-          setImpRecientes([...sinEval, ...conEval].slice(0, 5));
-        }
+      buscarEntrevistasParaMedida('').then(res => {
+        if (res.data.ok) setImpRecientes((res.data.data || []).slice(0, 8));
       }).catch(() => {});
     }
   }, [esEdicion]);
@@ -327,41 +324,25 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
   // Buscar imputados
   useEffect(() => {
     if (imputadoBusq.trim().length < 2) { setImputadoOpts([]); return; }
-    getImputados(imputadoBusq).then(res => {
+    buscarEntrevistasParaMedida(imputadoBusq).then(res => {
       if (res.data.ok) setImputadoOpts(res.data.data || []);
     }).catch(err => console.warn('Error al buscar imputados:', err));
   }, [imputadoBusq]);
 
-  const seleccionarImputado = async (imp) => {
+  const seleccionarImputado = async (ent) => {
     setImputadoBusq('');
     setImputadoOpts([]);
     setShowRecientes(false);
-    setForm(prev => ({
-      ...prev,
-      causaPenal: imp.causaPenal || '',
-      nombreImputado: imp.nombre || '',
-      apPaternoImputado: imp.apPaterno || '',
-      apMaternoImputado: imp.apMaterno || '',
-      delito: imp.delito || '',
-      ubicacionFisica: imp.ubicacionFisica || '',
-    }));
-    setImputadoSelId(imp.id);
+    setImputadoSelId(ent.imputadoId);
     // Fetch previous evaluations for this imputado
     try {
-      const evRes = await getEvaluacionesByImputado(imp.id);
+      const evRes = await getEvaluacionesByImputado(ent.imputadoId);
       if (evRes.data.ok) setEvaluacionesPrevias(evRes.data.data || []);
     } catch { /* sin antecedentes */ }
-    // Fetch full imputado to get linked entrevistas
+    // Pre-llenar desde la entrevista seleccionada
     try {
-      const res = await getImputadoById(imp.id);
-      if (res.data.ok) {
-        const full = res.data.data;
-        if (full.entrevistas?.length) {
-          const ultima = full.entrevistas[full.entrevistas.length - 1];
-          const eres = await getEntrevistaById(ultima.id);
-          if (eres.data.ok) preLlenarDesdeEntrevista(eres.data.data, ultima.id);
-        }
-      }
+      const eres = await getEntrevistaById(ent.id);
+      if (eres.data.ok) preLlenarDesdeEntrevista(eres.data.data, ent.id);
     } catch { /* continuar sin pre-llenado */ }
   };
 
@@ -398,7 +379,7 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
       tieneVisa:      tieneVisa      || prev.tieneVisa,
       tienePasaporte: tienePasaporte || prev.tienePasaporte,
       // Familiares exterior
-      familiaresOtroPais: e.familiaresExteriorEsp || e.familiaresExterior ? 'Sí' : prev.familiaresOtroPais,
+      familiaresOtroPais: e.familiaresExterior ? (e.familiaresExteriorEsp || 'Sí') : prev.familiaresOtroPais,
       // Salud
       enfermedades:    e.enfermedad   || prev.enfermedades,
       // Relación con víctima
@@ -856,9 +837,10 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
               <ul className="fev-imp-opts">
                 {imputadoOpts.map(imp => (
                   <li key={imp.id} onClick={() => seleccionarImputado(imp)}>
-                    <div className="fev-imp-opt-nombre"><strong>{imp.nombre} {imp.apPaterno} {imp.apMaterno || ''}</strong></div>
+                    <div style={{ fontWeight: 600, color: '#1e293b', marginBottom: 2, fontSize: 13 }}>{imp.nombreCompleto}</div>
                     <div className="fev-imp-opt-meta">
                       <span className="fev-imp-causa">{imp.causaPenal}</span>
+                      <span style={{ color: '#6b7280', fontSize: 11 }}>• {imp.folio}</span>
                     </div>
                   </li>
                 ))}
@@ -870,13 +852,10 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
                 <li className="fev-imp-opts-header"><i className="bi bi-clock-history"></i> Pendientes de evaluación</li>
                 {impRecientes.map(imp => (
                   <li key={imp.id} onClick={() => seleccionarImputado(imp)}>
-                    <div className="fev-imp-opt-nombre"><strong>{imp.nombre} {imp.apPaterno} {imp.apMaterno || ''}</strong></div>
+                    <div style={{ fontWeight: 600, color: '#1e293b', marginBottom: 2, fontSize: 13 }}>{imp.nombreCompleto}</div>
                     <div className="fev-imp-opt-meta">
                       <span className="fev-imp-causa">{imp.causaPenal}</span>
-                      {(imp.totalEvaluaciones ?? 0) === 0
-                        ? <span className="fev-imp-sin-ent"><i className="bi bi-shield-exclamation"></i> Sin evaluación</span>
-                        : <span className="fev-imp-tiene-ent"><i className="bi bi-shield-check"></i> {imp.totalEvaluaciones} evaluación(es)</span>
-                      }
+                      <span style={{ color: '#6b7280', fontSize: 11 }}>• {imp.folio}</span>
                     </div>
                   </li>
                 ))}

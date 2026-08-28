@@ -194,6 +194,11 @@
 .eval-acciones-col {
     white-space: nowrap;
 }
+.eval-acciones-col > div {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
 .btn-ver-eval {
     background: none;
     border: 1px solid #376842;

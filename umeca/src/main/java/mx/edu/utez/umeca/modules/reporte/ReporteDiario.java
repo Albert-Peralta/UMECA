@@ -68,6 +68,8 @@ public class ReporteDiario extends BaseEntity {
     @Column(name = "firmas_recabadas_super")        private int firmasRecabadasSuper;
     @Column(name = "entrevista_encuadre_super")     private int entrevistaEncuadreSuper;
     @Column(name = "calendario_super")              private int calendarioSuper;
+    @Column(name = "captura_carpetas",           columnDefinition = "int default 0") private int capturaCarpetas;
+    @Column(name = "captura_oficios_imposicion", columnDefinition = "int default 0") private int capturaOficiosImposicion;
 
     // ── Campos manuales EVALUACIÓN ────────────────────────────────────────────
     @Column(name = "firmas_recabadas_eval")         private int firmasRecabadasEval;

@@ -36,6 +36,9 @@ public class EvaluacionRiesgo extends BaseEntity {
     @Column(name = "nombre_solicitante_texto", length = 300)
     private String nombreSolicitanteTexto;
 
+    @Column(name = "causa_penal", length = 200)
+    private String causaPenal;
+
     @Column(name = "cargo_solicitante", length = 200)
     private String cargoSolicitante;
 

@@ -59,6 +59,7 @@ const initialForm = {
     causaPenal: '',
     libro: '',
     foja: '',
+    estado: 'PENDIENTE',
     curp: '',
     nombre: '',
     apPaterno: '',
@@ -179,6 +180,8 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
     const [showRecientes, setShowRecientes] = useState(false);
     const [impSelId, setImpSelId] = useState(null);
     const [impYaTieneEntrevista, setImpYaTieneEntrevista] = useState(false);
+    const [impDuplicado, setImpDuplicado] = useState(null); // imputado existente con mismo nombre
+    const [impDuplicadoEntrevistas, setImpDuplicadoEntrevistas] = useState([]);
 
     const draftKey = 'umeca-draft-entrevista-nuevo';
 
@@ -263,26 +266,62 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
         }).catch(() => {});
     }, [impBusq]);
 
+    // Detecta si el imputado ya existe al llenar nombre + apellido paterno sin seleccionar del buscador
+    const normalizar = str => (str || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+    useEffect(() => {
+        if (impSelId) { setImpDuplicado(null); return; }
+        const nombre = normalizar(form.nombre);
+        const apPaterno = normalizar(form.apPaterno);
+        const apMaterno = normalizar(form.apMaterno);
+        if (nombre.length < 2 || apPaterno.length < 2) { setImpDuplicado(null); return; }
+        // Buscar por nombre y filtrar por apellido en el frontend
+        getImputados(form.nombre.trim()).then(res => {
+            if (!res.data.ok) return;
+            const encontrado = (res.data.data || []).find(i => {
+                if (i.fallecido || i.carpetaCerrada) return false;
+                if (normalizar(i.nombre) !== nombre) return false;
+                if (normalizar(i.apPaterno) !== apPaterno) return false;
+                // Si el materno ya fue escrito, también debe coincidir
+                if (apMaterno.length >= 2 && normalizar(i.apMaterno) !== apMaterno) return false;
+                return true;
+            });
+            setImpDuplicado(encontrado || null);
+        }).catch(() => {});
+    }, [form.nombre, form.apPaterno, form.apMaterno, impSelId]);
+
+    // Carga las entrevistas del imputado duplicado para mostrarlas en el aviso
+    useEffect(() => {
+        if (!impDuplicado) { setImpDuplicadoEntrevistas([]); return; }
+        getImputadoById(impDuplicado.id).then(res => {
+            if (res.data.ok) setImpDuplicadoEntrevistas(res.data.data.entrevistas || []);
+        }).catch(() => {});
+    }, [impDuplicado]);
+
     const seleccionarImp = async (imp) => {
         setImpBusq('');
         setImpOpts([]);
         setShowRecientes(false);
         setImpSelId(imp.id);
         setImpYaTieneEntrevista(false);
-        // Pre-llenar campos básicos desde el imputado
+        setImpDuplicado(null);
+        // Pre-llena nombre completo y causa penal del imputado seleccionado
         setForm(prev => ({
             ...prev,
-            causaPenal:  imp.causaPenal  || prev.causaPenal,
-            nombre:      imp.nombre      || prev.nombre,
-            apPaterno:   imp.apPaterno   || prev.apPaterno,
-            apMaterno:   imp.apMaterno   || prev.apMaterno,
-            delito:      imp.delito      || prev.delito,
+            nombre: imp.nombre || prev.nombre,
+            apPaterno: imp.apPaterno || prev.apPaterno,
+            apMaterno: imp.apMaterno || prev.apMaterno,
+            causaPenal: imp.causaPenal || prev.causaPenal,
         }));
-        // Verificar si ya tiene entrevistas
+        // Solo vincula el ID — causa penal puede editarse si la nueva causa es distinta
+        // Verificar si ya tiene entrevistas con la misma causa penal
         try {
             const res = await getImputadoById(imp.id);
             if (res.data.ok && res.data.data.entrevistas?.length > 0) {
-                setImpYaTieneEntrevista(true);
+                const causaPenalImp = imp.causaPenal?.trim().toLowerCase();
+                const tieneConMismaCausa = res.data.data.entrevistas.some(e =>
+                    e.causaPenal?.trim().toLowerCase() === causaPenalImp
+                );
+                setImpYaTieneEntrevista(tieneConMismaCausa);
             }
         } catch { /* sin bloqueo */ }
     };
@@ -392,6 +431,11 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
     };
 
     const handleGuardar = async () => {
+        if (impDuplicado && !impSelId) {
+            setError(`Este imputado ya está registrado en el sistema. Selecciónalo desde el buscador para vincularlo a su expediente.`);
+            document.querySelector('.fev-aviso-sin-entrevista')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
         // ── Validación frontend ────────────────────────────────────────────
         const nuevosErrores = validarFormulario();
         setErrores(nuevosErrores);
@@ -545,10 +589,53 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                         </ul>
                     )}
                 </div>
+                {/* Aviso: imputado ya existe pero no fue seleccionado del buscador */}
+                {impDuplicado && !impSelId && (
+                    <div className="fev-aviso-sin-entrevista" style={{ borderColor: '#dc2626', background: '#fef2f2', flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
+                            <i className="bi bi-exclamation-triangle-fill" style={{ color: '#dc2626', fontSize: 18, flexShrink: 0 }}></i>
+                            <div style={{ flex: 1 }}>
+                                <strong>Este imputado ya está registrado en el sistema.</strong>
+                                <span> Selecciónalo desde el buscador para vincularlo a su expediente existente.</span>
+                            </div>
+                            <button className="fev-btn-limpiar" onClick={() => setImpBusq(`${form.nombre} ${form.apPaterno}`)}>
+                                <i className="bi bi-search"></i> Buscar
+                            </button>
+                        </div>
+                        {impDuplicadoEntrevistas.length > 0 && (
+                            <div style={{ width: '100%', borderTop: '1px solid #fca5a5', paddingTop: 8 }}>
+                                <p style={{ fontSize: 12, fontWeight: 600, color: '#991b1b', marginBottom: 6 }}>
+                                    <i className="bi bi-journal-text"></i> Entrevistas registradas ({impDuplicadoEntrevistas.length}):
+                                </p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                    {impDuplicadoEntrevistas.map(ent => (
+                                        <div key={ent.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, background: '#fff1f1', borderRadius: 6, padding: '5px 10px', flexWrap: 'wrap' }}>
+                                            <span style={{ fontWeight: 700, color: '#7f1d1d' }}>{ent.folio || '—'}</span>
+                                            <span style={{ color: '#6b7280' }}>|</span>
+                                            <span style={{ color: '#374151' }}>{ent.causaPenal || 'Sin causa penal'}</span>
+                                            <span style={{ color: '#6b7280' }}>|</span>
+                                            <span style={{ color: '#374151' }}>{ent.fechaRegistro || '—'}</span>
+                                            <span style={{ color: '#6b7280' }}>|</span>
+                                            <span style={{
+                                                fontWeight: 600,
+                                                color: ent.estado === 'COMPLETADO' ? '#065f46' : '#92400e',
+                                                background: ent.estado === 'COMPLETADO' ? '#d1fae5' : '#fef3c7',
+                                                borderRadius: 4, padding: '1px 7px', fontSize: 11
+                                            }}>{ent.estado}</span>
+                                            {ent.tipoSeguimiento && (
+                                                <span style={{ color: '#4b5563', fontSize: 11 }}>• {ent.tipoSeguimiento}</span>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
                 {/* Imputado seleccionado sin entrevista (situación normal al crear) */}
                 {impSelId && !impYaTieneEntrevista && (
                     <div className="fev-prellenado-row">
-                        <p className="fev-prellenado-aviso"><i className="bi bi-check-circle-fill"></i> Imputado vinculado — datos básicos pre-llenados</p>
+                        <p className="fev-prellenado-aviso"><i className="bi bi-check-circle-fill"></i> Imputado vinculado al expediente</p>
                         <button className="fev-btn-limpiar" onClick={() => {
                             setImpSelId(null); setImpYaTieneEntrevista(false);
                             setForm(prev => ({ ...prev, causaPenal: '', nombre: '', apPaterno: '', apMaterno: '', delito: '' }));
@@ -585,6 +672,13 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                     <div className="fe-campo-inline">
                         <label>FOJA:</label>
                         <input value={form.foja} onChange={e => set('foja', e.target.value)} />
+                    </div>
+                    <div className="fe-campo-inline">
+                        <label>ESTADO:</label>
+                        <select value={form.estado} onChange={e => set('estado', e.target.value)} style={{ borderRadius: 6, border: '1px solid #d1d5db', padding: '4px 8px', fontSize: 13, fontWeight: 600, color: form.estado === 'COMPLETADO' ? '#065f46' : '#92400e', background: form.estado === 'COMPLETADO' ? '#d1fae5' : '#fef3c7' }}>
+                            <option value="PENDIENTE">Pendiente</option>
+                            <option value="COMPLETADO">Completado</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -1128,7 +1222,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
 
             <div className="fe-botones">
                 <button className="fe-btn-cancelar" onClick={onCancelar}>← Cancelar y Volver</button>
-                <button className="fe-btn-guardar" onClick={() => {
+                <button className="fe-btn-guardar" onClick={() => { if (impDuplicado && !impSelId) { setError('Este imputado ya está registrado. Selecciónalo desde el buscador.'); document.querySelector('.fev-aviso-sin-entrevista')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
                     const nuevosErrores = validarFormulario();
                     setErrores(nuevosErrores);
                     const primerError = Object.keys(nuevosErrores).find(k => nuevosErrores[k]);

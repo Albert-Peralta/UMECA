@@ -75,6 +75,14 @@ public class ImputadoService {
                         (a, b) -> a
                 ));
 
+        // 1 query: folio y fecha de la última entrevista por imputado
+        Map<Long, Object[]> ultimaEnt = entrevistaRepository.ultimaEntrevistaPorImputados(ids)
+                .stream().collect(Collectors.toMap(
+                        r -> (Long) r[0],
+                        r -> r,
+                        (a, b) -> a
+                ));
+
         List<ImputadoResponseDTO> lista = todos.stream().map(i -> {
             ImputadoResponseDTO dto = ImputadoResponseDTO.fromSimple(i);
             dto.setTotalEntrevistas(conteoEnt.getOrDefault(i.getId(), 0L).intValue());
@@ -90,6 +98,8 @@ public class ImputadoService {
                 dto.setCumplimientoMedidaActiva(mInfo.length > 5 && mInfo[5] != null ? mInfo[5].toString() : null);
             }
             dto.setZona(zonas.get(i.getId()));
+            Object[] ue = ultimaEnt.get(i.getId());
+            if (ue != null && ue[1] != null) dto.setUltimaEntrevistaEstado(ue[1].toString());
             return dto;
         }).toList();
 
@@ -105,11 +115,19 @@ public class ImputadoService {
     }
 
     public ApiResponse buscar(String termino) {
-        List<ImputadoResponseDTO> lista = imputadoRepository
-                .findByNombreContainingIgnoreCaseOrApPaternoContainingIgnoreCase(termino, termino)
-                .stream()
-                .map(ImputadoResponseDTO::fromSimple)
-                .toList();
+        List<Imputado> encontrados = imputadoRepository.buscarPorTermino(termino);
+        if (encontrados.isEmpty()) return new ApiResponse(true, "Resultados", List.of());
+
+        List<Long> ids = encontrados.stream().map(Imputado::getId).toList();
+        Map<Long, Long> conteoEnt = entrevistaRepository.countsPorImputados(ids)
+                .stream().collect(Collectors.toMap(r -> (Long) r[0], r -> (Long) r[1]));
+
+        List<ImputadoResponseDTO> lista = encontrados.stream().map(i -> {
+            ImputadoResponseDTO dto = ImputadoResponseDTO.fromSimple(i);
+            dto.setTotalEntrevistas(conteoEnt.getOrDefault(i.getId(), 0L).intValue());
+            return dto;
+        }).toList();
+
         return new ApiResponse(true, "Resultados", lista);
     }
 
@@ -368,6 +386,19 @@ public class ImputadoService {
                     Bitacora.Accion.EDITAR, descCambios);
             return new ApiResponse(true, "Imputado actualizado",
                     ImputadoResponseDTO.fromSimple(updated));
+        }).orElse(new ApiResponse(false, "Imputado no encontrado"));
+    }
+
+    @Transactional
+    public ApiResponse eliminar(Long id) {
+        return imputadoRepository.findById(id).map(imp -> {
+            long entrevistas  = entrevistaRepository.countByImputadoId(id);
+            long evaluaciones = evaluacionRepository.countByImputadoId(id);
+            long medidas      = medidaRepository.countByImputadoId(id);
+            if (entrevistas > 0 || evaluaciones > 0 || medidas > 0)
+                return new ApiResponse(false, "No se puede eliminar: el imputado tiene registros vinculados.");
+            imputadoRepository.delete(imp);
+            return new ApiResponse(true, "Imputado eliminado correctamente.");
         }).orElse(new ApiResponse(false, "Imputado no encontrado"));
     }
 }

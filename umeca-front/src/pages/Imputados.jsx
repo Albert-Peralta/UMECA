@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getImputados, getImputadoById, actualizarImputado, actualizarFotoImputado, registrarFallecimiento, registrarCierreCarpeta, revertirCierreCarpeta } from '../api/imputadosApi';
+import { getImputados, getImputadoById, actualizarImputado, actualizarFotoImputado, registrarFallecimiento, registrarCierreCarpeta, revertirCierreCarpeta, eliminarImputado } from '../api/imputadosApi';
 import { getSeguimientosPorImputado } from '../api/seguimientosApi';
 import { cambiarCumplimiento } from '../api/medidasApi';
 import { useAuth } from '../context/AuthContext';
@@ -123,6 +123,10 @@ const Imputados = ({ onNavigarEntrevista }) => {
     const [editarConfirmando, setEditarConfirmando] = useState(false);
     const [guardandoEditar, setGuardandoEditar] = useState(false);
     const [editarMsg, setEditarMsg] = useState(null);
+
+    const [showEliminar, setShowEliminar] = useState(false);
+    const [eliminandoImp, setEliminandoImp] = useState(false);
+    const [eliminarMsg, setEliminarMsg] = useState(null);
 
     const handleGuardarEdicion = async () => {
         if (!formEditar.nombre.trim() || !formEditar.apPaterno.trim()) {
@@ -583,9 +587,25 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                         </td>
                                     )}
                                     <td style={{ textAlign: 'center' }}>
-                                        <span className={`count-badge ${(item.totalEntrevistas ?? 0) === 0 ? 'count-badge-cero' : ''}`}>
-                                            {item.totalEntrevistas ?? 0}
-                                        </span>
+                                        {(item.totalEntrevistas ?? 0) === 0 ? (
+                                            <span className="count-badge count-badge-cero">0</span>
+                                        ) : (
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                                                <span className="count-badge">{item.totalEntrevistas}</span>
+                                                {item.ultimaEntrevistaEstado && (() => {
+                                                    const cfg = {
+                                                        PENDIENTE:   { label: 'Pendiente',   color: '#92400e', bg: '#fef3c7' },
+                                                        COMPLETADA:  { label: 'Completada',  color: '#065f46', bg: '#d1fae5' },
+                                                        EN_REVISION: { label: 'En revisión', color: '#1e40af', bg: '#dbeafe' },
+                                                    }[item.ultimaEntrevistaEstado] ?? { label: item.ultimaEntrevistaEstado, color: '#374151', bg: '#f3f4f6' };
+                                                    return (
+                                                        <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: cfg.bg, color: cfg.color, whiteSpace: 'nowrap' }}>
+                                                            {cfg.label}
+                                                        </span>
+                                                    );
+                                                })()}
+                                            </div>
+                                        )}
                                     </td>
                                     <td style={{ textAlign: 'center', paddingRight: 20 }}>
                                         <span className={`count-badge ${(item.totalEvaluaciones ?? 0) === 0 ? 'count-badge-cero' : ''}`}>
@@ -1215,6 +1235,11 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                             <i className="bi bi-pencil-square"></i> Editar Datos
                                         </button>
                                     )}
+                                    {esAdmin && (perfil.entrevistas?.length ?? 0) === 0 && (perfil.evaluaciones?.length ?? 0) === 0 && (perfil.medidas?.length ?? 0) === 0 && (
+                                        <button className="exp-action-btn exp-btn-fallecimiento" onClick={() => { setEliminarMsg(null); setShowEliminar(true); }}>
+                                            <i className="bi bi-trash-fill"></i> Eliminar
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -1600,6 +1625,57 @@ const Imputados = ({ onNavigarEntrevista }) => {
                     <button className="imp-zoom-close" onClick={() => setZoomFoto(false)}>
                         <i className="bi bi-x-lg"></i>
                     </button>
+                </div>
+            )}
+
+            {/* ── Modal Eliminar Imputado ── */}
+            {showEliminar && perfil && (
+                <div className="fall-overlay">
+                    <div className="fall-modal fall-modal-eliminar">
+                        <div className="fall-header fall-header-eliminar">
+                            <div className="fall-header-icon fall-header-icon-eliminar">
+                                <i className="bi bi-trash-fill"></i>
+                            </div>
+                            <div className="fall-header-info">
+                                <h3 className="fall-header-title">Eliminar Imputado</h3>
+                                <p className="fall-header-sub">{perfil.nombre} {perfil.apPaterno} {perfil.apMaterno}</p>
+                            </div>
+                            <button className="fall-close" onClick={() => setShowEliminar(false)}><i className="bi bi-x-lg"></i></button>
+                        </div>
+                        <div className="fall-body">
+                            <p style={{ textAlign: 'center', color: '#374151', margin: '16px 0' }}>
+                                ¿Estás seguro de que deseas eliminar este imputado? Esta acción <strong>no se puede deshacer</strong>.
+                            </p>
+                            {eliminarMsg && (
+                                <div className={`fall-msg ${eliminarMsg.tipo === 'ok' ? 'fall-msg--ok' : 'fall-msg--error'}`}>
+                                    {eliminarMsg.texto}
+                                </div>
+                            )}
+                        </div>
+                        <div className="fall-footer">
+                            <button className="fall-btn-cancelar" onClick={() => setShowEliminar(false)} disabled={eliminandoImp}>Cancelar</button>
+                            <button className="fall-btn-confirmar fall-btn-eliminar" disabled={eliminandoImp} onClick={async () => {
+                                setEliminandoImp(true);
+                                try {
+                                    const res = await eliminarImputado(perfil.id);
+                                    if (res.data.ok) {
+                                        setShowEliminar(false);
+                                        setShowPerfil(false);
+                                        setPerfil(null);
+                                        setDatos(prev => prev.filter(i => i.id !== perfil.id));
+                                    } else {
+                                        setEliminarMsg({ tipo: 'error', texto: res.data.message });
+                                    }
+                                } catch {
+                                    setEliminarMsg({ tipo: 'error', texto: 'Error al eliminar el imputado.' });
+                                } finally {
+                                    setEliminandoImp(false);
+                                }
+                            }}>
+                                {eliminandoImp ? 'Eliminando...' : 'Sí, eliminar'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

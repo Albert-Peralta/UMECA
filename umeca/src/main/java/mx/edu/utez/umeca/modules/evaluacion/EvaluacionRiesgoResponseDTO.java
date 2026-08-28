@@ -166,18 +166,23 @@ public class EvaluacionRiesgoResponseDTO {
                     : "—");
         dto.setCargo(e.getCargoSolicitante());
         dto.setDependencia(e.getDependenciaSolicitante());
-        dto.setImputadoId(e.getImputado().getId());
-        dto.setImputadoFallecido(e.getImputado().isFallecido());
-        dto.setImputadoCarpetaCerrada(e.getImputado().isCarpetaCerrada());
-        dto.setImputadoEstatusCierre(e.getImputado().getEstatusCumplimientoCierre());
-        dto.setNumeroCierreCarpeta(e.getImputado().getNumeroCierreCarpeta());
-        dto.setNombreImputado(e.getImputado().getNombre());
-        dto.setApPaternoImputado(e.getImputado().getApPaterno());
-        dto.setApMaternoImputado(e.getImputado().getApMaterno());
-        dto.setNombreCompletoImputado(e.getImputado().getNombreCompleto());
-        dto.setCausaPenal(e.getImputado().getCausaPenal());
-        dto.setDelito(e.getImputado().getDelito());
-        dto.setUbicacionFisica(e.getImputado().getUbicacionFisica());
+        // Guard: imputado puede ser null en registros corruptos — evitar NPE
+        if (e.getImputado() != null) {
+            dto.setImputadoId(e.getImputado().getId());
+            dto.setImputadoFallecido(e.getImputado().isFallecido());
+            dto.setImputadoCarpetaCerrada(e.getImputado().isCarpetaCerrada());
+            dto.setImputadoEstatusCierre(e.getImputado().getEstatusCumplimientoCierre());
+            dto.setNumeroCierreCarpeta(e.getImputado().getNumeroCierreCarpeta());
+            dto.setNombreImputado(e.getImputado().getNombre());
+            dto.setApPaternoImputado(e.getImputado().getApPaterno());
+            dto.setApMaternoImputado(e.getImputado().getApMaterno());
+            dto.setNombreCompletoImputado(e.getImputado().getNombreCompleto());
+            dto.setCausaPenal(e.getCausaPenal() != null ? e.getCausaPenal() : e.getImputado().getCausaPenal());
+            dto.setDelito(e.getImputado().getDelito());
+            dto.setUbicacionFisica(e.getImputado().getUbicacionFisica());
+        } else {
+            dto.setCausaPenal(e.getCausaPenal());
+        }
         dto.setPuestaDisposicion(e.getPuestaDisposicion());
         dto.setFechaAudiencia(e.getFechaAudiencia());
         dto.setEstatus(e.getEstatus().name());
