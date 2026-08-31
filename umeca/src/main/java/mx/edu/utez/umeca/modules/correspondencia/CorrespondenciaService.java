@@ -152,6 +152,37 @@ public class CorrespondenciaService {
         }).orElse(new ApiResponse(false, "Registro no encontrado"));
     }
 
+    // ── Revertir cancelación (vuelve a PENDIENTE y limpia motivo) ────────────
+    @Transactional
+    public ApiResponse revertirCancelacion(Long id) {
+        return repository.findById(id).map(c -> {
+            if (c.getEstado() != Correspondencia.Estado.CANCELADO)
+                return new ApiResponse(false, "El registro no está cancelado");
+            c.setEstado(Correspondencia.Estado.PENDIENTE);
+            c.setMotivoCancelacion(null);
+            repository.save(c);
+            bitacoraService.registrar(Bitacora.Entidad.CORRESPONDENCIA, id,
+                    c.getNoTurno(), Bitacora.Accion.EDITAR, "Cancelación revertida — estado vuelto a PENDIENTE");
+            return new ApiResponse(true, "Cancelación revertida correctamente");
+        }).orElse(new ApiResponse(false, "Registro no encontrado"));
+    }
+
+    // ── Cancelar (cambia estado a CANCELADO y guarda motivo) ─────────────────
+    @Transactional
+    public ApiResponse cancelar(Long id, String motivo) {
+        if (motivo == null || motivo.isBlank())
+            return new ApiResponse(false, "El motivo de cancelación es obligatorio");
+        return repository.findById(id).map(c -> {
+            c.setEstado(Correspondencia.Estado.CANCELADO);
+            c.setMotivoCancelacion(motivo.trim());
+            repository.save(c);
+            bitacoraService.registrar(Bitacora.Entidad.CORRESPONDENCIA, id,
+                    c.getNoTurno(), Bitacora.Accion.EDITAR,
+                    "Correspondencia cancelada — motivo: " + motivo.trim());
+            return new ApiResponse(true, "Registro cancelado correctamente");
+        }).orElse(new ApiResponse(false, "Registro no encontrado"));
+    }
+
     // ── Usuarios que han registrado correspondencia ───────────────────────────
     @Transactional(readOnly = true)
     public ApiResponse getRegistradores() {

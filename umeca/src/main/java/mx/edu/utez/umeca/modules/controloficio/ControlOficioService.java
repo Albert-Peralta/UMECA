@@ -114,6 +114,38 @@ public class ControlOficioService {
         }).orElse(new ApiResponse(false, "Registro no encontrado"));
     }
 
+    // ── Cancelar ──────────────────────────────────────────────────────────────
+    @Transactional
+    public ApiResponse cancelar(Long id, String motivo) {
+        if (motivo == null || motivo.isBlank())
+            return new ApiResponse(false, "El motivo de cancelación es obligatorio");
+        return repository.findById(id).map(c -> {
+            c.setEstado(ControlOficio.Estado.CANCELADO);
+            c.setMotivoCancelacion(motivo.trim());
+            repository.save(c);
+            bitacoraService.registrar(Bitacora.Entidad.CONTROL_OFICIO, id,
+                    c.getNoOficio(), Bitacora.Accion.EDITAR,
+                    "Oficio cancelado — motivo: " + motivo.trim());
+            return new ApiResponse(true, "Oficio cancelado correctamente");
+        }).orElse(new ApiResponse(false, "Registro no encontrado"));
+    }
+
+    // ── Revertir cancelación ──────────────────────────────────────────────────
+    @Transactional
+    public ApiResponse revertirCancelacion(Long id) {
+        return repository.findById(id).map(c -> {
+            if (c.getEstado() != ControlOficio.Estado.CANCELADO)
+                return new ApiResponse(false, "El registro no está cancelado");
+            c.setEstado(ControlOficio.Estado.PENDIENTE);
+            c.setMotivoCancelacion(null);
+            repository.save(c);
+            bitacoraService.registrar(Bitacora.Entidad.CONTROL_OFICIO, id,
+                    c.getNoOficio(), Bitacora.Accion.EDITAR,
+                    "Cancelación revertida — estado vuelto a PENDIENTE");
+            return new ApiResponse(true, "Cancelación revertida correctamente");
+        }).orElse(new ApiResponse(false, "Registro no encontrado"));
+    }
+
     // ── Exportar Excel ────────────────────────────────────────────────────────
     @Transactional(readOnly = true)
     public byte[] exportarExcel() throws IOException {

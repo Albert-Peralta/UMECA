@@ -40,3 +40,6 @@ export const cambiarCumplimiento = (id, valor) =>
 
 export const toggleSobreseimiento = (id, valor) =>
     api.patch(`/medidas/${id}/sobreseimiento`, null, { params: { valor } });
+
+export const guardarObservaciones = (id, observaciones) =>
+    api.patch(`/medidas/${id}/observaciones`, { observaciones });

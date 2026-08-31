@@ -189,6 +189,20 @@ public class MedidaCautelarService {
         return new ApiResponse(true, "Registro actualizado", MedidaCautelarResponseDTO.from(updated));
     }
 
+    // ── Guardar observaciones ─────────────────────────────────────────────────
+    @Transactional
+    public ApiResponse guardarObservaciones(Long id, String observaciones) {
+        return repository.findById(id).map(m -> {
+            m.setObservaciones(observaciones != null ? observaciones.trim() : null);
+            MedidaCautelar saved = repository.save(m);
+            String nombre = saved.getImputado() != null
+                    ? saved.getImputado().getNombre() + " " + saved.getImputado().getApPaterno() : "—";
+            bitacoraService.registrar(Bitacora.Entidad.MEDIDA_CAUTELAR, saved.getId(), nombre,
+                    Bitacora.Accion.EDITAR, "Observaciones actualizadas");
+            return new ApiResponse(true, "Observaciones guardadas", MedidaCautelarResponseDTO.from(saved));
+        }).orElse(new ApiResponse(false, "Registro no encontrado"));
+    }
+
     @Transactional
     public ApiResponse cambiarEstado(Long id, String estado) {
         return repository.findById(id).map(m -> {

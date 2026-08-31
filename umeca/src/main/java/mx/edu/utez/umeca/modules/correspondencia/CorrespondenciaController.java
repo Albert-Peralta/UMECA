@@ -98,6 +98,24 @@ public class CorrespondenciaController {
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
     }
 
+    /** Admin/Superadmin: revertir cancelación (vuelve a PENDIENTE) */
+    @PatchMapping("/{id}/revertir-cancelacion")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
+    public ResponseEntity<ApiResponse> revertirCancelacion(@PathVariable Long id) {
+        ApiResponse res = service.revertirCancelacion(id);
+        return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
+    }
+
+    /** Admin/Superadmin: cancelar registro (cambia estado a CANCELADO con motivo) */
+    @PatchMapping("/{id}/cancelar")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
+    public ResponseEntity<ApiResponse> cancelar(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> body) {
+        ApiResponse res = service.cancelar(id, body != null ? body.get("motivo") : null);
+        return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
+    }
+
     /** Admin: usuarios que han registrado correspondencia (para filtro) */
     @GetMapping("/registradores")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")

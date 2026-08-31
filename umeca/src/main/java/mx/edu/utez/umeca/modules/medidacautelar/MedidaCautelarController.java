@@ -64,6 +64,16 @@ public class MedidaCautelarController {
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
     }
 
+    @PatchMapping("/{id}/observaciones")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION')" +
+                  " or @moduloChecker.puedeEditar(authentication,'MEDIDAS')")
+    public ResponseEntity<ApiResponse> guardarObservaciones(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> body) {
+        ApiResponse res = service.guardarObservaciones(id, body != null ? body.get("observaciones") : null);
+        return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
+    }
+
     @PatchMapping("/{id}/cumplimiento")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION')" +
                   " or @moduloChecker.puedeEditar(authentication,'MEDIDAS')")

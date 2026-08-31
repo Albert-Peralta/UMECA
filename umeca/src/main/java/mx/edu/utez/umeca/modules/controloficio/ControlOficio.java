@@ -53,5 +53,8 @@ public class ControlOficio {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    public enum Estado { PENDIENTE, TRAMITADO }
+    @Column(name = "motivo_cancelacion", length = 500)
+    private String motivoCancelacion;
+
+    public enum Estado { PENDIENTE, TRAMITADO, CANCELADO }
 }

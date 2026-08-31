@@ -110,10 +110,14 @@
 }
 .co-badge-pendiente { background: #fef3c7; color: #92400e; }
 .co-badge-tramitado { background: #d1fae5; color: #065f46; }
+.co-badge-cancelado { background: #e5e7eb; color: #374151; font-style: italic; }
+.co-fila-cancelada  { background: #f3f4f6 !important; opacity: 0.82; }
+.co-fila-cancelada:hover { background: #e5e7eb !important; opacity: 1; }
+.co-fila-cancelada td:first-child { border-left: 3px solid #9ca3af; }
 
 /* ── Acciones ────────────────────────────────────────────────────────────────── */
 .co-acciones { display: flex; gap: 6px; }
-.co-btn-ver, .co-btn-editar, .co-btn-eliminar {
+.co-btn-ver, .co-btn-editar, .co-btn-eliminar, .co-btn-cancelar, .co-btn-revertir {
     background: none; border: 1px solid #376842; color: #376842;
     border-radius: 6px; padding: 3px 7px; cursor: pointer;
     font-size: 13px; display: inline-flex; align-items: center;
@@ -123,6 +127,10 @@
 .co-btn-editar:hover    { background: #376842; color: #fff; }
 .co-btn-eliminar        { border-color: #ef4444; color: #ef4444; }
 .co-btn-eliminar:hover  { background: #ef4444; color: #fff; }
+.co-btn-cancelar        { border-color: #6b7280; color: #6b7280; }
+.co-btn-cancelar:hover  { background: #6b7280; color: #fff; }
+.co-btn-revertir        { border-color: #059669; color: #059669; }
+.co-btn-revertir:hover  { background: #059669; color: #fff; }
 
 /* ── Paginador / header-top ──────────────────────────────────────────────────── */
 .co-header-top {
@@ -289,5 +297,17 @@
     background: #ef4444; color: #fff; border: none; border-radius: 8px;
     padding: 9px 18px; font-size: 0.88rem; font-weight: 700; cursor: pointer;
 }
-.co-modal-btn-confirmar:hover { background: #2d5535; }
-.co-modal-btn-eliminar:hover  { background: #b91c1c; }
+.co-modal-btn-confirmar:hover  { background: #2d5535; }
+.co-modal-btn-eliminar:hover   { background: #b91c1c; }
+.co-modal-btn-gris {
+    background: #6b7280; color: #fff; border: none; border-radius: 8px;
+    padding: 9px 18px; font-size: 0.88rem; font-weight: 700; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px; transition: background .2s;
+}
+.co-modal-btn-gris:hover    { background: #4b5563; }
+.co-modal-btn-gris:disabled { opacity: .5; cursor: not-allowed; }
+.co-modal-icon-cancelar {
+    width: 44px; height: 44px; border-radius: 50%; background: #f3f4f6;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; color: #6b7280; margin-bottom: 12px;
+}

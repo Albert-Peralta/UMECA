@@ -4,7 +4,7 @@ import { useToast } from '../context/ToastContext';
 import { useFormGuard } from '../context/FormGuardContext';
 import {
     getCorrespondencia, getMisAsignados, getMisRegistros, crearCorrespondencia,
-    editarCorrespondencia, eliminarCorrespondencia,
+    editarCorrespondencia, eliminarCorrespondencia, cancelarCorrespondencia, revertirCancelacionCorrespondencia,
     getPersonalAsignable, asignarCorrespondencia, quitarAsignacion,
     cambiarEstadoCorrespondencia, getContadoresCorrespondencia, exportarCorrespondenciaExcel,
     SEDES, TIPOS, PRIORIDADES, ESTADOS_PERSONAL, ESTADO_CONFIG, PRIORIDAD_CONFIG,
@@ -18,6 +18,29 @@ const FORM_VACIO = {
     tipo: '', remitente: '', asunto: '',
     terminoRespuestaHoras: '', requiereRespuesta: false, prioridad: 'NORMAL',
 };
+
+// ── Compresión de imágenes (Canvas, sin librerías) ─────────────────────────
+const comprimirImagen = (file, maxPx = 1200, calidad = 0.80) =>
+    new Promise(resolve => {
+        if (!file.type.startsWith('image/')) { resolve(file); return; }
+        const img = new Image();
+        img.onload = () => {
+            let { width, height } = img;
+            if (width > maxPx || height > maxPx) {
+                if (width > height) { height = Math.round(height * maxPx / width); width = maxPx; }
+                else                { width  = Math.round(width  * maxPx / height); height = maxPx; }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width; canvas.height = height;
+            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+            canvas.toBlob(blob => {
+                if (!blob) { resolve(file); return; }
+                resolve(new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' }));
+            }, 'image/jpeg', calidad);
+        };
+        img.onerror = () => resolve(file); // fallback: enviar original
+        img.src = URL.createObjectURL(file);
+    });
 
 export default function Correspondencia() {
     const { user } = useAuth();
@@ -63,6 +86,11 @@ export default function Correspondencia() {
     const [showEliminarModal,setShowEliminarModal] = useState(false);
     const [registroEliminar, setRegistroEliminar] = useState(null);
     const [loadingEliminar,  setLoadingEliminar]  = useState(false);
+    const [showCancelarModal,setShowCancelarModal] = useState(false);
+    const [registroCancelar, setRegistroCancelar] = useState(null);
+    const [motivoCancelar,   setMotivoCancelar]   = useState('');
+    const [motivoError,      setMotivoError]      = useState('');
+    const [loadingCancelar,  setLoadingCancelar]  = useState(false);
 
     // PDF con auth
     const [loadingPdf, setLoadingPdf] = useState(false);
@@ -125,7 +153,12 @@ export default function Correspondencia() {
                 setShowConfirm(false);
                 cargar();
             } else showToast(res.data.message || 'Error al guardar', 'error');
-        } catch { showToast('Error de conexión', 'error'); }
+        } catch (err) {
+            const status = err?.response?.status;
+            if (status === 413) showToast('El archivo supera el tamaño permitido (PDF: máx. 10 MB, imágenes: máx. 2 MB)', 'error');
+            else if (status === 403) showToast('No tienes permiso para realizar esta acción', 'error');
+            else showToast('Error de conexión. Verifica tu red e intenta de nuevo.', 'error');
+        }
         finally { setLoadingGuardar(false); }
     };
 
@@ -185,7 +218,12 @@ export default function Correspondencia() {
                 setRegistroEditar(null);
                 cargar();
             } else showToast(res.data.message || 'Error al editar', 'error');
-        } catch { showToast('Error de conexión', 'error'); }
+        } catch (err) {
+            const status = err?.response?.status;
+            if (status === 413) showToast('El archivo supera el tamaño permitido (PDF: máx. 10 MB, imágenes: máx. 2 MB)', 'error');
+            else if (status === 403) showToast('No tienes permiso para realizar esta acción', 'error');
+            else showToast('Error de conexión. Verifica tu red e intenta de nuevo.', 'error');
+        }
         finally { setLoadingGuardar(false); }
     };
 
@@ -207,6 +245,30 @@ export default function Correspondencia() {
             } else showToast(res.data.message || 'Error al eliminar', 'error');
         } catch { showToast('Error de conexión', 'error'); }
         finally { setLoadingEliminar(false); }
+    };
+
+    // ── Cancelar (admin) ────────────────────────────────────────────────────
+    const abrirCancelar = (reg) => {
+        setRegistroCancelar(reg);
+        setMotivoCancelar('');
+        setMotivoError('');
+        setShowCancelarModal(true);
+    };
+
+    const handleCancelar = async () => {
+        if (!motivoCancelar.trim()) { setMotivoError('El motivo es obligatorio'); return; }
+        setLoadingCancelar(true);
+        try {
+            const res = await cancelarCorrespondencia(registroCancelar.id, motivoCancelar.trim());
+            if (res.data.ok) {
+                showToast('Registro cancelado correctamente');
+                setShowCancelarModal(false);
+                setRegistroCancelar(null);
+                setMotivoCancelar('');
+                cargar();
+            } else showToast(res.data.message || 'Error al cancelar', 'error');
+        } catch { showToast('Error de conexión', 'error'); }
+        finally { setLoadingCancelar(false); }
     };
 
     // ── Asignar (admin) ─────────────────────────────────────────────────────
@@ -439,14 +501,34 @@ export default function Correspondencia() {
                                 setDragging(false);
                                 const file = e.dataTransfer.files[0];
                                 const TIPOS_VALIDOS = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-                                if (file && TIPOS_VALIDOS.includes(file.type)) {
-                                    setArchivo(file);
-                                    setErroresCampo(er => ({ ...er, archivo: '' }));
+                                if (!file) return;
+                                if (!TIPOS_VALIDOS.includes(file.type)) return;
+                                const maxSize = file.type === 'application/pdf' ? 10 * 1024 * 1024 : 2 * 1024 * 1024;
+                                const maxLabel = file.type === 'application/pdf' ? '10 MB' : '2 MB';
+                                if (file.size > maxSize) {
+                                    setErroresCampo(er => ({ ...er, archivo: `El archivo no puede superar ${maxLabel}` }));
+                                    return;
                                 }
+                                comprimirImagen(file).then(f => { setArchivo(f); setErroresCampo(er => ({ ...er, archivo: '' })); });
                             }}
                         >
                             <input type="file" accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
-                                onChange={e => { setArchivo(e.target.files[0] || null); setErroresCampo(er => ({ ...er, archivo: '' })); }} />
+                                onChange={e => {
+                                    const file = e.target.files[0] || null;
+                                    if (file) {
+                                        const maxSize = file.type === 'application/pdf' ? 10 * 1024 * 1024 : 2 * 1024 * 1024;
+                                        const maxLabel = file.type === 'application/pdf' ? '10 MB' : '2 MB';
+                                        if (file.size > maxSize) {
+                                            setErroresCampo(er => ({ ...er, archivo: `El archivo no puede superar ${maxLabel}` }));
+                                            e.target.value = '';
+                                            return;
+                                        }
+                                        comprimirImagen(file).then(f => { setArchivo(f); setErroresCampo(er => ({ ...er, archivo: '' })); });
+                                        return;
+                                    }
+                                    setArchivo(null);
+                                    setErroresCampo(er => ({ ...er, archivo: '' }));
+                                }} />
                             {archivo ? (
                                 <>
                                     <i className={`bi ${archivo.type.startsWith('image/') ? 'bi-file-earmark-image-fill' : 'bi-file-earmark-pdf-fill'} corr-dropzone-icon corr-dropzone-icon-ok`} />
@@ -640,6 +722,16 @@ export default function Correspondencia() {
                             </span>
                         </div>
                     </div>
+
+                    {/* Motivo de cancelación */}
+                    {registro.estado === 'CANCELADO' && registro.motivoCancelacion && (
+                        <div style={{ margin: '1rem 0', padding: '10px 14px', background: '#f3f4f6', borderRadius: 8, borderLeft: '3px solid #9ca3af' }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 4 }}>
+                                <i className="bi bi-x-circle" /> Motivo de cancelación
+                            </span>
+                            <span style={{ fontSize: 13, color: '#374151', lineHeight: 1.6 }}>{registro.motivoCancelacion}</span>
+                        </div>
+                    )}
 
                     {/* Sección contenido */}
                     <div className="corr-detalle-seccion" style={{ marginTop: '1.2rem' }}><span><i className="bi bi-file-text" /> Contenido</span></div>
@@ -883,12 +975,13 @@ export default function Correspondencia() {
                         ) : pagActual.map((r) => {
                             const cfg  = ESTADO_CONFIG[r.estado] || {};
                             const pcfg = PRIORIDAD_CONFIG[r.prioridad] || {};
-                            const filaRoja = r.requiereRespuesta;
+                            const filaRoja = r.requiereRespuesta && r.estado !== 'CANCELADO';
                             const filaPendiente = r.estado === 'PENDIENTE';
-                            const filaSinAsignar = esAdmin && !r.asignadoAId;
-                            const filaPorAtender = esPersonal && r.estado !== 'FINALIZADO';
+                            const filaCancelada = r.estado === 'CANCELADO';
+                            const filaSinAsignar = esAdmin && !r.asignadoAId && !filaCancelada;
+                            const filaPorAtender = esPersonal && r.estado !== 'FINALIZADO' && !filaCancelada;
                             return (
-                                <tr key={r.id} className={`${filaRoja ? 'corr-fila-alerta' : ''} ${filaPendiente ? 'corr-fila-pendiente' : ''} ${filaSinAsignar ? 'corr-fila-sin-asignar' : ''} ${filaPorAtender ? 'corr-fila-por-atender' : ''}`}>
+                                <tr key={r.id} className={`${filaRoja ? 'corr-fila-alerta' : ''} ${filaPendiente ? 'corr-fila-pendiente' : ''} ${filaCancelada ? 'corr-fila-cancelada' : ''} ${filaSinAsignar ? 'corr-fila-sin-asignar' : ''} ${filaPorAtender ? 'corr-fila-por-atender' : ''}`}>
                                     <td className="corr-turno">
                                         <span className="corr-turno-seq">{r.noTurno?.split('-')[2]}</span>
                                     </td>
@@ -932,14 +1025,29 @@ export default function Correspondencia() {
                                         )}
                                         {esAdmin && (
                                             <>
-                                                <button className="corr-btn-editar" title="Editar"
-                                                    onClick={() => abrirEditar(r)}>
-                                                    <i className="bi bi-pencil-fill" />
-                                                </button>
-                                                <button className="corr-btn-eliminar" title="Eliminar"
-                                                    onClick={() => abrirEliminar(r)}>
-                                                    <i className="bi bi-trash-fill" />
-                                                </button>
+                                                {r.estado !== 'CANCELADO' && (
+                                                    <button className="corr-btn-editar" title="Editar"
+                                                        onClick={() => abrirEditar(r)}>
+                                                        <i className="bi bi-pencil-fill" />
+                                                    </button>
+                                                )}
+                                                {r.estado !== 'CANCELADO' ? (
+                                                    <button className="corr-btn-cancelar" title="Cancelar registro"
+                                                        onClick={() => abrirCancelar(r)}>
+                                                        <i className="bi bi-x-circle-fill" />
+                                                    </button>
+                                                ) : (
+                                                    <button className="corr-btn-revertir" title="Revertir cancelación"
+                                                        onClick={async () => {
+                                                            try {
+                                                                const res = await revertirCancelacionCorrespondencia(r.id);
+                                                                if (res.data.ok) { showToast('Cancelación revertida'); cargar(); }
+                                                                else showToast(res.data.message || 'Error al revertir', 'error');
+                                                            } catch { showToast('Error de conexión', 'error'); }
+                                                        }}>
+                                                        <i className="bi bi-arrow-counterclockwise" />
+                                                    </button>
+                                                )}
                                             </>
                                         )}
                                     </td>
@@ -1066,6 +1174,83 @@ export default function Correspondencia() {
                 </div>
             )}
         {/* Modal eliminar */}
+            {/* ── Modal Cancelar ── */}
+            {showCancelarModal && (
+                <div className="corr-modal-overlay">
+                    <div className="corr-modal-box corr-modal-box-danger" style={{ borderTop: '4px solid #6b7280', maxWidth: 480 }}>
+                        {/* Header gris */}
+                        <div className="corr-modal-danger-header" style={{ background: 'linear-gradient(135deg,#f3f4f6,#e5e7eb)', borderRadius: '8px 8px 0 0' }}>
+                            <div className="corr-modal-danger-icon" style={{ background: '#fff', color: '#4b5563', boxShadow: '0 2px 8px rgba(0,0,0,0.10)' }}>
+                                <i className="bi bi-x-circle-fill" style={{ fontSize: 22 }} />
+                            </div>
+                            <div>
+                                <h3 className="corr-modal-danger-titulo" style={{ color: '#1f2937' }}>Cancelar registro</h3>
+                                <p className="corr-modal-danger-sub" style={{ color: '#6b7280' }}>El registro cambiará a estado <strong>Cancelado</strong></p>
+                            </div>
+                        </div>
+
+                        <div className="corr-modal-danger-body">
+                            {/* Card info registro */}
+                            <div className="corr-modal-danger-card" style={{ marginBottom: 18 }}>
+                                <div className="corr-modal-danger-row">
+                                    <span className="corr-modal-danger-lbl"><i className="bi bi-hash" /> No. Turno</span>
+                                    <span className="corr-modal-danger-val corr-modal-danger-turno">{registroCancelar?.noTurno || '—'}</span>
+                                </div>
+                                <div className="corr-modal-danger-divider" />
+                                <div className="corr-modal-danger-row corr-modal-danger-row-col">
+                                    <span className="corr-modal-danger-lbl"><i className="bi bi-chat-left-text" /> Asunto</span>
+                                    <span className="corr-modal-danger-val">{registroCancelar?.asunto || '—'}</span>
+                                </div>
+                                {registroCancelar?.remitente && (<>
+                                    <div className="corr-modal-danger-divider" />
+                                    <div className="corr-modal-danger-row corr-modal-danger-row-col">
+                                        <span className="corr-modal-danger-lbl"><i className="bi bi-person" /> Remitente</span>
+                                        <span className="corr-modal-danger-val">{registroCancelar.remitente}</span>
+                                    </div>
+                                </>)}
+                            </div>
+
+                            {/* Campo motivo */}
+                            <div style={{ background: '#fafafa', border: '1px solid #e5e7eb', borderRadius: 10, padding: '14px 16px', marginBottom: 24 }}>
+                                <label style={{ fontSize: 11, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                                    <i className="bi bi-pencil-square" style={{ color: '#6b7280' }} />
+                                    Motivo de cancelación <span style={{ color: '#dc2626' }}>*</span>
+                                </label>
+                                <textarea
+                                    autoFocus
+                                    rows={3}
+                                    value={motivoCancelar}
+                                    onChange={e => { setMotivoCancelar(e.target.value); if (e.target.value.trim()) setMotivoError(''); }}
+                                    placeholder="Describe el motivo por el que se cancela este registro..."
+                                    style={{ width: '100%', borderRadius: 7, border: motivoError ? '1.5px solid #dc2626' : '1.5px solid #d1d5db', padding: '9px 11px', fontSize: 13, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', background: '#fff', outline: 'none', lineHeight: 1.5 }}
+                                />
+                                {motivoError
+                                    ? <span style={{ fontSize: 12, color: '#dc2626', marginTop: 5, display: 'flex', alignItems: 'center', gap: 4 }}><i className="bi bi-exclamation-circle-fill" /> {motivoError}</span>
+                                    : <span style={{ fontSize: 11, color: '#9ca3af', marginTop: 5, display: 'block' }}>Mínimo 10 caracteres recomendados</span>
+                                }
+                            </div>
+
+                            {/* Separador */}
+                            <div style={{ height: 1, background: '#e5e7eb', margin: '0 0 20px' }} />
+
+                            {/* Acciones */}
+                            <div className="corr-modal-acciones">
+                                <button className="corr-modal-btn-cancelar" onClick={() => setShowCancelarModal(false)} disabled={loadingCancelar}
+                                    style={{ flex: 1 }}>
+                                    <i className="bi bi-x-lg" /> Cerrar
+                                </button>
+                                <button onClick={handleCancelar} disabled={loadingCancelar}
+                                    style={{ flex: 1.4, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '9px 16px', borderRadius: 8, border: 'none', background: loadingCancelar ? '#9ca3af' : '#4b5563', color: '#fff', fontWeight: 700, fontSize: 13, cursor: loadingCancelar ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
+                                    {loadingCancelar
+                                        ? <><i className="bi bi-hourglass-split" /> Cancelando...</>
+                                        : <><i className="bi bi-x-circle-fill" /> Confirmar cancelación</>}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {showEliminarModal && (
                 <div className="corr-modal-overlay">
                     <div className="corr-modal-box corr-modal-box-danger">

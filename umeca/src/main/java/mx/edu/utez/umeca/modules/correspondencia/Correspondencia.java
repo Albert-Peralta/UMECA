@@ -81,6 +81,9 @@ public class Correspondencia {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "motivo_cancelacion", length = 500)
+    private String motivoCancelacion;
+
     // ── Enums ──────────────────────────────────────────────────────────────────
 
     public enum Sede { XOCHITEPEC, CUAUTLA, JOJUTLA }
@@ -89,5 +92,5 @@ public class Correspondencia {
 
     public enum Prioridad { NORMAL, URGENTE, DE_CONOCIMIENTO, TURNO, CIRCULAR }
 
-    public enum Estado { PENDIENTE, ASIGNADO, LEIDO, EN_ESPERA, FINALIZADO, ARCHIVADO }
+    public enum Estado { PENDIENTE, ASIGNADO, LEIDO, EN_ESPERA, FINALIZADO, ARCHIVADO, CANCELADO }
 }

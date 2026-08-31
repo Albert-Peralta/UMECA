@@ -27,6 +27,7 @@ public class CorrespondenciaResponseDTO {
     private String asignadoARol;
     private LocalDateTime fechaAsignacion;
     private LocalDateTime createdAt;
+    private String motivoCancelacion;
 
     public static CorrespondenciaResponseDTO from(Correspondencia c) {
         CorrespondenciaResponseDTO dto = new CorrespondenciaResponseDTO();
@@ -46,6 +47,7 @@ public class CorrespondenciaResponseDTO {
         dto.setEstado(c.getEstado() != null ? c.getEstado().name() : null);
         dto.setFechaAsignacion(c.getFechaAsignacion());
         dto.setCreatedAt(c.getCreatedAt());
+        dto.setMotivoCancelacion(c.getMotivoCancelacion());
         if (c.getRegistradoPor() != null)
             dto.setRegistradoPorNombre(c.getRegistradoPor().getNombre() + " " + c.getRegistradoPor().getApPaterno());
         if (c.getAsignadoA() != null) {

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { agregarSeguimiento, registrarLevantamiento, registrarRevocacion, registrarAmpliacion, eliminarMedida, toggleSobreseimiento } from '../api/medidasApi';
+import { agregarSeguimiento, registrarLevantamiento, registrarRevocacion, registrarAmpliacion, eliminarMedida, toggleSobreseimiento, guardarObservaciones } from '../api/medidasApi';
 import { registrarFallecimiento } from '../api/imputadosApi';
 import HistorialRegistro from '../components/HistorialRegistro';
 import SeguimientosPanel from '../components/SeguimientosPanel';
@@ -145,6 +145,9 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
 
     // ── Ampliación SCP ────────────────────────────────────────────────────────
     const [showAmpliacion, setShowAmpliacion] = useState(false);
+    const [showObsModal,   setShowObsModal]   = useState(false);
+    const [obsTexto,       setObsTexto]       = useState('');
+    const [loadingObs,     setLoadingObs]     = useState(false);
 
     // ── Fallecimiento ─────────────────────────────────────────────────────────
     const FALL_VACIO = { fechaFallecimiento: '', quienAviso: '', parentescoInformante: '', comoSeComprobo: '', noActaDefuncion: '', observacionesFallecimiento: '' };
@@ -211,6 +214,23 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
             else { setAmpError(res.data.message); }
         } catch { setAmpError('Error al registrar la ampliación.'); }
         finally { setLoadingAmp(false); }
+    };
+
+    const abrirObservaciones = () => {
+        setObsTexto(m.observaciones || '');
+        setShowObsModal(true);
+    };
+    const handleGuardarObs = async () => {
+        setLoadingObs(true);
+        try {
+            const res = await guardarObservaciones(m.id, obsTexto);
+            if (res.data.ok) {
+                onActualizado(res.data.data);
+                setShowObsModal(false);
+                showToast('Observaciones guardadas correctamente');
+            } else showToast(res.data.message || 'Error al guardar', 'error');
+        } catch { showToast('Error de conexión', 'error'); }
+        finally { setLoadingObs(false); }
     };
 
     return (
@@ -285,6 +305,12 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                     {puedeRegistrar && !m.imputadoFallecido && !m.imputadoCarpetaCerrada && (
                         <button className="dm-btn-editar" onClick={onEditar}>
                             <i className="bi bi-pencil" /> Editar
+                        </button>
+                    )}
+                    {puedeRegistrar && !m.imputadoFallecido && !m.imputadoCarpetaCerrada && (
+                        <button className="dm-btn-editar" style={{ background: '#e0f2fe', color: '#0369a1', borderColor: '#bae6fd' }}
+                            onClick={abrirObservaciones}>
+                            <i className="bi bi-journal-text" /> Observaciones
                         </button>
                     )}
                     {puedeRegistrar && esMC && m.estado === 'ACTIVO' && !m.imputadoFallecido && !m.imputadoCarpetaCerrada && (
@@ -459,7 +485,23 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                     <Val label="Vigencia Fin"            value={m.vigenciaFin} />
                     <Val label="Fecha Próxima Revisión"  value={m.fechaProximaRevision} />
                     <Val label="Responsable Seguimiento" value={m.responsableSeguimiento} />
-                    <Val label="Observaciones"           value={m.observaciones} full />
+                    {m.observaciones && (
+                        <div style={{ gridColumn: '1 / -1', marginTop: 4 }}>
+                            <div style={{
+                                background: '#f0f9ff', border: '1.5px solid #7dd3fc',
+                                borderLeft: '4px solid #0369a1', borderRadius: 10,
+                                padding: '14px 18px',
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
+                                    <i className="bi bi-journal-text" style={{ color: '#0369a1', fontSize: '1rem' }} />
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0369a1', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Observaciones</span>
+                                </div>
+                                <p style={{ margin: 0, color: '#1e3a5f', fontSize: '0.92rem', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                                    {m.observaciones}
+                                </p>
+                            </div>
+                        </div>
+                    )}
                     <Val label="Observaciones Generales" value={m.observacionesGenerales} full />
                     {m.advertencia && <Val label="Advertencia al Imputado" value={m.advertencia} full />}
                 </div>
@@ -718,6 +760,77 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                         </button>
                         <button className="de-modal-btn-eliminar" onClick={handleEliminar} disabled={loadingEliminar}>
                             {loadingEliminar ? 'Eliminando...' : 'Sí, eliminar'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* ── Modal Observaciones ── */}
+        {showObsModal && (
+            <div style={{
+                position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200,
+            }}>
+                <div style={{
+                    background: '#f0f9ff', borderRadius: 16, padding: 28, width: '90%', maxWidth: 480,
+                    boxShadow: '0 20px 60px rgba(3,105,161,0.25), 0 4px 20px rgba(3,105,161,0.15)',
+                    border: '1.5px solid #7dd3fc',
+                }}>
+                    {/* Ícono + título */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
+                        <div style={{
+                            width: 48, height: 48, borderRadius: '50%',
+                            background: '#e0f2fe', display: 'flex', alignItems: 'center',
+                            justifyContent: 'center', color: '#0369a1', fontSize: '1.4rem', flexShrink: 0,
+                        }}>
+                            <i className="bi bi-journal-text" />
+                        </div>
+                        <div>
+                            <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#1f2937' }}>Observaciones</div>
+                            <div style={{ fontSize: '0.82rem', color: '#6b7280', marginTop: 2 }}>
+                                {m.imputadoNombre} · Causa penal: {m.causaPenal}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Separador */}
+                    <div style={{ borderTop: '1px solid #bae6fd', marginBottom: 18 }} />
+
+                    {/* Textarea */}
+                    <textarea
+                        rows={5}
+                        style={{
+                            width: '100%', resize: 'vertical', borderRadius: 8, padding: '10px 12px',
+                            border: '1.5px solid #7dd3fc', fontSize: '0.92rem', fontFamily: 'inherit',
+                            boxSizing: 'border-box', outline: 'none', color: '#1f2937', background: '#fff',
+                            transition: 'border-color .2s', lineHeight: 1.6,
+                        }}
+                        placeholder="Escribe las observaciones de esta medida..."
+                        value={obsTexto}
+                        onChange={e => setObsTexto(e.target.value)}
+                        disabled={loadingObs}
+                        onFocus={e => e.target.style.borderColor = '#0369a1'}
+                        onBlur={e => e.target.style.borderColor = '#d1d5db'}
+                    />
+
+                    {/* Botones */}
+                    <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+                        <button onClick={() => setShowObsModal(false)} disabled={loadingObs}
+                            style={{
+                                background: '#f3f4f6', border: 'none', borderRadius: 8,
+                                padding: '9px 18px', fontSize: '0.88rem', cursor: 'pointer', color: '#374151',
+                            }}>
+                            Cancelar
+                        </button>
+                        <button onClick={handleGuardarObs} disabled={loadingObs}
+                            style={{
+                                background: loadingObs ? '#93c5fd' : '#0369a1', color: '#fff',
+                                border: 'none', borderRadius: 8, padding: '9px 20px',
+                                fontSize: '0.88rem', fontWeight: 700, cursor: loadingObs ? 'not-allowed' : 'pointer',
+                                display: 'inline-flex', alignItems: 'center', gap: 7, transition: 'background .2s',
+                            }}>
+                            {loadingObs ? 'Guardando...' : <><i className="bi bi-check-lg" /> Guardar</>}
                         </button>
                     </div>
                 </div>

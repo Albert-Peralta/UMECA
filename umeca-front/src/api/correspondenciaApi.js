@@ -33,6 +33,12 @@ export const editarCorrespondencia = (id, datos, archivo) => {
 export const eliminarCorrespondencia = (id) =>
     api.delete(`/correspondencia/${id}`);
 
+export const cancelarCorrespondencia = (id, motivo) =>
+    api.patch(`/correspondencia/${id}/cancelar`, { motivo });
+
+export const revertirCancelacionCorrespondencia = (id) =>
+    api.patch(`/correspondencia/${id}/revertir-cancelacion`);
+
 export const getPersonalAsignable = () =>
     api.get('/correspondencia/personal-asignable');
 
@@ -90,6 +96,7 @@ export const ESTADO_CONFIG = {
     EN_ESPERA:  { label: 'En Espera',  clase: 'corr-badge-espera' },
     FINALIZADO: { label: 'Finalizado', clase: 'corr-badge-finalizado' },
     ARCHIVADO:  { label: 'Archivado',  clase: 'corr-badge-archivado' },
+    CANCELADO:  { label: 'Cancelado',  clase: 'corr-badge-cancelado' },
 };
 
 export const PRIORIDAD_CONFIG = {

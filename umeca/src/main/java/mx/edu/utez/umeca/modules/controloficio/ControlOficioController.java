@@ -45,6 +45,20 @@ public class ControlOficioController {
         return ResponseEntity.ok(service.eliminar(id));
     }
 
+    @PatchMapping("/{id}/cancelar")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR')")
+    public ResponseEntity<ApiResponse> cancelar(@PathVariable Long id, @RequestBody java.util.Map<String, String> body) {
+        ApiResponse res = service.cancelar(id, body != null ? body.get("motivo") : null);
+        return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
+    }
+
+    @PatchMapping("/{id}/revertir-cancelacion")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR')")
+    public ResponseEntity<ApiResponse> revertirCancelacion(@PathVariable Long id) {
+        ApiResponse res = service.revertirCancelacion(id);
+        return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
+    }
+
     @PatchMapping("/{id}/estado")
     @PreAuthorize("hasAnyRole('SUPERADMIN','ADMINISTRADOR','SUPERVISION','EVALUADOR_RIESGO','CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> cambiarEstado(@PathVariable Long id, @RequestParam String estado) {

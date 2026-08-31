@@ -3,7 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import {
     getLista, getContadores, crearOficio, editarOficio,
-    eliminarOficio, cambiarEstado, exportarExcel, ESTADO_CONFIG,
+    eliminarOficio, cambiarEstado, cancelarOficio, revertirCancelacionOficio,
+    exportarExcel, ESTADO_CONFIG,
 } from '../api/controlOficiosApi';
 import './ControlOficios.css';
 import './EntrevistaEncuadre.css';
@@ -47,7 +48,14 @@ export default function ControlOficios() {
     // ── Confirmación eliminar ─────────────────────────────────────────────────
     const [modalEliminar,  setModalEliminar]  = useState(null);
     const [eliminando,     setEliminando]     = useState(false);
-    const [modalTramitar,  setModalTramitar]  = useState(null); // registro a tramitar
+    const [modalTramitar,  setModalTramitar]  = useState(null);
+
+    // ── Cancelar ──────────────────────────────────────────────────────────────
+    const [showCancelarModal, setShowCancelarModal] = useState(false);
+    const [registroCancelar,  setRegistroCancelar]  = useState(null);
+    const [motivoCancelar,    setMotivoCancelar]    = useState('');
+    const [motivoError,       setMotivoError]       = useState('');
+    const [loadingCancelar,   setLoadingCancelar]   = useState(false);
 
     // ── Cargar lista ──────────────────────────────────────────────────────────
     const cargar = useCallback(async () => {
@@ -139,6 +147,28 @@ export default function ControlOficios() {
             } else showToast(res.data.message || 'Error al eliminar', 'error');
         } catch { showToast('Error al eliminar', 'error'); }
         finally  { setEliminando(false); }
+    };
+
+    // ── Cancelar oficio ───────────────────────────────────────────────────────
+    const abrirCancelar = (r) => {
+        setRegistroCancelar(r);
+        setMotivoCancelar('');
+        setMotivoError('');
+        setShowCancelarModal(true);
+    };
+    const handleCancelar = async () => {
+        if (!motivoCancelar.trim()) { setMotivoError('El motivo es obligatorio'); return; }
+        setLoadingCancelar(true);
+        try {
+            const res = await cancelarOficio(registroCancelar.id, motivoCancelar.trim());
+            if (res.data.ok) {
+                showToast('Oficio cancelado correctamente');
+                setShowCancelarModal(false);
+                cargar();
+                window.dispatchEvent(new CustomEvent('oficios-contadores-cambio'));
+            } else showToast(res.data.message || 'Error al cancelar', 'error');
+        } catch { showToast('Error de conexión', 'error'); }
+        finally  { setLoadingCancelar(false); }
     };
 
     // ── Cambiar estado ────────────────────────────────────────────────────────
@@ -252,6 +282,7 @@ export default function ControlOficios() {
         const cfg = ESTADO_CONFIG[registro.estado] || {};
         const esPendiente  = registro.estado === 'PENDIENTE';
         const esTramitado  = registro.estado === 'TRAMITADO';
+        const esCanceladoDet = registro.estado === 'CANCELADO';
         return (
             <>
             <div className="co-container">
@@ -304,6 +335,33 @@ export default function ControlOficios() {
                                     <button className="co-btn-back" style={{ marginBottom: 0 }}
                                         onClick={() => setModalTramitar({ ...registro, _revertir: true })}>
                                         <i className="bi bi-arrow-counterclockwise" /> Revertir a Pendiente
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                        {esCanceladoDet && (
+                            <div style={{ background: '#f3f4f6', borderRadius: 8, padding: '12px 16px', borderLeft: '3px solid #9ca3af' }}>
+                                <div style={{ color: '#6b7280', fontWeight: 700, marginBottom: 4 }}>
+                                    <i className="bi bi-x-circle-fill" /> Oficio cancelado
+                                </div>
+                                {registro.motivoCancelacion && (
+                                    <div style={{ color: '#374151', fontSize: '0.92rem' }}>
+                                        <strong>Motivo:</strong> {registro.motivoCancelacion}
+                                    </div>
+                                )}
+                                {esAdmin && (
+                                    <button className="co-btn-revertir" style={{ marginTop: 10 }}
+                                        onClick={async () => {
+                                            try {
+                                                const res = await revertirCancelacionOficio(registro.id);
+                                                if (res.data.ok) {
+                                                    showToast('Cancelación revertida');
+                                                    setRegistro(prev => ({ ...prev, estado: 'PENDIENTE', motivoCancelacion: null }));
+                                                    cargar();
+                                                } else showToast(res.data.message || 'Error', 'error');
+                                            } catch { showToast('Error de conexión', 'error'); }
+                                        }}>
+                                        <i className="bi bi-arrow-counterclockwise" /> Revertir cancelación
                                     </button>
                                 )}
                             </div>
@@ -420,9 +478,10 @@ export default function ControlOficios() {
                             <tr><td colSpan={8} className="co-sin-datos"><i className="bi bi-inbox" /> Sin registros</td></tr>
                         ) : pagActual.map(r => {
                             const cfg = ESTADO_CONFIG[r.estado] || {};
-                            const esPendiente = r.estado === 'PENDIENTE';
+                            const esPendiente  = r.estado === 'PENDIENTE';
+                            const esCancelado  = r.estado === 'CANCELADO';
                             return (
-                                <tr key={r.id} className={esPendiente ? 'co-fila-pendiente' : ''}>
+                                <tr key={r.id} className={esCancelado ? 'co-fila-cancelada' : esPendiente ? 'co-fila-pendiente' : ''}>
                                     <td className="co-td-no"><strong>{r.noOficio}</strong></td>
                                     <td>{fmtFecha(r.fecha)}</td>
                                     <td>{r.destinatario}</td>
@@ -444,10 +503,28 @@ export default function ControlOficios() {
                                             onClick={() => { setRegistro(r); setVista('detalle'); }}>
                                             <i className="bi bi-eye" />
                                         </button>
-                                        {esAdmin && (
+                                        {esAdmin && !esCancelado && (
                                             <button className="co-btn-editar" title="Editar"
                                                 onClick={() => abrirEditar(r)}>
                                                 <i className="bi bi-pencil" />
+                                            </button>
+                                        )}
+                                        {esAdmin && !esCancelado && (
+                                            <button className="co-btn-cancelar" title="Cancelar oficio"
+                                                onClick={() => abrirCancelar(r)}>
+                                                <i className="bi bi-x-circle-fill" />
+                                            </button>
+                                        )}
+                                        {esAdmin && esCancelado && (
+                                            <button className="co-btn-revertir" title="Revertir cancelación"
+                                                onClick={async () => {
+                                                    try {
+                                                        const res = await revertirCancelacionOficio(r.id);
+                                                        if (res.data.ok) { showToast('Cancelación revertida'); cargar(); window.dispatchEvent(new CustomEvent('oficios-contadores-cambio')); }
+                                                        else showToast(res.data.message || 'Error al revertir', 'error');
+                                                    } catch { showToast('Error de conexión', 'error'); }
+                                                }}>
+                                                <i className="bi bi-arrow-counterclockwise" />
                                             </button>
                                         )}
                                         {esAdmin && (
@@ -508,6 +585,49 @@ export default function ControlOficios() {
                             <button className="co-modal-btn-cancelar" onClick={() => setModalEliminar(null)} disabled={eliminando}>Cancelar</button>
                             <button className="co-modal-btn-eliminar" onClick={handleEliminar} disabled={eliminando}>
                                 {eliminando ? 'Eliminando...' : 'Eliminar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal cancelar oficio */}
+            {showCancelarModal && registroCancelar && (
+                <div className="co-modal-overlay">
+                    <div className="co-modal" style={{ maxWidth: 440 }}>
+                        <div className="co-modal-icon-cancelar">
+                            <i className="bi bi-x-circle-fill" />
+                        </div>
+                        <div className="co-modal-titulo">
+                            Cancelar oficio No. {registroCancelar.noOficio}
+                        </div>
+                        <p className="co-modal-texto" style={{ marginBottom: 10 }}>
+                            Indica el motivo por el que se cancela este oficio. Este campo es <strong>obligatorio</strong> y quedará registrado en el sistema.
+                        </p>
+                        <textarea
+                            rows={3}
+                            style={{
+                                width: '100%', resize: 'vertical', borderRadius: 8, padding: '10px 12px',
+                                border: motivoError ? '1.5px solid #ef4444' : '1.5px solid #d1d5db',
+                                fontSize: '0.92rem', fontFamily: 'inherit', boxSizing: 'border-box',
+                                outline: 'none', transition: 'border .2s',
+                            }}
+                            placeholder="Escribe el motivo de cancelación..."
+                            value={motivoCancelar}
+                            onChange={e => { setMotivoCancelar(e.target.value); if (motivoError) setMotivoError(''); }}
+                            disabled={loadingCancelar}
+                        />
+                        {motivoError && (
+                            <p style={{ color: '#ef4444', fontSize: '0.82rem', margin: '4px 0 0', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <i className="bi bi-exclamation-circle" /> {motivoError}
+                            </p>
+                        )}
+                        <div className="co-modal-acciones" style={{ marginTop: 18 }}>
+                            <button className="co-modal-btn-cancelar" onClick={() => setShowCancelarModal(false)} disabled={loadingCancelar}>
+                                Cerrar
+                            </button>
+                            <button className="co-modal-btn-gris" onClick={handleCancelar} disabled={loadingCancelar}>
+                                {loadingCancelar ? 'Cancelando...' : <><i className="bi bi-x-circle-fill" /> Cancelar oficio</>}
                             </button>
                         </div>
                     </div>

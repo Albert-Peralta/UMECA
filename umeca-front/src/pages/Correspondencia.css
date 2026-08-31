@@ -175,6 +175,11 @@
 .corr-fila-pendiente { background: #fffbeb !important; }
 .corr-fila-pendiente:hover { background: #fef3c7 !important; }
 .corr-fila-pendiente td:first-child { border-left: 3px solid #f59e0b; }
+.corr-fila-cancelada { background: #f3f4f6 !important; opacity: 0.82; }
+.corr-fila-cancelada:hover { background: #e5e7eb !important; opacity: 1; }
+.corr-fila-cancelada td:first-child { border-left: 3px solid #9ca3af; }
+.corr-btn-revertir         { border-color: #059669; color: #059669; }
+.corr-btn-revertir:hover   { background: #059669; color: white; }
 
 .corr-turno { white-space: nowrap; }
 .corr-turno-prefix { font-size: 0.75rem; color: #9ca3af; font-weight: 400; }
@@ -198,6 +203,7 @@
 .corr-badge-espera     { background: #fed7aa; color: #9a3412; }
 .corr-badge-finalizado { background: #d1fae5; color: #065f46; }
 .corr-badge-archivado  { background: #f3f4f6; color: #6b7280; }
+.corr-badge-cancelado  { background: #e5e7eb; color: #374151; font-style: italic; }
 
 /* ── Badges prioridad ───────────────────────────────────── */
 .corr-prior-badge {
@@ -212,7 +218,7 @@
 
 /* ── Acciones tabla ─────────────────────────────────────── */
 .corr-acciones { display: flex; gap: 6px; align-items: center; justify-content: center; }
-.corr-btn-ver, .corr-btn-asignar, .corr-btn-quitar, .corr-btn-editar, .corr-btn-eliminar {
+.corr-btn-ver, .corr-btn-asignar, .corr-btn-quitar, .corr-btn-editar, .corr-btn-eliminar, .corr-btn-cancelar, .corr-btn-revertir {
     background: none; border: 1px solid #376842; color: #376842;
     border-radius: 6px; padding: 3px 7px; cursor: pointer;
     font-size: 13px; display: inline-flex; align-items: center;
@@ -224,6 +230,8 @@
 .corr-btn-editar:hover     { background: #376842; color: white; }
 .corr-btn-eliminar         { border-color: #ef4444; color: #ef4444; }
 .corr-btn-eliminar:hover   { background: #ef4444; color: white; }
+.corr-btn-cancelar         { border-color: #6b7280; color: #6b7280; }
+.corr-btn-cancelar:hover   { background: #6b7280; color: white; }
 
 .corr-modal-icon-danger { background: #fee2e2; color: #dc2626; }
 

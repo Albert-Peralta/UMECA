@@ -18,6 +18,7 @@ public class ControlOficioResponseDTO {
     private String solicitanteNombre;
     private String solicitanteZona;
     private String estado;
+    private String motivoCancelacion;
     private LocalDateTime createdAt;
 
     public static ControlOficioResponseDTO from(ControlOficio c) {
@@ -33,6 +34,7 @@ public class ControlOficioResponseDTO {
             dto.setSolicitanteZona(c.getSolicitante().getZona() != null ? c.getSolicitante().getZona().name() : null);
         }
         dto.setEstado(c.getEstado().name());
+        dto.setMotivoCancelacion(c.getMotivoCancelacion());
         dto.setCreatedAt(c.getCreatedAt());
         return dto;
     }
