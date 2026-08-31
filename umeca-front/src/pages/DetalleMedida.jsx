@@ -199,12 +199,12 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
         finally { setLoadingEliminar(false); setShowConfirmEliminar(false); }
     };
 
-    const [ampForm, setAmpForm] = useState({ nuevoPlazoScp: '', motivoAmpliacion: '' });
+    const [ampForm, setAmpForm] = useState({ fechaVencimiento: '', motivoAmpliacion: '' });
     const [ampError, setAmpError] = useState('');
     const [loadingAmp, setLoadingAmp] = useState(false);
 
     const handleAmpliacion = async () => {
-        if (!ampForm.nuevoPlazoScp || !ampForm.motivoAmpliacion.trim()) {
+        if (!ampForm.fechaVencimiento || !ampForm.motivoAmpliacion.trim()) {
             setAmpError('Todos los campos son obligatorios.'); return;
         }
         setLoadingAmp(true); setAmpError('');
@@ -574,8 +574,8 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                             </p>
                             <div className="modal-field">
                                 <label>NUEVO PLAZO (FECHA DE VENCIMIENTO) *</label>
-                                <input type="date" value={ampForm.nuevoPlazoScp}
-                                    onChange={e => setAmpForm({ ...ampForm, nuevoPlazoScp: e.target.value })} />
+                                <input type="date" value={ampForm.fechaVencimiento}
+                                    onChange={e => setAmpForm({ ...ampForm, fechaVencimiento: e.target.value })} />
                             </div>
                             <div className="modal-field">
                                 <label>MOTIVO DE LA AMPLIACIÓN *</label>

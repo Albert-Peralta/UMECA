@@ -298,15 +298,17 @@ public class MedidaCautelarService {
     public ApiResponse registrarAmpliacion(Long id, AmpliacionDTO dto) {
         return repository.findById(id).map(m -> {
             m.setFechaAmpliacion(LocalDate.now());
-            m.setNuevoPlazoScp(dto.getNuevoPlazoScp());
             m.setMotivoAmpliacion(dto.getMotivoAmpliacion());
-            if (dto.getNuevoPlazoScp() != null) m.setPlazoScp(dto.getNuevoPlazoScp());
+            if (dto.getFechaVencimiento() != null && !dto.getFechaVencimiento().isBlank()) {
+                LocalDate nuevaFecha = LocalDate.parse(dto.getFechaVencimiento());
+                m.setVencimientoPlazo(nuevaFecha);
+            }
             MedidaCautelar saved = repository.save(m);
             String nombreAmp = saved.getImputado() != null
                     ? saved.getImputado().getNombre() + " " + saved.getImputado().getApPaterno() : "—";
             bitacoraService.registrar(Bitacora.Entidad.MEDIDA_CAUTELAR, saved.getId(), nombreAmp,
                     Bitacora.Accion.EDITAR,
-                    "Plazo ampliado — nuevo plazo: " + dto.getNuevoPlazoScp()
+                    "Plazo ampliado — nuevo vencimiento: " + dto.getFechaVencimiento()
                             + (dto.getMotivoAmpliacion() != null ? " | motivo: " + dto.getMotivoAmpliacion() : ""));
             return new ApiResponse(true, "Plazo ampliado", MedidaCautelarResponseDTO.from(saved));
         }).orElse(new ApiResponse(false, "Registro no encontrado"));

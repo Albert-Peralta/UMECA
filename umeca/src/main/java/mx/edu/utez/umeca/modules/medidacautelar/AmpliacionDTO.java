@@ -4,6 +4,6 @@ import lombok.Getter;
 import lombok.Setter;
 @Getter @Setter
 public class AmpliacionDTO {
-    private Integer nuevoPlazoScp; // meses
+    private String fechaVencimiento;  // fecha nueva de vencimiento (yyyy-MM-dd)
     private String motivoAmpliacion;
 }
