@@ -72,10 +72,18 @@ public class ReporteDiario extends BaseEntity {
     @Column(name = "captura_oficios_imposicion", columnDefinition = "int default 0") private int capturaOficiosImposicion;
 
     // ── Campos manuales EVALUACIÓN ────────────────────────────────────────────
-    @Column(name = "firmas_recabadas_eval")         private int firmasRecabadasEval;
-    @Column(name = "entrevista_encuadre_eval")      private int entrevistaEncuadreEval;
-    @Column(name = "entrevista_evaluacion_eval")    private int entrevistaEvaluacionEval;
+    @Column(name = "firmas_recabadas_eval")              private int firmasRecabadasEval;
+    @Column(name = "entrevista_encuadre_eval")           private int entrevistaEncuadreEval;
+    @Column(name = "entrevista_evaluacion_eval")         private int entrevistaEvaluacionEval;
+    @Column(name = "calendario_eval")                    private int calendarioEval;
+    @Column(name = "captura_carpetas_eval")              private int capturaCarpetasEval;
+    @Column(name = "captura_oficios_imposicion_eval")    private int capturaOficiosImposicionEval;
 
     // ── Campos manuales CORRESPONDENCIA ──────────────────────────────────────
-    @Column(name = "oficios_diversos_corr")         private int oficiosDiversosCorr;
+    @Column(name = "oficios_diversos_corr")              private int oficiosDiversosCorr;
+    @Column(name = "firmas_recabadas_corr")              private int firmasRecabadasCorr;
+    @Column(name = "entrevista_encuadre_corr")           private int entrevistaEncuadreCorr;
+    @Column(name = "calendario_corr")                    private int calendarioCorr;
+    @Column(name = "captura_carpetas_corr")              private int capturaCarpetasCorr;
+    @Column(name = "captura_oficios_imposicion_corr")    private int capturaOficiosImposicionCorr;
 }

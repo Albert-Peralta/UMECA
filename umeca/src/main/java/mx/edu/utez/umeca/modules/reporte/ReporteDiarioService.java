@@ -104,15 +104,23 @@ public class ReporteDiarioService {
             case "negacionesFF"              -> r.setNegacionesFF(valor);
             case "informesFC"               -> r.setInformesFC(valor);
             case "informesFF"               -> r.setInformesFF(valor);
-            case "firmasRecabadasEval"       -> r.setFirmasRecabadasEval(valor);
-            case "entrevistaEncuadreEval"   -> r.setEntrevistaEncuadreEval(valor);
-            case "entrevistaEvaluacionEval" -> r.setEntrevistaEvaluacionEval(valor);
-            case "totalOficiosRecibidos"    -> r.setTotalOficiosRecibidos(valor);
-            case "nuevosCasosMC"            -> r.setNuevosCasosMC(valor);
-            case "nuevosCasosSCP"           -> r.setNuevosCasosSCP(valor);
-            case "sobreseimientos"          -> r.setSobreseimientos(valor);
-            case "levantamientoMedida"      -> r.setLevantamientoMedida(valor);
-            case "oficiosDiversosCorr"      -> r.setOficiosDiversosCorr(valor);
+            case "firmasRecabadasEval"            -> r.setFirmasRecabadasEval(valor);
+            case "entrevistaEncuadreEval"         -> r.setEntrevistaEncuadreEval(valor);
+            case "entrevistaEvaluacionEval"       -> r.setEntrevistaEvaluacionEval(valor);
+            case "calendarioEval"                 -> r.setCalendarioEval(valor);
+            case "capturaCarpetasEval"            -> r.setCapturaCarpetasEval(valor);
+            case "capturaOficiosImposicionEval"   -> r.setCapturaOficiosImposicionEval(valor);
+            case "totalOficiosRecibidos"          -> r.setTotalOficiosRecibidos(valor);
+            case "nuevosCasosMC"                  -> r.setNuevosCasosMC(valor);
+            case "nuevosCasosSCP"                 -> r.setNuevosCasosSCP(valor);
+            case "sobreseimientos"                -> r.setSobreseimientos(valor);
+            case "levantamientoMedida"            -> r.setLevantamientoMedida(valor);
+            case "oficiosDiversosCorr"            -> r.setOficiosDiversosCorr(valor);
+            case "firmasRecabadasCorr"            -> r.setFirmasRecabadasCorr(valor);
+            case "entrevistaEncuadreCorr"         -> r.setEntrevistaEncuadreCorr(valor);
+            case "calendarioCorr"                 -> r.setCalendarioCorr(valor);
+            case "capturaCarpetasCorr"            -> r.setCapturaCarpetasCorr(valor);
+            case "capturaOficiosImposicionCorr"   -> r.setCapturaOficiosImposicionCorr(valor);
             default -> { return new ApiResponse(false, "Campo desconocido: " + campo); }
         }
         repo.save(r);

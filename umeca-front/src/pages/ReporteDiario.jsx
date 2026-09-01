@@ -38,6 +38,9 @@ const CAMPOS_EVALUACION = [
     { key: 'firmasRecabadasEval',      label: 'Firmas recabadas',              tipo: null, manual: true },
     { key: 'entrevistaEncuadreEval',   label: 'Entrevista de encuadre',        tipo: null, manual: true },
     { key: 'entrevistaEvaluacionEval', label: 'Entrevista de evaluación',      tipo: null, manual: true },
+    { key: 'calendarioEval',           label: 'Calendario',                    tipo: null, manual: true },
+    { key: 'capturaCarpetasEval',      label: 'Captura de carpetas',           tipo: null, manual: true },
+    { key: 'capturaOficiosImposicionEval', label: 'Captura de oficios de imposición', tipo: null, manual: true },
 ];
 
 const CAMPOS_CORRESPONDENCIA = [
@@ -47,6 +50,11 @@ const CAMPOS_CORRESPONDENCIA = [
     { key: 'sobreseimientos',         label: 'Sobreseimientos',                tipo: null, manual: true },
     { key: 'levantamientoMedida',     label: 'Levantamiento de medida',        tipo: null, manual: true },
     { key: 'oficiosDiversosCorr',     label: 'Oficios emitidos diversos',      tipo: null, manual: true },
+    { key: 'firmasRecabadasCorr',     label: 'Firmas recabadas',               tipo: null, manual: true },
+    { key: 'entrevistaEncuadreCorr',  label: 'Entrevista de encuadre',         tipo: null, manual: true },
+    { key: 'calendarioCorr',          label: 'Calendario',                     tipo: null, manual: true },
+    { key: 'capturaCarpetasCorr',     label: 'Captura de carpetas',            tipo: null, manual: true },
+    { key: 'capturaOficiosImposicionCorr', label: 'Captura de oficios de imposición', tipo: null, manual: true },
 ];
 
 const TODOS_CAMPOS = [...CAMPOS_SUPERVISION, ...CAMPOS_EVALUACION, ...CAMPOS_CORRESPONDENCIA];
@@ -98,9 +106,12 @@ export default function ReporteDiario() {
         'negacionesFC', 'negacionesFF',
         'informesFC', 'informesFF',
         'firmasRecabadasEval', 'entrevistaEncuadreEval', 'entrevistaEvaluacionEval',
+        'calendarioEval', 'capturaCarpetasEval', 'capturaOficiosImposicionEval',
         // Correspondencia
         'totalOficiosRecibidos', 'nuevosCasosMC', 'nuevosCasosSCP',
         'sobreseimientos', 'levantamientoMedida', 'oficiosDiversosCorr',
+        'firmasRecabadasCorr', 'entrevistaEncuadreCorr', 'calendarioCorr',
+        'capturaCarpetasCorr', 'capturaOficiosImposicionCorr',
     ];
     const initManuales = () => Object.fromEntries(CAMPOS_MANUALES_KEYS.map(k => [k, 0]));
     const [manualesGuardados, setManualesGuardados] = useState(initManuales);
@@ -341,9 +352,10 @@ export default function ReporteDiario() {
                 <input
                     type="number"
                     min={0}
-                    value={valEditando}
+                    value={valEditando === 0 ? '' : valEditando}
                     onFocus={e => e.target.select()}
                     onChange={e => setManualesEditando(prev => ({ ...prev, [c.key]: Math.max(0, parseInt(e.target.value) || 0) }))}
+                    onBlur={e => { if (e.target.value === '') setManualesEditando(prev => ({ ...prev, [c.key]: 0 })); }}
                     className="rd-campo-input-manual"
                     disabled={!manualesCargados}
                     placeholder="0"

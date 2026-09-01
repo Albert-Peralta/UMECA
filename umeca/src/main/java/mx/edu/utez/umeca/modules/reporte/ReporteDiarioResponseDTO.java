@@ -63,9 +63,17 @@ public class ReporteDiarioResponseDTO {
     private int firmasRecabadasEval;
     private int entrevistaEncuadreEval;
     private int entrevistaEvaluacionEval;
+    private int calendarioEval;
+    private int capturaCarpetasEval;
+    private int capturaOficiosImposicionEval;
 
     // Manuales CORRESPONDENCIA
     private int oficiosDiversosCorr;
+    private int firmasRecabadasCorr;
+    private int entrevistaEncuadreCorr;
+    private int calendarioCorr;
+    private int capturaCarpetasCorr;
+    private int capturaOficiosImposicionCorr;
 
     public static ReporteDiarioResponseDTO from(ReporteDiario r) {
         ReporteDiarioResponseDTO dto = new ReporteDiarioResponseDTO();
@@ -116,7 +124,15 @@ public class ReporteDiarioResponseDTO {
         dto.setFirmasRecabadasEval(r.getFirmasRecabadasEval());
         dto.setEntrevistaEncuadreEval(r.getEntrevistaEncuadreEval());
         dto.setEntrevistaEvaluacionEval(r.getEntrevistaEvaluacionEval());
+        dto.setCalendarioEval(r.getCalendarioEval());
+        dto.setCapturaCarpetasEval(r.getCapturaCarpetasEval());
+        dto.setCapturaOficiosImposicionEval(r.getCapturaOficiosImposicionEval());
         dto.setOficiosDiversosCorr(r.getOficiosDiversosCorr());
+        dto.setFirmasRecabadasCorr(r.getFirmasRecabadasCorr());
+        dto.setEntrevistaEncuadreCorr(r.getEntrevistaEncuadreCorr());
+        dto.setCalendarioCorr(r.getCalendarioCorr());
+        dto.setCapturaCarpetasCorr(r.getCapturaCarpetasCorr());
+        dto.setCapturaOficiosImposicionCorr(r.getCapturaOficiosImposicionCorr());
 
         return dto;
     }

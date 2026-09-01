@@ -60,7 +60,15 @@ public class ReporteDiarioDTO {
     private int firmasRecabadasEval;
     private int entrevistaEncuadreEval;
     private int entrevistaEvaluacionEval;
+    private int calendarioEval;
+    private int capturaCarpetasEval;
+    private int capturaOficiosImposicionEval;
 
     // Manuales CORRESPONDENCIA
     private int oficiosDiversosCorr;
+    private int firmasRecabadasCorr;
+    private int entrevistaEncuadreCorr;
+    private int calendarioCorr;
+    private int capturaCarpetasCorr;
+    private int capturaOficiosImposicionCorr;
 }
