@@ -64,7 +64,7 @@ const PrintNegacion = ({ evaluacion: d, onCerrar }) => {
     const anio  = new Date().getFullYear();
     const mes   = String(new Date().getMonth() + 1).padStart(2, '0');
     const fecha = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
-    const numOficio = `SSyPC/CSP/DGRS/DUMCySA/[NUM]/${mes}/${anio}`;
+    const numOficio = `SSyPC/CSP/DGRS/DUMCySA/${d?.numeroOficio || '[NUM]'}/${mes}/${anio}`;
 
     // Soporta tanto el nuevo formato (imputados[]) como el legado (campos planos de BD)
     const imputados = d.imputados && d.imputados.length > 0

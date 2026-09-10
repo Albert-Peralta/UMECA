@@ -157,6 +157,14 @@
 .scp-detalle-badges { display: flex; gap: 8px; flex-wrap: wrap; }
 .scp-detalle-acciones { display: flex; gap: 8px; margin-left: auto; }
 
+.scp-btn-obs {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 16px; border-radius: 8px; border: none;
+    background: #e0f2fe; color: #0369a1; font-size: 0.82rem;
+    font-weight: 700; cursor: pointer; transition: all .15s;
+    box-shadow: 0 1px 4px rgba(0,0,0,.10);
+}
+.scp-btn-obs:hover { background: #bae6fd; }
 .scp-btn-edit {
     display: flex; align-items: center; gap: 6px;
     padding: 6px 16px; border-radius: 8px; border: none;

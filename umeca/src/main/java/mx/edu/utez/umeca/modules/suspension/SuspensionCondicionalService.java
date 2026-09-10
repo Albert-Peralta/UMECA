@@ -2,6 +2,9 @@ package mx.edu.utez.umeca.modules.suspension;
 
 import lombok.RequiredArgsConstructor;
 import mx.edu.utez.umeca.kernel.ApiResponse;
+import mx.edu.utez.umeca.modules.medidacautelar.ObservacionMedida;
+import mx.edu.utez.umeca.modules.medidacautelar.ObservacionMedidaRepository;
+import mx.edu.utez.umeca.modules.security.user.UserRepository;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
@@ -21,6 +24,8 @@ import java.util.*;
 public class SuspensionCondicionalService {
 
     private final SuspensionCondicionalRepository repo;
+    private final ObservacionMedidaRepository observacionRepository;
+    private final UserRepository userRepository;
     private final DataFormatter fmt = new DataFormatter();
 
     // ── Listar paginado ─────────────────────────────────────
@@ -217,4 +222,39 @@ public class SuspensionCondicionalService {
     }
 
     private boolean isBlank(String s) { return s == null || s.isBlank(); }
+
+    // ── Observaciones (historial) ─────────────────────────────────────────────
+    @Transactional
+    public ApiResponse agregarObservacion(Long id, String texto) {
+        return repo.findById(id).map(s -> {
+            String username = org.springframework.security.core.context.SecurityContextHolder
+                    .getContext().getAuthentication().getName();
+            String autorNombre = userRepository.findByUsername(username)
+                    .map(u -> u.getNombre() + " " + u.getApPaterno())
+                    .orElse(username);
+            ObservacionMedida obs = new ObservacionMedida();
+            obs.setTexto(texto.trim());
+            obs.setAutorNombre(autorNombre);
+            obs.setSuspension(s);
+            observacionRepository.save(obs);
+            return new ApiResponse(true, "Observación registrada", toDto(obs));
+        }).orElse(new ApiResponse(false, "Registro no encontrado"));
+    }
+
+    @Transactional(readOnly = true)
+    public ApiResponse listarObservaciones(Long id) {
+        java.util.List<java.util.Map<String, Object>> lista = observacionRepository
+                .findBySuspensionIdOrderByFechaCreacionDesc(id)
+                .stream().map(this::toDto).toList();
+        return new ApiResponse(true, "OK", lista);
+    }
+
+    private java.util.Map<String, Object> toDto(ObservacionMedida o) {
+        return java.util.Map.of(
+                "id",          o.getId(),
+                "texto",       o.getTexto(),
+                "autorNombre", o.getAutorNombre(),
+                "fechaCreacion", o.getFechaCreacion().toString()
+        );
+    }
 }

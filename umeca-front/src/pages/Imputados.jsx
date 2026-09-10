@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getImputados, getImputadoById, actualizarImputado, actualizarFotoImputado, registrarFallecimiento, registrarCierreCarpeta, revertirCierreCarpeta, eliminarImputado } from '../api/imputadosApi';
+import { getImputados, getImputadoById, actualizarImputado, actualizarFotoImputado, registrarFallecimiento, registrarCierreCarpeta, revertirCierreCarpeta, eliminarImputado, cambiarUbicacionExpediente, getUsuariosActivos, confirmarExpediente } from '../api/imputadosApi';
 import { getSeguimientosPorImputado } from '../api/seguimientosApi';
 import { cambiarCumplimiento } from '../api/medidasApi';
 import { useAuth } from '../context/AuthContext';
@@ -127,6 +127,107 @@ const Imputados = ({ onNavigarEntrevista }) => {
     const [showEliminar, setShowEliminar] = useState(false);
     const [eliminandoImp, setEliminandoImp] = useState(false);
     const [eliminarMsg, setEliminarMsg] = useState(null);
+
+    // ── Ubicación física del expediente ──────────────────────────────────────
+    const [showUbicacion, setShowUbicacion]       = useState(false);
+    const [ubicEstado, setUbicEstado]             = useState('ELABORANDO');
+    const [ubicUsuarioId, setUbicUsuarioId]       = useState('');
+    const [usuariosActivos, setUsuariosActivos]   = useState([]);
+    const [guardandoUbic, setGuardandoUbic]       = useState(false);
+
+    const abrirModalUbicacion = () => {
+        setUbicEstado(perfil.ubicacionExpediente || 'ELABORANDO');
+        setUbicUsuarioId(perfil.usuarioExpedienteId ? String(perfil.usuarioExpedienteId) : '');
+        if (usuariosActivos.length === 0) {
+            getUsuariosActivos().then(r => { if (r.data.ok) setUsuariosActivos(r.data.data); });
+        }
+        setShowUbicacion(true);
+    };
+
+    const [confirmandoExp, setConfirmandoExp]   = useState(false);
+    const [reportandoNoTengo, setReportandoNoTengo] = useState(false);
+
+    const handleConfirmarExpediente = async () => {
+        setConfirmandoExp(true);
+        try {
+            const res = await confirmarExpediente(perfil.id);
+            if (res.data.ok) {
+                setPerfil(prev => ({ ...prev, expedienteConfirmado: true, fechaConfirmacionExpediente: new Date().toISOString() }));
+                setDatos(prev => prev.map(i => i.id === perfil.id
+                    ? { ...i, expedienteConfirmado: true }
+                    : i
+                ));
+                showToast('Recepción del expediente confirmada');
+                window.dispatchEvent(new CustomEvent('expediente-confirmado'));
+            } else {
+                showToast(res.data.message || 'Error al confirmar', 'error');
+            }
+        } catch {
+            showToast('Error al confirmar', 'error');
+        } finally {
+            setConfirmandoExp(false);
+        }
+    };
+
+    const handleNoTengoExpediente = async () => {
+        setReportandoNoTengo(true);
+        try {
+            const res = await cambiarUbicacionExpediente(perfil.id, 'ELABORANDO', null);
+            if (res.data.ok) {
+                setPerfil(prev => ({
+                    ...prev,
+                    ubicacionExpediente: 'ELABORANDO',
+                    usuarioExpedienteId: null,
+                    usuarioExpedienteNombre: null,
+                    expedienteConfirmado: false,
+                }));
+                setDatos(prev => prev.map(i => i.id === perfil.id
+                    ? { ...i, ubicacionExpediente: 'ELABORANDO', usuarioExpedienteId: null, expedienteConfirmado: false }
+                    : i
+                ));
+                showToast('Reportado — el expediente vuelve a estado Elaborando', 'error');
+                window.dispatchEvent(new CustomEvent('expediente-confirmado'));
+            } else {
+                showToast(res.data.message || 'Error al reportar', 'error');
+            }
+        } catch {
+            showToast('Error al reportar', 'error');
+        } finally {
+            setReportandoNoTengo(false);
+        }
+    };
+
+    const handleGuardarUbicacion = async () => {
+        setGuardandoUbic(true);
+        try {
+            const uid = ubicEstado === 'CON_PERSONAL' ? (ubicUsuarioId || null) : null;
+            const res = await cambiarUbicacionExpediente(perfil.id, ubicEstado, uid ? Number(uid) : null);
+            if (res.data.ok) {
+                const d = res.data.data;
+                setPerfil(prev => ({
+                    ...prev,
+                    ubicacionExpediente:      d.ubicacionExpediente,
+                    usuarioExpedienteId:      d.usuarioExpedienteId,
+                    usuarioExpedienteNombre:  d.usuarioExpedienteNombre,
+                    expedienteConfirmado:     false,
+                    fechaConfirmacionExpediente: null,
+                }));
+                setDatos(prev => prev.map(i => i.id === perfil.id
+                    ? { ...i, ubicacionExpediente: d.ubicacionExpediente, usuarioExpedienteId: d.usuarioExpedienteId, expedienteConfirmado: false }
+                    : i
+                ));
+                window.dispatchEvent(new CustomEvent('expediente-confirmado'));
+                setShowUbicacion(false);
+                showToast('Ubicación actualizada correctamente');
+            } else {
+                showToast(res.data.message || 'Error al actualizar', 'error');
+            }
+        } catch {
+            showToast('Error al actualizar la ubicación', 'error');
+        } finally {
+            setGuardandoUbic(false);
+        }
+    };
 
     const handleGuardarEdicion = async () => {
         if (!formEditar.nombre.trim() || !formEditar.apPaterno.trim()) {
@@ -552,8 +653,15 @@ const Imputados = ({ onNavigarEntrevista }) => {
                         ) : paginados.length === 0 ? (
                             <tr><td colSpan={tabVista === 'cerrados' ? 10 : 9} className="tabla-vacia">No hay registros</td></tr>
                         ) : (
-                            paginados.map((item, index) => (
-                                <tr key={item.id}>
+                            paginados.map((item, index) => {
+                                const esMiExpedientePendiente = item.ubicacionExpediente === 'CON_PERSONAL'
+                                    && item.usuarioExpedienteId === user?.id
+                                    && !item.expedienteConfirmado;
+                                const esMiExpedienteConfirmado = item.ubicacionExpediente === 'CON_PERSONAL'
+                                    && item.usuarioExpedienteId === user?.id
+                                    && item.expedienteConfirmado;
+                                return (
+                                <tr key={item.id} className={esMiExpedientePendiente ? 'imp-fila-pendiente' : esMiExpedienteConfirmado ? 'imp-fila-confirmada' : ''}>
                                     <td>{inicio + index + 1}</td>
                                     <td className="td-nombre">
                                         <div style={{ display:'flex', alignItems:'center', gap:'7px' }}>
@@ -675,7 +783,8 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                         </div>
                                     </td>
                                 </tr>
-                            ))
+                                );
+                            })
                         )}
                     </tbody>
                 </table>
@@ -842,11 +951,41 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                     const ultimaActividad = todasFechas[0] ?? null;
                                     return (
                                         <div className="exp-info-grid">
-                                            <div className="exp-info-card">
-                                                <i className="bi bi-geo-alt-fill exp-info-icon exp-icon-blue"></i>
-                                                <div>
-                                                    <span className="exp-info-label">Ubicación física</span>
-                                                    <span className="exp-info-value">{perfil.ubicacionFisica ?? '—'}</span>
+                                            <div className="exp-info-card" style={{ cursor: 'pointer' }} onClick={abrirModalUbicacion} title="Cambiar ubicación del expediente">
+                                                <i className="bi bi-folder2-open exp-info-icon exp-icon-blue"></i>
+                                                <div style={{ flex: 1 }}>
+                                                    <span className="exp-info-label">Ubicación del expediente</span>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                                                        {(() => {
+                                                            const ue = perfil.ubicacionExpediente || 'ELABORANDO';
+                                                            if (ue === 'CON_PERSONAL') {
+                                                                const confirmado = perfil.expedienteConfirmado;
+                                                                return (
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                                                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#dbeafe', color: '#1e40af', borderRadius: 20, padding: '2px 10px', fontSize: '0.8rem', fontWeight: 700 }}>
+                                                                            <i className="bi bi-person-fill" style={{ fontSize: '0.75rem' }} />
+                                                                            {perfil.usuarioExpedienteNombre || 'Personal'}
+                                                                        </span>
+                                                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: confirmado ? '#dcfce7' : '#fef3c7', color: confirmado ? '#15803d' : '#92400e', borderRadius: 20, padding: '2px 8px', fontSize: '0.72rem', fontWeight: 700 }}>
+                                                                            <i className={`bi ${confirmado ? 'bi-patch-check-fill' : 'bi-hourglass-split'}`} style={{ fontSize: '0.65rem' }} />
+                                                                            {confirmado ? 'Confirmado' : 'Pendiente'}
+                                                                        </span>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                            const cfg = {
+                                                                ELABORANDO: { label: 'Elaborando', bg: '#fef3c7', color: '#92400e', icon: 'bi-pencil-fill' },
+                                                                EN_ARCHIVO: { label: 'En archivo', bg: '#d1fae5', color: '#065f46', icon: 'bi-archive-fill' },
+                                                            }[ue] || { label: ue, bg: '#f3f4f6', color: '#374151', icon: 'bi-question' };
+                                                            return (
+                                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: cfg.bg, color: cfg.color, borderRadius: 20, padding: '2px 10px', fontSize: '0.8rem', fontWeight: 700 }}>
+                                                                    <i className={`bi ${cfg.icon}`} style={{ fontSize: '0.75rem' }} />
+                                                                    {cfg.label}
+                                                                </span>
+                                                            );
+                                                        })()}
+                                                        <i className="bi bi-pencil-square" style={{ fontSize: '0.75rem', color: '#9ca3af' }} />
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div className="exp-info-card">
@@ -959,6 +1098,62 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                                 )}
                                             </div>
                                         )}
+                                    </div>
+                                )}
+
+                                {/* ── Banner: confirmar recepción del expediente ── */}
+                                {perfil.ubicacionExpediente === 'CON_PERSONAL' &&
+                                 perfil.usuarioExpedienteId === user?.id && (
+                                    <div style={{
+                                        margin: '0 0 14px',
+                                        borderRadius: 12,
+                                        overflow: 'hidden',
+                                        border: perfil.expedienteConfirmado ? '1.5px solid #86efac' : '1.5px solid #fbbf24',
+                                        boxShadow: perfil.expedienteConfirmado ? '0 2px 8px rgba(34,197,94,0.12)' : '0 2px 8px rgba(245,158,11,0.15)',
+                                    }}>
+                                        <div style={{
+                                            display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
+                                            background: perfil.expedienteConfirmado ? 'linear-gradient(135deg,#f0fdf4,#dcfce7)' : 'linear-gradient(135deg,#fffbeb,#fef3c7)',
+                                        }}>
+                                            <div style={{ width: 38, height: 38, borderRadius: 10, background: perfil.expedienteConfirmado ? '#bbf7d0' : '#fde68a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                <i className={`bi ${perfil.expedienteConfirmado ? 'bi-folder-check' : 'bi-folder-exclamation'}`} style={{ color: perfil.expedienteConfirmado ? '#15803d' : '#b45309', fontSize: '1.1rem' }} />
+                                            </div>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ fontWeight: 700, fontSize: '0.88rem', color: perfil.expedienteConfirmado ? '#14532d' : '#78350f' }}>
+                                                    {perfil.expedienteConfirmado ? 'Expediente en tu poder' : 'Expediente asignado a ti'}
+                                                </div>
+                                                <div style={{ fontSize: '0.75rem', color: perfil.expedienteConfirmado ? '#16a34a' : '#92400e', marginTop: 2 }}>
+                                                    {perfil.expedienteConfirmado
+                                                        ? `Confirmado el ${new Date(perfil.fechaConfirmacionExpediente).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                                                        : 'Confirma si lo tienes físicamente o repórtalo'}
+                                                </div>
+                                            </div>
+                                            {!perfil.expedienteConfirmado && (
+                                                <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                                                    <button
+                                                        onClick={handleNoTengoExpediente}
+                                                        disabled={reportandoNoTengo || confirmandoExp}
+                                                        style={{ padding: '7px 14px', borderRadius: 8, border: '1.5px solid #fca5a5', background: '#fff', color: '#dc2626', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap', opacity: reportandoNoTengo ? 0.6 : 1 }}
+                                                    >
+                                                        {reportandoNoTengo
+                                                            ? <><i className="bi bi-hourglass-split" /> Reportando...</>
+                                                            : <><i className="bi bi-x-lg" /> No lo tengo</>}
+                                                    </button>
+                                                    <button
+                                                        onClick={handleConfirmarExpediente}
+                                                        disabled={confirmandoExp || reportandoNoTengo}
+                                                        style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: '#f59e0b', color: '#fff', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap', opacity: confirmandoExp ? 0.6 : 1 }}
+                                                    >
+                                                        {confirmandoExp
+                                                            ? <><i className="bi bi-hourglass-split" /> Confirmando...</>
+                                                            : <><i className="bi bi-check-lg" /> Sí, lo tengo</>}
+                                                    </button>
+                                                </div>
+                                            )}
+                                            {perfil.expedienteConfirmado && (
+                                                <i className="bi bi-patch-check-fill" style={{ color: '#16a34a', fontSize: '1.3rem', flexShrink: 0 }} />
+                                            )}
+                                        </div>
                                     </div>
                                 )}
 
@@ -1674,6 +1869,112 @@ const Imputados = ({ onNavigarEntrevista }) => {
                             }}>
                                 {eliminandoImp ? 'Eliminando...' : 'Sí, eliminar'}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Modal: Ubicación física del expediente ───────────────────── */}
+            {showUbicacion && perfil && (
+                <div className="modal-overlay" onClick={() => setShowUbicacion(false)}>
+                    <div onClick={e => e.stopPropagation()} style={{
+                        background: '#fff', borderRadius: 18, width: '100%', maxWidth: 440,
+                        boxShadow: '0 24px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08)',
+                        overflow: 'hidden', animation: 'fadeInUp .2s ease',
+                    }}>
+                        {/* Header */}
+                        <div style={{ background: 'linear-gradient(135deg,#1e40af 0%,#3b82f6 100%)', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <i className="bi bi-folder2-open" style={{ color: '#fff', fontSize: '1.2rem' }} />
+                                </div>
+                                <div>
+                                    <div style={{ color: '#fff', fontWeight: 700, fontSize: '1rem', lineHeight: 1.2 }}>Ubicación del expediente</div>
+                                    <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.78rem', marginTop: 2 }}>{perfil.nombreCompleto}</div>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowUbicacion(false)} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff', fontSize: '1rem' }}>
+                                <i className="bi bi-x-lg" />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div style={{ padding: '22px 24px' }}>
+                            <p style={{ margin: '0 0 16px', fontSize: '0.82rem', color: '#64748b', fontWeight: 500 }}>
+                                Selecciona dónde se encuentra actualmente el expediente físico:
+                            </p>
+
+                            {/* Opciones */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 18 }}>
+                                {[
+                                    { val: 'ELABORANDO',   label: 'Elaborando',   desc: 'En proceso de elaboración',          icon: 'bi-pencil-square', bg: '#fffbeb', color: '#b45309', border: '#f59e0b', ring: '#fef3c7' },
+                                    { val: 'CON_PERSONAL', label: 'Con personal', desc: 'Asignado a un miembro del personal',  icon: 'bi-person-badge',  bg: '#eff6ff', color: '#1d4ed8', border: '#3b82f6', ring: '#dbeafe' },
+                                    { val: 'EN_ARCHIVO',   label: 'En archivo',   desc: 'Guardado en el archivo físico',       icon: 'bi-archive',       bg: '#f0fdf4', color: '#15803d', border: '#22c55e', ring: '#dcfce7' },
+                                ].map(op => {
+                                    const sel = ubicEstado === op.val;
+                                    return (
+                                        <div
+                                            key={op.val}
+                                            onClick={() => setUbicEstado(op.val)}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: 14,
+                                                padding: '13px 16px', borderRadius: 12, cursor: 'pointer',
+                                                border: `2px solid ${sel ? op.border : '#e2e8f0'}`,
+                                                background: sel ? op.ring : '#fafafa',
+                                                boxShadow: sel ? `0 0 0 3px ${op.ring}` : 'none',
+                                                transition: 'all .15s',
+                                            }}
+                                        >
+                                            <div style={{ width: 40, height: 40, borderRadius: 10, background: op.bg, border: `1.5px solid ${sel ? op.border : '#e5e7eb'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all .15s' }}>
+                                                <i className={`bi ${op.icon}`} style={{ color: op.color, fontSize: '1.1rem' }} />
+                                            </div>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: sel ? op.color : '#1e293b' }}>{op.label}</div>
+                                                <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 1 }}>{op.desc}</div>
+                                            </div>
+                                            <div style={{ width: 20, height: 20, borderRadius: '50%', border: `2px solid ${sel ? op.border : '#cbd5e1'}`, background: sel ? op.border : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all .15s' }}>
+                                                {sel && <i className="bi bi-check" style={{ color: '#fff', fontSize: '0.7rem', fontWeight: 900 }} />}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Selector de usuario (solo CON_PERSONAL) */}
+                            {ubicEstado === 'CON_PERSONAL' && (
+                                <div style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: 10, padding: '14px 16px', marginBottom: 18 }}>
+                                    <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1d4ed8', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                                        <i className="bi bi-person-check-fill" />
+                                        ¿Quién tiene el expediente?
+                                    </label>
+                                    <select
+                                        value={ubicUsuarioId}
+                                        onChange={e => setUbicUsuarioId(e.target.value)}
+                                        style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1.5px solid #93c5fd', fontSize: '0.88rem', background: '#fff', color: '#1e293b', outline: 'none', cursor: 'pointer' }}
+                                    >
+                                        <option value="">— Selecciona un usuario —</option>
+                                        {usuariosActivos.map(u => (
+                                            <option key={u.id} value={u.id}>{u.nombre}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
+                            {/* Botones */}
+                            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                                <button onClick={() => setShowUbicacion(false)} style={{ padding: '9px 20px', borderRadius: 9, border: '1.5px solid #e2e8f0', background: '#fff', color: '#64748b', fontWeight: 600, cursor: 'pointer', fontSize: '0.88rem' }}>
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleGuardarUbicacion}
+                                    disabled={guardandoUbic || (ubicEstado === 'CON_PERSONAL' && !ubicUsuarioId)}
+                                    style={{ padding: '9px 22px', borderRadius: 9, border: 'none', background: 'linear-gradient(135deg,#1e40af,#3b82f6)', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: 7, opacity: (guardandoUbic || (ubicEstado === 'CON_PERSONAL' && !ubicUsuarioId)) ? 0.55 : 1, transition: 'opacity .15s' }}
+                                >
+                                    {guardandoUbic
+                                        ? <><i className="bi bi-hourglass-split" /> Guardando...</>
+                                        : <><i className="bi bi-check-lg" /> Guardar</>}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

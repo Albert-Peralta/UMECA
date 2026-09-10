@@ -26,6 +26,7 @@ import ControlOficios from './ControlOficios';
 import ExpedientesAnteriores from './ExpedientesAnteriores';
 import { getContadoresCorrespondencia } from '../api/correspondenciaApi';
 import { getContadores as getContadoresOficios } from '../api/controlOficiosApi';
+import { getExpedientesPendientesCount } from '../api/imputadosApi';
 
 // ── Menú por rol ──────────────────────────────────────────────────────────────
 // Cada entrada puede ser un ítem de navegación (con key e icon) o un separador visual.
@@ -147,8 +148,9 @@ const Dashboard = () => {
     const [activeMenu, setActiveMenu] = useState(() => getValidKey(window.location.hash));
     const [avatarSrc, setAvatarSrc] = useState(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [corrPendientes,   setCorrPendientes]   = useState(0);
-    const [oficiosPendientes, setOficiosPendientes] = useState(0);
+    const [corrPendientes,        setCorrPendientes]        = useState(0);
+    const [oficiosPendientes,     setOficiosPendientes]     = useState(0);
+    const [expedientesPendientes, setExpedientesPendientes] = useState(0);
     const [guardConfirm, setGuardConfirm] = useState(null); // key pendiente de navegar
     const { isFormDirty, setFormDirty } = useFormGuard();
 
@@ -214,6 +216,24 @@ const Dashboard = () => {
         return () => {
             clearInterval(id);
             window.removeEventListener('oficios-contadores-cambio', handler);
+        };
+    }, [user?.rol]);
+
+    // Carga y refresca el contador de expedientes asignados sin confirmar
+    useEffect(() => {
+        const cargar = async () => {
+            try {
+                const res = await getExpedientesPendientesCount();
+                if (res.data?.ok) setExpedientesPendientes(res.data.data ?? 0);
+            } catch { /* silencioso */ }
+        };
+        cargar();
+        const id = setInterval(cargar, 30_000);
+        const handler = () => cargar();
+        window.addEventListener('expediente-confirmado', handler);
+        return () => {
+            clearInterval(id);
+            window.removeEventListener('expediente-confirmado', handler);
         };
     }, [user?.rol]);
 
@@ -423,6 +443,9 @@ const Dashboard = () => {
                                 )}
                                 {item.key === 'control-oficios' && oficiosPendientes > 0 && (
                                     <span className="sidebar-badge">{oficiosPendientes > 99 ? '99+' : oficiosPendientes}</span>
+                                )}
+                                {item.key === 'imputados' && expedientesPendientes > 0 && (
+                                    <span className="sidebar-badge" style={{ background: '#f59e0b' }}>{expedientesPendientes > 99 ? '99+' : expedientesPendientes}</span>
                                 )}
                             </button>
                         )

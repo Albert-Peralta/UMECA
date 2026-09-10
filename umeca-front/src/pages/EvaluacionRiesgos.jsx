@@ -75,6 +75,7 @@ const EvaluacionRiesgos = () => {
     const impVacio = () => ({ nombreImputado: '', apPaternoImputado: '', apMaternoImputado: '', edad: '', imputadoId: null });
     const getNegacionVacio = () => ({
         causaPenal: '',
+        numeroOficio: '',
         imputados: [impVacio()],
         dependencia: '', cargo: '',
         nombreSolicitante: '', fechaSolicitud: '', horaInicio: '', lugarEntrevista: ''
@@ -88,6 +89,7 @@ const EvaluacionRiesgos = () => {
     const [negOptsporIdx, setNegOptsPorIdx] = useState({});   // resultados del buscador por tarjeta
     const [negDupPorIdx, setNegDupPorIdx] = useState({});     // imputado duplicado detectado por tarjeta
     const [negDupEntsPorIdx, setNegDupEntsPorIdx] = useState({}); // entrevistas del duplicado por tarjeta
+    const [negDupEvalsPorIdx, setNegDupEvalsPorIdx] = useState({}); // evaluaciones del duplicado por tarjeta
 
     const normalizar = str => (str || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
 
@@ -123,9 +125,13 @@ const EvaluacionRiesgos = () => {
                 setNegDupPorIdx(p => ({ ...p, [idx]: encontrado || null }));
                 if (encontrado) {
                     const detRes = await getImputadoById(encontrado.id);
-                    if (detRes.data.ok) setNegDupEntsPorIdx(p => ({ ...p, [idx]: detRes.data.data.entrevistas || [] }));
+                    if (detRes.data.ok) {
+                        setNegDupEntsPorIdx(p => ({ ...p, [idx]: detRes.data.data.entrevistas || [] }));
+                        setNegDupEvalsPorIdx(p => ({ ...p, [idx]: detRes.data.data.evaluaciones || [] }));
+                    }
                 } else {
                     setNegDupEntsPorIdx(p => ({ ...p, [idx]: [] }));
+                    setNegDupEvalsPorIdx(p => ({ ...p, [idx]: [] }));
                 }
             } catch { /* sin bloqueo */ }
         });
@@ -224,6 +230,7 @@ const EvaluacionRiesgos = () => {
                             fechaSolicitud:    data.fechaSolicitud || '',
                             horaInicio:        data.horaInicio || '',
                             lugarEntrevista:   data.lugarEntrevista || '',
+                            numeroOficio:      data.numOficio || '',
                         });
                         setShowPrintNegacion(true);
                     } else {
@@ -526,6 +533,7 @@ const EvaluacionRiesgos = () => {
                                                                 fechaSolicitud: data.fechaSolicitud || '',
                                                                 horaInicio: data.horaInicio || '',
                                                                 lugarEntrevista: data.lugarEntrevista || '',
+                                                                numeroOficio: data.numOficio || '',
                                                             });
                                                             setShowPrintNegacion(true);
                                                         } else {
@@ -677,6 +685,17 @@ const EvaluacionRiesgos = () => {
                                 {negacionErrores.causaPenal && <span style={{ fontSize: 10, color: '#c0392b' }}>{negacionErrores.causaPenal}</span>}
                             </div>
 
+                            {/* Número de oficio */}
+                            <div style={{ marginBottom: 8 }}>
+                                <label style={{ fontSize: 11, fontWeight: 600, color: '#444', display: 'block', marginBottom: 3 }}>Número de oficio</label>
+                                <input
+                                    value={negacionData.numeroOficio}
+                                    onChange={e => setNegacionData(p => ({ ...p, numeroOficio: e.target.value }))}
+                                    placeholder="Ej. 001"
+                                    style={{ width: '100%', boxSizing: 'border-box', border: '1px solid #ddd', borderRadius: 6, padding: '7px 10px', fontSize: 13, outline: 'none' }} />
+                                <span style={{ fontSize: 10, color: '#888' }}>Aparecerá en el encabezado del documento como SSyPC/CSP/DGRS/DUMCySA/<strong>{negacionData.numeroOficio || 'NUM'}</strong>/mes/año</span>
+                            </div>
+
                             {/* Sugerencias por causa penal */}
                             {(sugerenciasPorIdx.causa || []).length > 0 && (
                                 <div style={{ border: '1px solid #b6d4fe', borderRadius: 8, marginBottom: 10, overflow: 'hidden', background: '#eef4ff' }}>
@@ -733,22 +752,29 @@ const EvaluacionRiesgos = () => {
                                                     style={{ marginLeft: 'auto', background: '#2d6a4f', color: '#fff', border: 'none', borderRadius: 5, padding: '3px 10px', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
                                                     <i className="bi bi-link-45deg" /> Vincular
                                                 </button>
-                                                <button onMouseDown={() => setNegDupPorIdx(p => ({ ...p, [idx]: null }))}
+                                                <button onMouseDown={() => { setNegDupPorIdx(p => ({ ...p, [idx]: null })); setNegDupEvalsPorIdx(p => ({ ...p, [idx]: [] })); }}
                                                     style={{ background: '#fff', color: '#555', border: '1px solid #fca5a5', borderRadius: 5, padding: '3px 8px', fontSize: 11, cursor: 'pointer' }}>
                                                     Son diferentes
                                                 </button>
                                             </div>
-                                            {(negDupEntsPorIdx[idx] || []).length > 0 && (
+                                            {(negDupEvalsPorIdx[idx] || []).length > 0 && (
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 3, borderTop: '1px solid #fca5a5', paddingTop: 6 }}>
-                                                    {(negDupEntsPorIdx[idx] || []).map(ent => (
-                                                        <div key={ent.id} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fff1f1', borderRadius: 4, padding: '3px 8px', flexWrap: 'wrap' }}>
-                                                            <span style={{ fontWeight: 700, color: '#7f1d1d', fontSize: 11 }}>{ent.folio}</span>
-                                                            <span style={{ color: '#6b7280', fontSize: 10 }}>|</span>
-                                                            <span style={{ color: '#374151', fontSize: 11 }}>{ent.causaPenal || 'Sin causa'}</span>
-                                                            <span style={{ color: '#6b7280', fontSize: 10 }}>|</span>
-                                                            <span style={{ fontWeight: 600, fontSize: 10, color: ent.estado === 'COMPLETADO' ? '#065f46' : '#92400e', background: ent.estado === 'COMPLETADO' ? '#d1fae5' : '#fef3c7', borderRadius: 3, padding: '1px 5px' }}>{ent.estado}</span>
-                                                        </div>
-                                                    ))}
+                                                    <span style={{ fontSize: 10, color: '#7f1d1d', fontWeight: 600, marginBottom: 2 }}>
+                                                        <i className="bi bi-shield-exclamation" /> Evaluaciones / Negaciones registradas ({negDupEvalsPorIdx[idx].length}):
+                                                    </span>
+                                                    {(negDupEvalsPorIdx[idx] || []).map(ev => {
+                                                        const esNegacion = ev.tipoDocumento === 'NEGACION';
+                                                        const tipoLabel = esNegacion ? 'Negación' : 'Evaluación';
+                                                        const tipoColor = esNegacion ? { bg: '#fef3c7', color: '#92400e' } : { bg: '#e0e7ff', color: '#3730a3' };
+                                                        return (
+                                                            <div key={ev.id} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fff1f1', borderRadius: 4, padding: '3px 8px', flexWrap: 'wrap' }}>
+                                                                <span style={{ color: '#6b7280', fontSize: 10 }}>{ev.fechaSolicitud}</span>
+                                                                <span style={{ fontWeight: 700, fontSize: 10, background: tipoColor.bg, color: tipoColor.color, borderRadius: 3, padding: '1px 5px' }}>{tipoLabel}</span>
+                                                                <span style={{ color: '#374151', fontSize: 10 }}>·</span>
+                                                                <span style={{ color: '#374151', fontSize: 10 }}>{ev.delito || 'Sin delito'}</span>
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                             )}
                                         </div>
@@ -877,6 +903,7 @@ const EvaluacionRiesgos = () => {
                                         apMaternoImputado: primero.apMaternoImputado || '',
                                         edad:              primero.edad ? parseInt(primero.edad) : null,
                                         causaPenal:        negacionData.causaPenal,
+                                        numOficio:         negacionData.numeroOficio || null,
                                         dependencia:       negacionData.dependencia,
                                         cargo:             negacionData.cargo,
                                         nombreSolicitante: negacionData.nombreSolicitante,

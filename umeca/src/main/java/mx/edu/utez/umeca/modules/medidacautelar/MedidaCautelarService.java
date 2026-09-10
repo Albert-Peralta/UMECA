@@ -30,6 +30,7 @@ public class MedidaCautelarService {
     private final UserRepository userRepository;
     private final SeguimientoMedidaRepository seguimientoRepository;
     private final BitacoraService bitacoraService;
+    private final ObservacionMedidaRepository observacionRepository;
 
     @Transactional(readOnly = true)
     public ApiResponse findAll() {
@@ -189,18 +190,72 @@ public class MedidaCautelarService {
         return new ApiResponse(true, "Registro actualizado", MedidaCautelarResponseDTO.from(updated));
     }
 
-    // ── Guardar observaciones ─────────────────────────────────────────────────
+    // ── Observaciones (historial) ─────────────────────────────────────────────
+    @Transactional
+    public ApiResponse agregarObservacion(Long id, String texto) {
+        return repository.findById(id).map(m -> {
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            String autorNombre = userRepository.findByUsername(username)
+                    .map(u -> u.getNombre() + " " + u.getApPaterno())
+                    .orElse(username);
+            ObservacionMedida obs = new ObservacionMedida();
+            obs.setTexto(texto.trim());
+            obs.setAutorNombre(autorNombre);
+            obs.setMedida(m);
+            observacionRepository.save(obs);
+            bitacoraService.registrar(Bitacora.Entidad.MEDIDA_CAUTELAR, m.getId(),
+                    m.getImputado() != null ? m.getImputado().getNombre() + " " + m.getImputado().getApPaterno() : "—",
+                    Bitacora.Accion.EDITAR, "Observación agregada");
+            return new ApiResponse(true, "Observación registrada", toDto(obs));
+        }).orElse(new ApiResponse(false, "Registro no encontrado"));
+    }
+
+    @Transactional(readOnly = true)
+    public ApiResponse listarObservaciones(Long id) {
+        List<java.util.Map<String, Object>> lista = observacionRepository
+                .findByMedidaIdOrderByFechaCreacionDesc(id)
+                .stream().map(this::toDto).toList();
+        return new ApiResponse(true, "OK", lista);
+    }
+
+    @Transactional
+    public ApiResponse agregarObservacionScp(Long id, String texto,
+            mx.edu.utez.umeca.modules.suspension.SuspensionCondicionalRepository scpRepo) {
+        return scpRepo.findById(id).map(s -> {
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            String autorNombre = userRepository.findByUsername(username)
+                    .map(u -> u.getNombre() + " " + u.getApPaterno())
+                    .orElse(username);
+            ObservacionMedida obs = new ObservacionMedida();
+            obs.setTexto(texto.trim());
+            obs.setAutorNombre(autorNombre);
+            obs.setSuspension(s);
+            observacionRepository.save(obs);
+            return new ApiResponse(true, "Observación registrada", toDto(obs));
+        }).orElse(new ApiResponse(false, "Registro no encontrado"));
+    }
+
+    @Transactional(readOnly = true)
+    public ApiResponse listarObservacionesScp(Long id) {
+        List<java.util.Map<String, Object>> lista = observacionRepository
+                .findBySuspensionIdOrderByFechaCreacionDesc(id)
+                .stream().map(this::toDto).toList();
+        return new ApiResponse(true, "OK", lista);
+    }
+
+    private java.util.Map<String, Object> toDto(ObservacionMedida o) {
+        return java.util.Map.of(
+                "id",          o.getId(),
+                "texto",       o.getTexto(),
+                "autorNombre", o.getAutorNombre(),
+                "fechaCreacion", o.getFechaCreacion().toString()
+        );
+    }
+
+    /** @deprecated Mantener por compatibilidad – usar agregarObservacion() */
     @Transactional
     public ApiResponse guardarObservaciones(Long id, String observaciones) {
-        return repository.findById(id).map(m -> {
-            m.setObservaciones(observaciones != null ? observaciones.trim() : null);
-            MedidaCautelar saved = repository.save(m);
-            String nombre = saved.getImputado() != null
-                    ? saved.getImputado().getNombre() + " " + saved.getImputado().getApPaterno() : "—";
-            bitacoraService.registrar(Bitacora.Entidad.MEDIDA_CAUTELAR, saved.getId(), nombre,
-                    Bitacora.Accion.EDITAR, "Observaciones actualizadas");
-            return new ApiResponse(true, "Observaciones guardadas", MedidaCautelarResponseDTO.from(saved));
-        }).orElse(new ApiResponse(false, "Registro no encontrado"));
+        return agregarObservacion(id, observaciones != null ? observaciones : "");
     }
 
     @Transactional

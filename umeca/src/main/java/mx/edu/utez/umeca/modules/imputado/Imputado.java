@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import mx.edu.utez.umeca.kernel.BaseEntity;
+import mx.edu.utez.umeca.modules.security.user.User;
 
 import java.time.LocalDate;
 
@@ -30,6 +31,23 @@ public class Imputado extends BaseEntity {
 
     @Column(name = "ubicacion_fisica", length = 300)
     private String ubicacionFisica;
+
+    // ── Ubicación física del expediente ──────────────────────────────────────
+    public enum UbicacionExpediente { ELABORANDO, CON_PERSONAL, EN_ARCHIVO }
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "ubicacion_expediente", length = 20, nullable = false)
+    private UbicacionExpediente ubicacionExpediente = UbicacionExpediente.ELABORANDO;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_expediente_id")
+    private User usuarioExpediente;
+
+    @Column(name = "expediente_confirmado", nullable = false)
+    private boolean expedienteConfirmado = false;
+
+    @Column(name = "fecha_confirmacion_expediente")
+    private java.time.LocalDateTime fechaConfirmacionExpediente;
 
     @Column(name = "foto", columnDefinition = "LONGTEXT")
     private String foto;  // Base64 data-URL

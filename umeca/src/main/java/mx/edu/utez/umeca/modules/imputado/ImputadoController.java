@@ -106,6 +106,43 @@ public class ImputadoController {
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
     }
 
+    /** Cambia la ubicación física del expediente — accesible a todos los roles. */
+    @PatchMapping("/{id}/ubicacion-expediente")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO','ROLE_CORRESPONDENCIA')")
+    public ResponseEntity<ApiResponse> cambiarUbicacionExpediente(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> body) {
+        String estado    = (String) body.get("estado");
+        Long   usuarioId = body.get("usuarioId") != null ? Long.valueOf(body.get("usuarioId").toString()) : null;
+        ApiResponse res  = service.cambiarUbicacionExpediente(id, estado, usuarioId);
+        return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
+    }
+
+    /** Lista usuarios activos para el selector de asignación — accesible a todos los roles. */
+    @GetMapping("/usuarios-activos")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO','ROLE_CORRESPONDENCIA')")
+    public ResponseEntity<ApiResponse> listarUsuariosActivos() {
+        return ResponseEntity.ok(service.listarUsuariosActivos());
+    }
+
+    /** El usuario asignado confirma que tiene físicamente el expediente. */
+    @PatchMapping("/{id}/confirmar-expediente")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO','ROLE_CORRESPONDENCIA')")
+    public ResponseEntity<ApiResponse> confirmarExpediente(
+            @PathVariable Long id,
+            org.springframework.security.core.Authentication auth) {
+        ApiResponse res = service.confirmarExpediente(id, auth.getName());
+        return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
+    }
+
+    /** Devuelve el número de expedientes asignados al usuario actual sin confirmar. */
+    @GetMapping("/expedientes-pendientes-count")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO','ROLE_CORRESPONDENCIA')")
+    public ResponseEntity<ApiResponse> expedientesPendientesCount(
+            org.springframework.security.core.Authentication auth) {
+        return ResponseEntity.ok(service.contarExpedientesPendientes(auth.getName()));
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN', 'ROLE_SUPERVISION')")
     public ResponseEntity<ApiResponse> update(@PathVariable Long id,

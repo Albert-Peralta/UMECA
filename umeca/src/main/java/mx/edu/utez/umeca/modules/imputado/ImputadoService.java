@@ -9,6 +9,8 @@ import mx.edu.utez.umeca.modules.evaluacion.EvaluacionRiesgoRepository;
 import mx.edu.utez.umeca.modules.medidacautelar.MedidaCautelarRepository;
 import mx.edu.utez.umeca.modules.supervision.Supervision;
 import mx.edu.utez.umeca.modules.supervision.SupervisionRepository;
+import mx.edu.utez.umeca.modules.security.user.User;
+import mx.edu.utez.umeca.modules.security.user.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +33,7 @@ public class ImputadoService {
     private final MedidaCautelarRepository medidaRepository;
     private final SupervisionRepository supervisionRepository;
     private final BitacoraService bitacoraService;
+    private final UserRepository userRepository;
 
     /**
      * Lista todos los imputados con conteos de entrevistas, evaluaciones,
@@ -400,5 +403,80 @@ public class ImputadoService {
             imputadoRepository.delete(imp);
             return new ApiResponse(true, "Imputado eliminado correctamente.");
         }).orElse(new ApiResponse(false, "Imputado no encontrado"));
+    }
+
+    /** Cambia la ubicación física del expediente (Elaborando / Con personal / En archivo). */
+    @Transactional
+    public ApiResponse cambiarUbicacionExpediente(Long id, String estado, Long usuarioId) {
+        return imputadoRepository.findById(id).map(imp -> {
+            Imputado.UbicacionExpediente ue;
+            try { ue = Imputado.UbicacionExpediente.valueOf(estado); }
+            catch (Exception e) { return new ApiResponse(false, "Estado de ubicación inválido"); }
+
+            imp.setUbicacionExpediente(ue);
+            imp.setExpedienteConfirmado(false);
+            imp.setFechaConfirmacionExpediente(null);
+            if (ue == Imputado.UbicacionExpediente.CON_PERSONAL) {
+                if (usuarioId == null) return new ApiResponse(false, "Debe indicar el usuario asignado");
+                User u = userRepository.findById(usuarioId).orElse(null);
+                if (u == null) return new ApiResponse(false, "Usuario no encontrado");
+                imp.setUsuarioExpediente(u);
+            } else {
+                imp.setUsuarioExpediente(null);
+            }
+            Imputado saved = imputadoRepository.save(imp);
+
+            String detalle = switch (ue) {
+                case ELABORANDO   -> "Expediente marcado como En elaboración";
+                case EN_ARCHIVO   -> "Expediente enviado al archivo";
+                case CON_PERSONAL -> "Expediente asignado a " + saved.getUsuarioExpediente().getNombre()
+                        + " " + saved.getUsuarioExpediente().getApPaterno();
+            };
+            bitacoraService.registrar(Bitacora.Entidad.IMPUTADO, id,
+                    saved.getNombreCompleto(), Bitacora.Accion.EDITAR, detalle);
+
+            return new ApiResponse(true, "Ubicación actualizada", ImputadoResponseDTO.fromSimple(saved));
+        }).orElse(new ApiResponse(false, "Imputado no encontrado"));
+    }
+
+    /** Confirma que el usuario asignado tiene físicamente el expediente. */
+    @Transactional
+    public ApiResponse confirmarExpediente(Long id, String username) {
+        return imputadoRepository.findById(id).map(imp -> {
+            if (imp.getUsuarioExpediente() == null)
+                return new ApiResponse(false, "Este expediente no está asignado a ningún usuario");
+            if (!imp.getUsuarioExpediente().getUsername().equals(username))
+                return new ApiResponse(false, "Solo el usuario asignado puede confirmar la recepción");
+            imp.setExpedienteConfirmado(true);
+            imp.setFechaConfirmacionExpediente(java.time.LocalDateTime.now());
+            Imputado saved = imputadoRepository.save(imp);
+            bitacoraService.registrar(Bitacora.Entidad.IMPUTADO, id,
+                    saved.getNombreCompleto(), Bitacora.Accion.EDITAR,
+                    "Expediente confirmado por " + username);
+            return new ApiResponse(true, "Recepción confirmada", ImputadoResponseDTO.fromSimple(saved));
+        }).orElse(new ApiResponse(false, "Imputado no encontrado"));
+    }
+
+    /** Cuenta cuántos expedientes tiene el usuario asignados sin confirmar. */
+    @Transactional(readOnly = true)
+    public ApiResponse contarExpedientesPendientes(String username) {
+        long count = imputadoRepository.countExpedientesPendientesByUsername(username);
+        return new ApiResponse(true, "OK", count);
+    }
+
+    /** Lista todos los usuarios activos excepto administradores (para el selector de asignación de expediente). */
+    @Transactional(readOnly = true)
+    public ApiResponse listarUsuariosActivos() {
+        return new ApiResponse(true, "OK",
+                userRepository.findAll().stream()
+                        .filter(User::isActivo)
+                        .filter(u -> u.getRol() != mx.edu.utez.umeca.modules.security.user.User.Rol.ADMINISTRADOR
+                                  && u.getRol() != mx.edu.utez.umeca.modules.security.user.User.Rol.SUPERADMIN)
+                        .map(u -> Map.of(
+                                "id",     u.getId(),
+                                "nombre", u.getNombre() + " " + u.getApPaterno(),
+                                "rol",    u.getRol().name()
+                        ))
+                        .toList());
     }
 }

@@ -74,6 +74,23 @@ public class MedidaCautelarController {
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
     }
 
+    @PostMapping("/{id}/observaciones")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> agregarObservacion(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> body) {
+        String texto = body != null ? body.get("texto") : null;
+        if (texto == null || texto.isBlank()) return ResponseEntity.badRequest().body(new ApiResponse(false, "El texto no puede estar vacío"));
+        ApiResponse res = service.agregarObservacion(id, texto);
+        return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
+    }
+
+    @GetMapping("/{id}/observaciones")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> listarObservaciones(@PathVariable Long id) {
+        return ResponseEntity.ok(service.listarObservaciones(id));
+    }
+
     @PatchMapping("/{id}/cumplimiento")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION')" +
                   " or @moduloChecker.puedeEditar(authentication,'MEDIDAS')")

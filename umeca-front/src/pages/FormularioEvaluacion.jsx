@@ -216,6 +216,42 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
   const [tieneDraft, setTieneDraft] = useState(false);
   const [draftGuardadoEn, setDraftGuardadoEn] = useState(null);
 
+  // Detección automática de imputado duplicado por nombre
+  const [impDuplicado, setImpDuplicado] = useState(null);
+  const [impDuplicadoEvals, setImpDuplicadoEvals] = useState([]);
+
+  const normalizar = str => (str || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+
+  useEffect(() => {
+    if (esEdicion || imputadoSelId) { setImpDuplicado(null); return; }
+    const nombre = normalizar(form.nombreImputado);
+    const apPaterno = normalizar(form.apPaternoImputado);
+    const apMaterno = normalizar(form.apMaternoImputado);
+    if (nombre.length < 2 || apPaterno.length < 2) { setImpDuplicado(null); return; }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await getImputados(form.nombreImputado.trim());
+        if (!res.data.ok) return;
+        const encontrado = (res.data.data || []).find(i => {
+          if (i.fallecido || i.carpetaCerrada) return false;
+          if (normalizar(i.nombre) !== nombre) return false;
+          if (normalizar(i.apPaterno) !== apPaterno) return false;
+          if (apMaterno.length >= 2 && normalizar(i.apMaterno || '') !== apMaterno) return false;
+          return true;
+        });
+        setImpDuplicado(encontrado || null);
+      } catch { /* sin bloqueo */ }
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [form.nombreImputado, form.apPaternoImputado, form.apMaternoImputado, imputadoSelId, esEdicion]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!impDuplicado) { setImpDuplicadoEvals([]); return; }
+    getImputadoById(impDuplicado.id).then(res => {
+      if (res.data.ok) setImpDuplicadoEvals(res.data.data.evaluaciones || []);
+    }).catch(() => {});
+  }, [impDuplicado]);
+
   // Selección de imputado cuando hay varios con la misma causa penal
   const [imputadosCausaPenal, setImputadosCausaPenal] = useState([]);
   const [showSeleccionImputado, setShowSeleccionImputado] = useState(false);
@@ -681,6 +717,11 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
    * (campos _imp, verificaciones camelCase, listas como JSON).
    */
   const handleGuardar = async () => {
+    if (impDuplicado && !imputadoSelId) {
+      setError('Este imputado ya está registrado en el sistema. Vincúlalo desde el aviso que aparece en la sección de datos generales.');
+      document.getElementById('fev-aviso-duplicado')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     const nuevosErrores = {
       causaPenal:        !form.causaPenal,
       nombreImputado:    !form.nombreImputado,
@@ -939,6 +980,72 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
 
       {/* 1. Datos generales */}
       {sec('1. DATOS GENERALES')}
+
+      {/* ── Banner duplicado por nombre ── */}
+      {!esEdicion && impDuplicado && !imputadoSelId && (
+        <div id="fev-aviso-duplicado" style={{ border: '1.5px solid #dc2626', background: '#fef2f2', borderRadius: 10, padding: '14px 16px', marginBottom: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {/* Línea 1: ícono + texto */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <i className="bi bi-exclamation-triangle-fill" style={{ color: '#dc2626', fontSize: '1rem', flexShrink: 0 }} />
+            <div>
+              <strong style={{ color: '#991b1b', fontSize: '0.88rem' }}>Este imputado ya está registrado en el sistema.</strong>
+              <span style={{ color: '#7f1d1d', fontSize: '0.82rem', marginLeft: 6 }}>Vincúlalo para asociar la evaluación a su expediente existente.</span>
+            </div>
+          </div>
+          {/* Línea 2: botones alineados */}
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <button
+              onClick={() => { setImputadoSelId(impDuplicado.id); setImpDuplicado(null); }}
+              style={{ background: '#2d6a4f', color: '#fff', border: 'none', borderRadius: 6, padding: '7px 16px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <i className="bi bi-link-45deg" /> Vincular al expediente
+            </button>
+            <button
+              onClick={() => setImpDuplicado(null)}
+              style={{ background: '#fff', color: '#555', border: '1px solid #fca5a5', borderRadius: 6, padding: '7px 14px', fontSize: '0.82rem', cursor: 'pointer' }}>
+              Son personas diferentes
+            </button>
+          </div>
+          {/* Listado de evaluaciones previas */}
+          {impDuplicadoEvals.length > 0 && (
+            <div style={{ borderTop: '1px solid #fca5a5', paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#991b1b' }}>
+                <i className="bi bi-shield-exclamation" /> Evaluaciones / Negaciones registradas ({impDuplicadoEvals.length}):
+              </span>
+              {impDuplicadoEvals.map(ev => {
+                const esNegacion = ev.tipoDocumento === 'NEGACION';
+                const tipoLabel = esNegacion ? 'Negación' : 'Evaluación';
+                const tipoColor = esNegacion ? { bg: '#fef3c7', color: '#92400e' } : { bg: '#e0e7ff', color: '#3730a3' };
+                const resultLabel = ev.resultado === 'FLEXIBLE' ? 'Bajo Riesgo' : ev.resultado === 'ESTRICTO' ? 'Medio Riesgo' : ev.resultado === 'DIFICIL_CUMPLIR' ? 'Alto Riesgo' : ev.resultado || ev.estatus || '—';
+                const resultColor = ev.resultado === 'FLEXIBLE' ? { bg: '#d1fae5', color: '#065f46' } : ev.resultado === 'ESTRICTO' ? { bg: '#fef3c7', color: '#92400e' } : ev.resultado === 'DIFICIL_CUMPLIR' ? { bg: '#fee2e2', color: '#991b1b' } : { bg: '#f3f4f6', color: '#374151' };
+                return (
+                  <div key={ev.id} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fff1f1', borderRadius: 5, padding: '5px 10px', flexWrap: 'wrap', fontSize: '0.78rem' }}>
+                    <span style={{ fontWeight: 700, color: '#7f1d1d' }}>{ev.fechaSolicitud || '—'}</span>
+                    <span style={{ color: '#6b7280' }}>·</span>
+                    <span style={{ background: tipoColor.bg, color: tipoColor.color, borderRadius: 4, padding: '1px 6px', fontWeight: 700 }}>{tipoLabel}</span>
+                    <span style={{ color: '#6b7280' }}>·</span>
+                    <span style={{ color: '#374151' }}>{ev.delito || 'Sin delito'}</span>
+                    {ev.resultado && (<><span style={{ color: '#6b7280' }}>·</span>
+                      <span style={{ fontWeight: 600, background: resultColor.bg, color: resultColor.color, borderRadius: 4, padding: '1px 6px' }}>{resultLabel}</span>
+                    </>)}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Banner: vinculado correctamente */}
+      {!esEdicion && imputadoSelId && !impDuplicado && (
+        <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 10, padding: '10px 16px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <i className="bi bi-person-check-fill" style={{ color: '#16a34a', fontSize: '1rem' }} />
+          <span style={{ color: '#14532d', fontWeight: 700, fontSize: '0.88rem' }}>Imputado vinculado al expediente existente</span>
+          <button onClick={() => setImputadoSelId(null)} style={{ marginLeft: 'auto', background: 'none', border: '1px solid #86efac', borderRadius: 5, fontSize: '0.78rem', cursor: 'pointer', color: '#555', padding: '3px 10px' }}>
+            <i className="bi bi-x-circle" /> Desvincular
+          </button>
+        </div>
+      )}
+
       <div className="fev-grid-4">
         {field('Nombre(s) *', inp(form.nombreImputado, v => s('nombreImputado', v)), false, errores.nombreImputado, 'fev-nombreImputado')}
         {field('Apellido Paterno *', inp(form.apPaternoImputado, v => s('apPaternoImputado', v)), false, errores.apPaternoImputado, 'fev-apPaternoImputado')}

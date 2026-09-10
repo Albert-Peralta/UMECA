@@ -3,6 +3,7 @@ import {
     getSuspensiones, getSuspensionById, crearSuspension,
     actualizarSuspension, eliminarSuspension, importarSuspensiones, getAniosDisponibles
 } from '../api/suspensionApi';
+import { agregarObservacionSCP, listarObservacionesSCP } from '../api/medidasApi';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import { puedeCrear as _puedeCrear, puedeEditar as _puedeEditar } from '../utils/permisos';
@@ -36,6 +37,38 @@ export default function SuspensionCondicional() {
     // Detalle / formulario
     const [detalle,    setDetalle]    = useState(null);
     const [loadingDet, setLoadingDet] = useState(false);
+
+    // Observaciones (historial)
+    const [showObsModal,  setShowObsModal]  = useState(false);
+    const [obsTexto,      setObsTexto]      = useState('');
+    const [loadingObs,    setLoadingObs]    = useState(false);
+    const [historialObs,  setHistorialObs]  = useState([]);
+    const [cargandoObs,   setCargandoObs]   = useState(false);
+
+    useEffect(() => {
+        if (showObsModal && detalle?.id) {
+            setCargandoObs(true);
+            listarObservacionesSCP(detalle.id)
+                .then(r => { if (r.data.ok) setHistorialObs(r.data.data); })
+                .catch(() => {})
+                .finally(() => setCargandoObs(false));
+        }
+    }, [showObsModal, detalle?.id]);
+
+    const abrirObservaciones = () => { setObsTexto(''); setHistorialObs([]); setShowObsModal(true); };
+    const handleGuardarObs = async () => {
+        if (!obsTexto.trim()) return;
+        setLoadingObs(true);
+        try {
+            const res = await agregarObservacionSCP(detalle.id, obsTexto);
+            if (res.data.ok) {
+                setHistorialObs(prev => [res.data.data, ...prev]);
+                setObsTexto('');
+                showToast('Observación registrada correctamente');
+            } else showToast(res.data.message || 'Error al guardar', 'error');
+        } catch { showToast('Error de conexión', 'error'); }
+        finally { setLoadingObs(false); }
+    };
     const scrollYRef = useRef(0);
 
     // Modal crear/editar
@@ -279,18 +312,21 @@ export default function SuspensionCondicional() {
                     )}
                     {detalle.anio && <span className="scp-anio-badge">{detalle.anio}</span>}
                 </div>
-                {puedeEditar && (
-                    <div className="scp-detalle-acciones">
-                        <button className="scp-btn-edit" onClick={() => abrirEditar(detalle)}>
-                            <i className="bi bi-pencil-fill" /> Editar
+                <div className="scp-detalle-acciones">
+                        <button className="scp-btn-obs" onClick={abrirObservaciones}>
+                            <i className="bi bi-journal-text" /> Observaciones
                         </button>
+                        {puedeEditar && (
+                            <button className="scp-btn-edit" onClick={() => abrirEditar(detalle)}>
+                                <i className="bi bi-pencil-fill" /> Editar
+                            </button>
+                        )}
                         {esAdmin && (
                             <button className="scp-btn-del" onClick={() => setConfirmId(detalle.id)}>
                                 <i className="bi bi-trash-fill" /> Eliminar
                             </button>
                         )}
                     </div>
-                )}
             </div>
 
             <div className="scp-detalle-grid">
@@ -320,12 +356,13 @@ export default function SuspensionCondicional() {
                     </div>
                 )}
 
-                {detalle.observaciones && (
-                    <div className="scp-seccion">
-                        <div className="scp-seccion-titulo"><i className="bi bi-chat-left-text-fill" /> Observaciones</div>
-                        <p className="scp-texto-libre">{detalle.observaciones}</p>
-                    </div>
-                )}
+                <div className="scp-seccion" style={{ cursor: 'pointer' }} onClick={abrirObservaciones}>
+                    <div className="scp-seccion-titulo"><i className="bi bi-chat-left-text-fill" /> Observaciones <span style={{ background: '#dbeafe', color: '#1e40af', borderRadius: 20, padding: '1px 8px', fontSize: '0.72rem', fontWeight: 700, marginLeft: 6 }}>Ver historial</span></div>
+                    {detalle.observaciones
+                        ? <p className="scp-texto-libre" style={{ opacity: 0.6, fontSize: '0.82rem' }}>Las observaciones ahora se gestionan desde el botón "Observaciones"</p>
+                        : <p style={{ color: '#9ca3af', fontSize: '0.82rem', margin: 0 }}>Sin observaciones registradas — haz clic para agregar</p>
+                    }
+                </div>
             </div>
 
             {/* Modal confirmar eliminar */}
@@ -345,6 +382,65 @@ export default function SuspensionCondicional() {
                 </div>
             )}
             {ModalFormulario}
+
+            {/* ── Modal Observaciones (historial) ── */}
+            {showObsModal && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }}>
+                    <div style={{ background: '#fff', borderRadius: 16, width: '90%', maxWidth: 540, height: '600px', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.22)', overflow: 'hidden' }}>
+                        <div style={{ background: 'linear-gradient(135deg,#0369a1,#0284c7)', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <i className="bi bi-journal-text" style={{ color: '#fff', fontSize: '1.2rem' }} />
+                                <div>
+                                    <div style={{ fontWeight: 800, fontSize: '0.98rem', color: '#fff' }}>Observaciones</div>
+                                    <div style={{ fontSize: '0.75rem', color: '#bae6fd', marginTop: 1 }}>{detalle.imputado} · {detalle.causa}</div>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowObsModal(false)} style={{ background: 'rgba(255,255,255,.15)', border: '1px solid rgba(255,255,255,.3)', color: '#fff', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <i className="bi bi-x-lg" style={{ fontSize: 13 }} />
+                            </button>
+                        </div>
+                        <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb', flexShrink: 0 }}>
+                            <textarea rows={3} style={{ width: '100%', resize: 'vertical', borderRadius: 8, padding: '10px 12px', border: '1.5px solid #e5e7eb', fontSize: '0.9rem', fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none', color: '#1f2937', background: '#f8fafc', lineHeight: 1.6 }}
+                                placeholder="Escribe una nueva observación..."
+                                value={obsTexto} onChange={e => setObsTexto(e.target.value)} disabled={loadingObs}
+                                onFocus={e => e.target.style.borderColor = '#0369a1'} onBlur={e => e.target.style.borderColor = '#e5e7eb'} />
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, gap: 12, flexWrap: 'wrap' }}>
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.72rem', color: '#6b7280' }}>
+                                    <i className="bi bi-lock-fill" style={{ color: '#d1d5db' }} />
+                                    Las observaciones no pueden editarse una vez registradas
+                                </span>
+                                <button onClick={handleGuardarObs} disabled={loadingObs || !obsTexto.trim()}
+                                    style={{ background: obsTexto.trim() ? '#0369a1' : '#93c5fd', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: '0.88rem', fontWeight: 700, cursor: obsTexto.trim() ? 'pointer' : 'not-allowed', display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                                    {loadingObs ? 'Guardando...' : <><i className="bi bi-send" /> Agregar</>}
+                                </button>
+                            </div>
+                        </div>
+                        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
+                            {cargandoObs ? (
+                                <div style={{ textAlign: 'center', color: '#9ca3af', fontSize: '0.85rem', padding: '20px 0' }}>Cargando historial...</div>
+                            ) : historialObs.length === 0 ? (
+                                <div style={{ textAlign: 'center', color: '#9ca3af', fontSize: '0.85rem', padding: '20px 0' }}>
+                                    <i className="bi bi-journal" style={{ fontSize: '1.8rem', display: 'block', marginBottom: 8, opacity: 0.4 }} />
+                                    Sin observaciones registradas
+                                </div>
+                            ) : historialObs.map(obs => (
+                                <div key={obs.id} style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 10, padding: '12px 14px', borderLeft: '3px solid #0369a1' }}>
+                                    <div style={{ fontSize: '0.88rem', color: '#1f2937', lineHeight: 1.6, marginBottom: 8 }}>{obs.texto}</div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#dbeafe', color: '#1e40af', borderRadius: 20, padding: '2px 8px', fontSize: '0.72rem', fontWeight: 700 }}>
+                                            <i className="bi bi-person-fill" style={{ fontSize: '0.65rem' }} />{obs.autorNombre}
+                                        </span>
+                                        <span style={{ fontSize: '0.72rem', color: '#9ca3af' }}>
+                                            <i className="bi bi-clock" style={{ marginRight: 3 }} />
+                                            {new Date(obs.fechaCreacion).toLocaleString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 

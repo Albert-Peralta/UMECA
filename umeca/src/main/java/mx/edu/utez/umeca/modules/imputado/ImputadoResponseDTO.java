@@ -22,6 +22,11 @@ public class ImputadoResponseDTO {
     private String causaPenal;
     private String delito;
     private String ubicacionFisica;
+    private String  ubicacionExpediente;         // "ELABORANDO" | "CON_PERSONAL" | "EN_ARCHIVO"
+    private Long    usuarioExpedienteId;
+    private String  usuarioExpedienteNombre;    // nombre completo del usuario asignado
+    private boolean expedienteConfirmado;
+    private java.time.LocalDateTime fechaConfirmacionExpediente;
     private String foto;
     private LocalDateTime createdAt;
     private int totalEntrevistas;
@@ -86,6 +91,8 @@ public class ImputadoResponseDTO {
         private String estatus;
         private String resultado;
         private String evaluador;
+        private String tipoDocumento;
+        private String delito;
 
         public static EvaluacionResumen from(EvaluacionRiesgo e) {
             EvaluacionResumen r = new EvaluacionResumen();
@@ -96,6 +103,8 @@ public class ImputadoResponseDTO {
             r.setEvaluador(e.getEvaluador() != null
                     ? e.getEvaluador().getNombre() + " " + e.getEvaluador().getApPaterno()
                     : null);
+            r.setTipoDocumento(e.getTipoDocumento() != null ? e.getTipoDocumento().name() : "NORMAL");
+            r.setDelito(e.getArticuloDelito());
             return r;
         }
     }
@@ -135,6 +144,13 @@ public class ImputadoResponseDTO {
         dto.setCausaPenal(i.getCausaPenal());
         dto.setDelito(i.getDelito());
         dto.setUbicacionFisica(i.getUbicacionFisica());
+        dto.setUbicacionExpediente(i.getUbicacionExpediente() != null ? i.getUbicacionExpediente().name() : "ELABORANDO");
+        if (i.getUsuarioExpediente() != null) {
+            dto.setUsuarioExpedienteId(i.getUsuarioExpediente().getId());
+            dto.setUsuarioExpedienteNombre(i.getUsuarioExpediente().getNombre() + " " + i.getUsuarioExpediente().getApPaterno());
+        }
+        dto.setExpedienteConfirmado(i.isExpedienteConfirmado());
+        dto.setFechaConfirmacionExpediente(i.getFechaConfirmacionExpediente());
         dto.setFoto(i.getFoto());
         dto.setCreatedAt(i.getCreatedAt());
         dto.setFallecido(i.isFallecido());
@@ -164,6 +180,13 @@ public class ImputadoResponseDTO {
         dto.setCausaPenal(i.getCausaPenal());
         dto.setDelito(i.getDelito());
         dto.setUbicacionFisica(i.getUbicacionFisica());
+        dto.setUbicacionExpediente(i.getUbicacionExpediente() != null ? i.getUbicacionExpediente().name() : "ELABORANDO");
+        if (i.getUsuarioExpediente() != null) {
+            dto.setUsuarioExpedienteId(i.getUsuarioExpediente().getId());
+            dto.setUsuarioExpedienteNombre(i.getUsuarioExpediente().getNombre() + " " + i.getUsuarioExpediente().getApPaterno());
+        }
+        dto.setExpedienteConfirmado(i.isExpedienteConfirmado());
+        dto.setFechaConfirmacionExpediente(i.getFechaConfirmacionExpediente());
         dto.setFoto(i.getFoto());
         dto.setCreatedAt(i.getCreatedAt());
         dto.setFallecido(i.isFallecido());

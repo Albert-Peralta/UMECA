@@ -144,6 +144,12 @@
 .historico-tabla tbody tr:nth-child(odd) td  { background-color: #f5f9f6; }
 .historico-tabla tbody tr:nth-child(even) td { background-color: #ffffff; }
 .historico-tabla tbody tr:hover td           { background-color: #e8f5e9; }
+.historico-tabla tbody tr.imp-fila-pendiente td       { background-color: #fff7ed !important; border-left: 0; }
+.historico-tabla tbody tr.imp-fila-pendiente td:first-child { border-left: 4px solid #f59e0b; }
+.historico-tabla tbody tr.imp-fila-pendiente:hover td { background-color: #fef3c7 !important; }
+.historico-tabla tbody tr.imp-fila-confirmada td       { background-color: #f0fdf4 !important; border-left: 0; }
+.historico-tabla tbody tr.imp-fila-confirmada td:first-child { border-left: 4px solid #22c55e; }
+.historico-tabla tbody tr.imp-fila-confirmada:hover td { background-color: #dcfce7 !important; }
 
 /* ── ESTATUS ─────────────────────────────── */
 .estatus-badge {

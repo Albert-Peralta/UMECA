@@ -477,7 +477,13 @@ export default function ReporteDiario() {
                     <div className="rd-fecha-resumen">
                         <div className="rd-fecha-wrap">
                             <label>Fecha</label>
-                            <span className="rd-fecha-fija">{new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                            <input
+                                type="date"
+                                value={fechaPropia}
+                                max={hoyISO()}
+                                onChange={e => setFechaPropia(e.target.value)}
+                                className="rd-fecha-input"
+                            />
                         </div>
                         <p className="rd-info-auto">
                             <i className="bi bi-info-circle" />
@@ -577,7 +583,13 @@ export default function ReporteDiario() {
                             <div className="rd-fecha-resumen" style={{ paddingTop: 16 }}>
                                 <div className="rd-fecha-wrap">
                                     <label>Fecha</label>
-                                    <span className="rd-fecha-fija">{new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                    <input
+                                        type="date"
+                                        value={fechaPropia}
+                                        max={hoyISO()}
+                                        onChange={e => setFechaPropia(e.target.value)}
+                                        className="rd-fecha-input"
+                                    />
                                 </div>
                             </div>
                             {resumenEvalChips({}, manualesGuardados)}

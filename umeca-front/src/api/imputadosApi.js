@@ -25,3 +25,12 @@ export const revertirCierreCarpeta = (id) =>
     api.patch(`/imputados/${id}/revertir-cierre`);
 
 export const eliminarImputado = (id) => api.delete(`/imputados/${id}`);
+
+export const cambiarUbicacionExpediente = (id, estado, usuarioId = null) =>
+    api.patch(`/imputados/${id}/ubicacion-expediente`, { estado, usuarioId });
+
+export const getUsuariosActivos = () => api.get('/imputados/usuarios-activos');
+
+export const confirmarExpediente = (id) => api.patch(`/imputados/${id}/confirmar-expediente`);
+
+export const getExpedientesPendientesCount = () => api.get('/imputados/expedientes-pendientes-count');

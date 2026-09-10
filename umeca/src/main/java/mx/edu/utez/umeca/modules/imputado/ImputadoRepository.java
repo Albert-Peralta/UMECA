@@ -60,6 +60,10 @@ public interface ImputadoRepository extends JpaRepository<Imputado, Long> {
     @Query("SELECT COUNT(i) FROM Imputado i WHERE i.createdAt >= :inicio AND i.createdAt < :fin")
     long countByRango(@Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin);
 
+    // Ubicación expediente
+    @Query("SELECT COUNT(i) FROM Imputado i WHERE i.usuarioExpediente.username = :username AND i.expedienteConfirmado = false AND i.ubicacionExpediente = mx.edu.utez.umeca.modules.imputado.Imputado.UbicacionExpediente.CON_PERSONAL")
+    long countExpedientesPendientesByUsername(@Param("username") String username);
+
     // Cierre de carpeta
     @Query("SELECT COUNT(i) FROM Imputado i WHERE i.carpetaCerrada = true AND YEAR(i.fechaCierreCarpeta) = :anio")
     long countCierresPorAnio(@Param("anio") int anio);

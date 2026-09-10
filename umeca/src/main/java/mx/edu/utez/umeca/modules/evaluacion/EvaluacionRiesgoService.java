@@ -347,6 +347,7 @@ public class EvaluacionRiesgoService {
         ev.setEvaluador(solicitante);
         ev.setEstatus(EvaluacionRiesgo.Estatus.FINALIZADO);
         ev.setTipoDocumento(EvaluacionRiesgo.TipoDocumento.NEGACION);
+        if (dto.getNumOficio() != null && !dto.getNumOficio().isBlank()) ev.setNumOficio(dto.getNumOficio());
 
         EvaluacionRiesgo savedEv = evaluacionRepository.save(ev);
         String nombreEv = imputado.getNombre() + " " + imputado.getApPaterno();

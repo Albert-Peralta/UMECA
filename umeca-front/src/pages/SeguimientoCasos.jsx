@@ -50,7 +50,7 @@ const SeguimientoCasos = () => {
     const alertaVencimiento = (item) => {
         const dias = diasParaVencer(item);
         if (dias === null) return null;
-        if (dias < -15) return null; // más de 15 días vencida: ya no se muestra
+        if (dias < -30) return null; // más de 30 días vencida: ya no se muestra
         if (dias < 0)   return { tipo: 'vencido',  label: `Venció hace ${Math.abs(dias)} día(s)`, clase: 'alerta-vencido' };
         if (dias === 0) return { tipo: 'proximo',  label: 'Vence hoy',                            clase: 'alerta-proximo' };
         if (dias <= 30) return { tipo: 'proximo',  label: `Vence en ${dias} día(s)`,              clase: 'alerta-proximo' };

@@ -43,3 +43,15 @@ export const toggleSobreseimiento = (id, valor) =>
 
 export const guardarObservaciones = (id, observaciones) =>
     api.patch(`/medidas/${id}/observaciones`, { observaciones });
+
+// Historial de observaciones (MC)
+export const agregarObservacionMC = (id, texto) =>
+    api.post(`/medidas/${id}/observaciones`, { texto });
+export const listarObservacionesMC = (id) =>
+    api.get(`/medidas/${id}/observaciones`);
+
+// Historial de observaciones (SCP)
+export const agregarObservacionSCP = (id, texto) =>
+    api.post(`/suspension-condicional/${id}/observaciones`, { texto });
+export const listarObservacionesSCP = (id) =>
+    api.get(`/suspension-condicional/${id}/observaciones`);
