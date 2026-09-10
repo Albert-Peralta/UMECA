@@ -984,18 +984,38 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
       {/* ── Banner duplicado por nombre ── */}
       {!esEdicion && impDuplicado && !imputadoSelId && (
         <div id="fev-aviso-duplicado" style={{ border: '1.5px solid #dc2626', background: '#fef2f2', borderRadius: 10, padding: '14px 16px', marginBottom: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {/* Línea 1: ícono + texto */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <i className="bi bi-exclamation-triangle-fill" style={{ color: '#dc2626', fontSize: '1rem', flexShrink: 0 }} />
+          {/* Línea 1: ícono + texto + nombre */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+            <i className="bi bi-exclamation-triangle-fill" style={{ color: '#dc2626', fontSize: '1rem', flexShrink: 0, marginTop: 2 }} />
             <div>
               <strong style={{ color: '#991b1b', fontSize: '0.88rem' }}>Este imputado ya está registrado en el sistema.</strong>
               <span style={{ color: '#7f1d1d', fontSize: '0.82rem', marginLeft: 6 }}>Vincúlalo para asociar la evaluación a su expediente existente.</span>
+              <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <i className="bi bi-person-fill" style={{ color: '#991b1b', fontSize: '0.85rem' }} />
+                <span style={{ fontWeight: 700, color: '#991b1b', fontSize: '0.88rem' }}>
+                  {[impDuplicado.nombre, impDuplicado.apPaterno, impDuplicado.apMaterno].filter(Boolean).join(' ')}
+                </span>
+                {impDuplicado.causaPenal && (
+                  <span style={{ fontSize: '0.78rem', color: '#7f1d1d', background: '#fee2e2', borderRadius: 4, padding: '1px 6px' }}>
+                    {impDuplicado.causaPenal}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           {/* Línea 2: botones alineados */}
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <button
-              onClick={() => { setImputadoSelId(impDuplicado.id); setImpDuplicado(null); }}
+              onClick={() => {
+                setImputadoSelId(impDuplicado.id);
+                setForm(prev => ({
+                  ...prev,
+                  nombreImputado:    impDuplicado.nombre    || prev.nombreImputado,
+                  apPaternoImputado: impDuplicado.apPaterno || prev.apPaternoImputado,
+                  apMaternoImputado: impDuplicado.apMaterno || prev.apMaternoImputado,
+                }));
+                setImpDuplicado(null);
+              }}
               style={{ background: '#2d6a4f', color: '#fff', border: 'none', borderRadius: 6, padding: '7px 16px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
               <i className="bi bi-link-45deg" /> Vincular al expediente
             </button>

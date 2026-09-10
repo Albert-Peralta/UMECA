@@ -745,9 +745,22 @@ const EvaluacionRiesgos = () => {
                                     {/* Aviso de duplicado detectado automáticamente */}
                                     {negDupPorIdx[idx] && !imp.imputadoId && (
                                         <div style={{ border: '1px solid #dc2626', background: '#fef2f2', borderRadius: 8, padding: '10px 12px', marginBottom: 8, fontSize: 12 }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                                                <i className="bi bi-exclamation-triangle-fill" style={{ color: '#dc2626' }} />
+                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 6 }}>
+                                                <i className="bi bi-exclamation-triangle-fill" style={{ color: '#dc2626', flexShrink: 0, marginTop: 2 }} />
+                                                <div style={{ flex: 1 }}>
                                                 <strong style={{ color: '#991b1b' }}>Este imputado ya está registrado en el sistema.</strong>
+                                                <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                                                    <i className="bi bi-person-fill" style={{ color: '#991b1b', fontSize: 11 }} />
+                                                    <span style={{ fontWeight: 700, color: '#991b1b', fontSize: 11 }}>
+                                                        {[negDupPorIdx[idx].nombre, negDupPorIdx[idx].apPaterno, negDupPorIdx[idx].apMaterno].filter(Boolean).join(' ')}
+                                                    </span>
+                                                    {negDupPorIdx[idx].causaPenal && (
+                                                        <span style={{ fontSize: 10, color: '#7f1d1d', background: '#fee2e2', borderRadius: 3, padding: '1px 5px' }}>
+                                                            {negDupPorIdx[idx].causaPenal}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                </div>
                                                 <button onMouseDown={() => seleccionarImpNeg(idx, negDupPorIdx[idx])}
                                                     style={{ marginLeft: 'auto', background: '#2d6a4f', color: '#fff', border: 'none', borderRadius: 5, padding: '3px 10px', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
                                                     <i className="bi bi-link-45deg" /> Vincular
