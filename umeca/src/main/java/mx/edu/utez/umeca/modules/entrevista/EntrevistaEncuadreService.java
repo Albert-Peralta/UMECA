@@ -305,6 +305,10 @@ public class EntrevistaEncuadreService {
             existing.setBuenaBaseEsp(entrevista.getBuenaBaseEsp());
             existing.setObligacionesDificiles(entrevista.getObligacionesDificiles());
             existing.setObligacionesDificilesEsp(entrevista.getObligacionesDificilesEsp());
+            existing.setCuentaConDefensor(entrevista.getCuentaConDefensor());
+            existing.setDefensorNombre(entrevista.getDefensorNombre());
+            existing.setDefensorTelefono(entrevista.getDefensorTelefono());
+            existing.setDefensorCorreo(entrevista.getDefensorCorreo());
 
             // Si se completa
             if (entrevista.getEstado() == EntrevistaEncuadre.Estado.COMPLETADO

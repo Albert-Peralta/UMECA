@@ -205,6 +205,19 @@ public class EntrevistaEncuadre extends BaseEntity {
     @Column(name = "familiares_exterior_esp", length = 300)
     private String familiaresExteriorEsp;
 
+    // ── Defensor ─────────────────────────────────────
+    @Column(name = "cuenta_con_defensor")
+    private Boolean cuentaConDefensor = false;
+
+    @Column(name = "defensor_nombre", length = 200)
+    private String defensorNombre;
+
+    @Column(name = "defensor_telefono", length = 30)
+    private String defensorTelefono;
+
+    @Column(name = "defensor_correo", length = 200)
+    private String defensorCorreo;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo_seguimiento", length = 10)
     private TipoSeguimiento tipoSeguimiento;

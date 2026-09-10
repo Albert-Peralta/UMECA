@@ -109,6 +109,10 @@ const initialForm = {
     tratamientoAdiccionesEsp: '',
     familiaresExterior: false,
     familiaresExteriorEsp: '',
+    cuentaConDefensor: false,
+    defensorNombre: '',
+    defensorTelefono: '',
+    defensorCorreo: '',
     tipoSeguimiento: '',
 };
 
@@ -1203,6 +1207,26 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                     )}
                 </div>
             ))}
+
+            {seccionTitulo('DEFENSOR')}
+            <div className="fe-pregunta-bloque">
+                <div className="fe-radio-grupo">
+                    <label>¿Cuenta con defensor?</label>
+                    <div className="fe-radio-opciones">
+                        <label><input type="radio" checked={form.cuentaConDefensor === true}  onChange={() => set('cuentaConDefensor', true)}  /> Sí</label>
+                        <label><input type="radio" checked={form.cuentaConDefensor === false} onChange={() => set('cuentaConDefensor', false)} /> No</label>
+                    </div>
+                </div>
+                {form.cuentaConDefensor && (
+                    <>
+                        <div className="fe-grid-2" style={{ marginTop: 10 }}>
+                            {campo('Nombre del abogado', <input maxLength={200} value={form.defensorNombre} onChange={e => set('defensorNombre', e.target.value)} />)}
+                            {campo('Teléfono', <input maxLength={30} value={form.defensorTelefono} onChange={e => set('defensorTelefono', e.target.value)} />)}
+                        </div>
+                        {campo('Correo electrónico', <input type="email" maxLength={200} value={form.defensorCorreo} onChange={e => set('defensorCorreo', e.target.value)} />)}
+                    </>
+                )}
+            </div>
 
             {seccionTitulo('SELECCIONE EL TIPO DE SEGUIMIENTO')}
             <p className="fe-subtitulo">Según lo dictaminado por el juez, seleccione el proceso de seguimiento:</p>

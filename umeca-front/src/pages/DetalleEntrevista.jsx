@@ -980,6 +980,50 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
                 ))}
             </div>
 
+            {/* ── DEFENSOR ── */}
+            {seccion('DEFENSOR')}
+            <div className="de-preguntas">
+                <div className="de-pregunta-row">
+                    <span className="de-pregunta-label">¿Cuenta con defensor?</span>
+                    <div className="de-pregunta-controls">
+                        {editando ? (
+                            <>
+                                <label className="de-radio"><input type="radio" checked={form.cuentaConDefensor === true}  onChange={() => set('cuentaConDefensor', true)}  /> Sí</label>
+                                <label className="de-radio"><input type="radio" checked={form.cuentaConDefensor === false} onChange={() => set('cuentaConDefensor', false)} /> No</label>
+                            </>
+                        ) : (
+                            entrevista.cuentaConDefensor === true
+                                ? <span className="de-resp-badge de-resp-si">Sí</span>
+                                : entrevista.cuentaConDefensor === false
+                                    ? <span className="de-resp-badge de-resp-no">No</span>
+                                    : <span className="de-resp-badge" style={{ background: '#f5f5f5', color: '#aaa' }}>—</span>
+                        )}
+                    </div>
+                </div>
+                {(editando ? form.cuentaConDefensor : entrevista.cuentaConDefensor) && (
+                    <div className="de-grid-2" style={{ marginTop: 8 }}>
+                        <div className="de-campo">
+                            <span className="de-label">Nombre del abogado</span>
+                            {editando
+                                ? <input className="de-input" maxLength={200} value={form.defensorNombre || ''} onChange={e => set('defensorNombre', e.target.value)} />
+                                : <span className="de-valor">{entrevista.defensorNombre || '—'}</span>}
+                        </div>
+                        <div className="de-campo">
+                            <span className="de-label">Teléfono</span>
+                            {editando
+                                ? <input className="de-input" maxLength={30} value={form.defensorTelefono || ''} onChange={e => set('defensorTelefono', e.target.value)} />
+                                : <span className="de-valor">{entrevista.defensorTelefono || '—'}</span>}
+                        </div>
+                        <div className="de-campo" style={{ gridColumn: '1 / -1' }}>
+                            <span className="de-label">Correo electrónico</span>
+                            {editando
+                                ? <input className="de-input" type="email" maxLength={200} value={form.defensorCorreo || ''} onChange={e => set('defensorCorreo', e.target.value)} />
+                                : <span className="de-valor">{entrevista.defensorCorreo || '—'}</span>}
+                        </div>
+                    </div>
+                )}
+            </div>
+
             {/* ── TIPO DE SEGUIMIENTO ── */}
             {seccion('TIPO DE SEGUIMIENTO')}
             <div className="de-grid-2">
