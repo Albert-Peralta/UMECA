@@ -931,7 +931,46 @@ const Estadisticas = () => {
                     </div>
                 </GraficaCard>
 
-                {/* 15. Fracciones MC — azul */}
+                {/* 15. Evaluaciones por fuero — dona */}
+                <GraficaCard titulo="Clasificación de Fuero" subtitulo="Evaluaciones y negaciones por fiscalía">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                            <div style={{ width: 140, height: 140, flexShrink: 0 }}>
+                                <Doughnut
+                                    options={{ plugins: { legend: { display: false } }, cutout: '68%', maintainAspectRatio: false }}
+                                    data={{
+                                        labels: ['FGE', 'FGR'],
+                                        datasets: [{ data: [datos.evaluacionesFGE || 0, datos.evaluacionesFGR || 0], backgroundColor: [COLORES.verde + 'dd', COLORES.azul + 'dd'], borderWidth: 0, hoverOffset: 6 }],
+                                    }}
+                                />
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
+                                {[
+                                    { sigla: 'FGE', desc: 'Fiscalía General Estatal',       val: datos.evaluacionesFGE || 0, color: COLORES.verde },
+                                    { sigla: 'FGR', desc: 'Fiscalía General de la República', val: datos.evaluacionesFGR || 0, color: COLORES.azul  },
+                                ].map(({ sigla, desc, val, color }) => {
+                                    const total = (datos.evaluacionesFGE || 0) + (datos.evaluacionesFGR || 0);
+                                    const pct = total > 0 ? Math.round((val / total) * 100) : 0;
+                                    return (
+                                        <div key={sigla}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: color, display: 'inline-block' }} />
+                                                    <strong>{sigla}</strong>
+                                                    <span style={{ fontSize: '0.75rem', color: '#888' }}>{desc}</span>
+                                                </span>
+                                                <span style={{ fontWeight: 700, color }}>{val} <span style={{ fontWeight: 400, color: '#aaa', fontSize: '0.78rem' }}>({pct}%)</span></span>
+                                            </div>
+                                            <div style={{ height: 6, borderRadius: 3, background: '#f0f0f0' }}>
+                                                <div style={{ width: `${pct}%`, height: '100%', borderRadius: 3, background: color, transition: 'width .4s' }} />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                </GraficaCard>
+
+                {/* 17. Fracciones MC — azul */}
                 {datos.fraccionesMasUsadasMC?.length > 0 && (
                     <GraficaCard titulo="Fracciones más impuestas — M.C." subtitulo="Art. 155 CNPP" span2>
                         <div className="est-bar-wrap" style={{ height: Math.max(160, datos.fraccionesMasUsadasMC.slice(0,8).length * 44 + 40) }}>

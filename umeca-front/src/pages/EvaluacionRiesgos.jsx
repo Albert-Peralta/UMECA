@@ -78,7 +78,7 @@ const EvaluacionRiesgos = () => {
         numeroOficio: '',
         imputados: [impVacio()],
         dependencia: '', cargo: '',
-        nombreSolicitante: '', fechaSolicitud: '', horaInicio: '', lugarEntrevista: ''
+        nombreSolicitante: '', fechaSolicitud: '', horaInicio: '', lugarEntrevista: '', fuero: ''
     });
     const [negacionData, setNegacionData] = useState(getNegacionVacio);
     const [negacionErrores, setNegacionErrores] = useState({});
@@ -231,6 +231,7 @@ const EvaluacionRiesgos = () => {
                             horaInicio:        data.horaInicio || '',
                             lugarEntrevista:   data.lugarEntrevista || '',
                             numeroOficio:      data.numOficio || '',
+                            fuero:             data.fuero || '',
                         });
                         setShowPrintNegacion(true);
                     } else {
@@ -534,6 +535,7 @@ const EvaluacionRiesgos = () => {
                                                                 horaInicio: data.horaInicio || '',
                                                                 lugarEntrevista: data.lugarEntrevista || '',
                                                                 numeroOficio: data.numOficio || '',
+                                                                fuero: data.fuero || '',
                                                             });
                                                             setShowPrintNegacion(true);
                                                         } else {
@@ -899,6 +901,30 @@ const EvaluacionRiesgos = () => {
                             </div>
                         </div>
 
+                        {/* Clasificación de Fuero */}
+                        <div style={{ padding: '0 24px 16px' }}>
+                            <p style={{ fontSize: 11, fontWeight: 700, color: '#c0392b', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: 1 }}>Clasificación de Fuero</p>
+                            <div style={{ display: 'flex', gap: 12 }}>
+                                {[
+                                    { value: 'FGE', desc: 'Fiscalía General Estatal' },
+                                    { value: 'FGR', desc: 'Fiscalía General de la República' },
+                                ].map(({ value, desc }) => {
+                                    const selected = negacionData.fuero === value;
+                                    return (
+                                        <div key={value} onClick={() => setNegacionData(p => ({ ...p, fuero: value }))}
+                                            style={{ flex: 1, cursor: 'pointer', borderRadius: 8, border: selected ? '2px solid #2d6a4f' : '2px solid #e0e0e0', background: selected ? '#f0faf4' : '#fafafa', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, transition: 'all .15s' }}>
+                                            <div style={{ width: 16, height: 16, borderRadius: '50%', border: selected ? '5px solid #2d6a4f' : '2px solid #bbb', background: '#fff', flexShrink: 0, transition: 'all .15s' }} />
+                                            <div>
+                                                <div style={{ fontWeight: 800, fontSize: 13, color: selected ? '#1a4731' : '#333' }}>{value}</div>
+                                                <div style={{ fontSize: 10, color: selected ? '#2d6a4f' : '#888' }}>{desc}</div>
+                                            </div>
+                                            {selected && <i className="bi bi-check-circle-fill" style={{ marginLeft: 'auto', color: '#2d6a4f', fontSize: 14 }} />}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
                         {/* Footer */}
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '14px 24px', borderTop: '1px solid #eee', background: '#fafafa', borderRadius: '0 0 12px 12px' }}>
                             <button onClick={() => { setShowModalNegacion(false); setNegacionData(getNegacionVacio()); setNegacionErrores({}); setSugerenciasPorIdx({}); setNegBusqPorIdx({}); setNegOptsPorIdx({}); setNegDupPorIdx({}); setNegDupEntsPorIdx({}); }}
@@ -917,6 +943,7 @@ const EvaluacionRiesgos = () => {
                                         edad:              primero.edad ? parseInt(primero.edad) : null,
                                         causaPenal:        negacionData.causaPenal,
                                         numOficio:         negacionData.numeroOficio || null,
+                                        fuero:             negacionData.fuero || null,
                                         dependencia:       negacionData.dependencia,
                                         cargo:             negacionData.cargo,
                                         nombreSolicitante: negacionData.nombreSolicitante,

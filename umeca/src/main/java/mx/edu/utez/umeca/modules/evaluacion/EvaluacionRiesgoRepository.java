@@ -40,4 +40,12 @@ public interface EvaluacionRiesgoRepository extends JpaRepository<EvaluacionRies
 
     @Query("SELECT COUNT(e) FROM EvaluacionRiesgo e WHERE e.createdAt >= :inicio AND e.createdAt < :fin")
     long countByRango(@Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin);
+
+    @Query("SELECT COUNT(e) FROM EvaluacionRiesgo e WHERE e.fuero = :fuero AND e.createdAt >= :inicio AND e.createdAt < :fin")
+    long countByFueroAndRango(@Param("fuero") EvaluacionRiesgo.Fuero fuero,
+                               @Param("inicio") java.time.LocalDateTime inicio,
+                               @Param("fin") java.time.LocalDateTime fin);
+
+    @Query("SELECT e.fuero, COUNT(e) FROM EvaluacionRiesgo e WHERE e.fuero IS NOT NULL GROUP BY e.fuero")
+    List<Object[]> countPorFuero();
 }

@@ -156,6 +156,7 @@ public class EvaluacionRiesgoDTO {
 
     // Sección 13: conclusión
     private String resultado;
+    private String fuero;
     private String justificacionResultado;
     private String conclusionGeneral;
     private String riesgosProcesalesJson;

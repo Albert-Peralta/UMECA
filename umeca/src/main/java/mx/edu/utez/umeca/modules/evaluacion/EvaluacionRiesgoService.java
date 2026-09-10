@@ -292,6 +292,9 @@ public class EvaluacionRiesgoService {
         ev.setConclusionGeneral(dto.getConclusionGeneral());
         ev.setRiesgosProcesalesJson(dto.getRiesgosProcesalesJson());
         ev.setFactoresEstabilidadJson(dto.getFactoresEstabilidadJson());
+        if (dto.getFuero() != null && !dto.getFuero().isBlank()) {
+            try { ev.setFuero(EvaluacionRiesgo.Fuero.valueOf(dto.getFuero())); } catch (IllegalArgumentException ignored) {}
+        }
 
         // Verificaciones por sección (s1–s11)
         ev.setVerifS1Metodo(dto.getVerifS1Metodo()); ev.setVerifS1Resultado(dto.getVerifS1Resultado());
@@ -348,6 +351,9 @@ public class EvaluacionRiesgoService {
         ev.setEstatus(EvaluacionRiesgo.Estatus.FINALIZADO);
         ev.setTipoDocumento(EvaluacionRiesgo.TipoDocumento.NEGACION);
         if (dto.getNumOficio() != null && !dto.getNumOficio().isBlank()) ev.setNumOficio(dto.getNumOficio());
+        if (dto.getFuero() != null && !dto.getFuero().isBlank()) {
+            try { ev.setFuero(EvaluacionRiesgo.Fuero.valueOf(dto.getFuero())); } catch (IllegalArgumentException ignored) {}
+        }
 
         EvaluacionRiesgo savedEv = evaluacionRepository.save(ev);
         String nombreEv = imputado.getNombre() + " " + imputado.getApPaterno();

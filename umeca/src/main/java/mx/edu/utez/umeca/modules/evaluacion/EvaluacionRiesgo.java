@@ -380,4 +380,15 @@ public class EvaluacionRiesgo extends BaseEntity {
     public enum TipoDocumento {
         NORMAL, NEGACION
     }
+
+    /**
+     * Clasificación de fuero de la fiscalía solicitante.
+     */
+    public enum Fuero {
+        FGE, FGR
+    }
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "fuero", length = 10)
+    private Fuero fuero;
 }

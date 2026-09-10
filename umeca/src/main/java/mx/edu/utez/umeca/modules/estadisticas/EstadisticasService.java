@@ -77,6 +77,8 @@ public class EstadisticasService {
         data.put("totalActivos",     imputadoRepository.countActivos());
         data.put("totalTta",         medidaRepository.countTtaActivosByRango(fInicio, fFin));
         data.put("totalEvaluaciones",evaluacionRepository.countByRango(fInicio, fFin));
+        data.put("evaluacionesFGE", evaluacionRepository.countByFueroAndRango(mx.edu.utez.umeca.modules.evaluacion.EvaluacionRiesgo.Fuero.FGE, fInicio, fFin));
+        data.put("evaluacionesFGR", evaluacionRepository.countByFueroAndRango(mx.edu.utez.umeca.modules.evaluacion.EvaluacionRiesgo.Fuero.FGR, fInicio, fFin));
 
         data.put("totalEntrevistas", filtrarZona
                 ? entrevistaRepository.countByRangoYZona(fInicio, fFin, zona)

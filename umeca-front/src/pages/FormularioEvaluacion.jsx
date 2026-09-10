@@ -19,7 +19,7 @@ const FORM_BASE = {
   causaPenal: '', nombreImputado: '', apPaternoImputado: '', apMaternoImputado: '', delito: '', ubicacionFisica: '', lugarNacimiento: '',
   puestaDisposicion: '', fechaAudiencia: '',
   // Metadatos
-  horaInicio: '', horaFinal: '', lugarEntrevista: '',
+  horaInicio: '', horaFinal: '', lugarEntrevista: '', fuero: '',
   // S1 extras
   genero: '', fechaNacimiento: '', edad: '', municipio: '', estadoNacimiento: '', pais: '',
   curp: '', estadoCivil: '', hijos: false, numHijos: '', numHijosMenores: '',
@@ -179,6 +179,7 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
       numOficio: evaluacion.numOficio || '',
       folioEscrito: evaluacion.folioEscrito || '',
       fiscalia: evaluacion.fiscalia || '',
+      fuero: evaluacion.fuero || '',
       conclusionGeneral: evaluacion.conclusionGeneral || '',
       riesgosProcesales: (() => { try { const a = JSON.parse(evaluacion.riesgosProcesalesJson || '[]'); return [...a, ...Array(7)].slice(0,7).map(v=>v||''); } catch { return Array(7).fill(''); } })(),
       factoresEstabilidad: (() => { try { const a = JSON.parse(evaluacion.factoresEstabilidadJson || '[]'); return [...a, ...Array(7)].slice(0,7).map(v=>v||''); } catch { return Array(7).fill(''); } })(),
@@ -783,7 +784,8 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
         verifS9Metodo:  form.verif_s9_metodo,   verifS9Resultado:  form.verif_s9_resultado,
         verifS10Metodo: form.verif_s10_metodo,  verifS10Resultado: form.verif_s10_resultado,
         verifS11Metodo: form.verif_s11_metodo,  verifS11Resultado: form.verif_s11_resultado,
-        // Datos del oficio y conclusión
+        // Datos del oficio, fuero y conclusión
+        fuero: form.fuero || null,
         numOficio: form.numOficio,
         folioEscrito: form.folioEscrito,
         fiscalia: form.fiscalia,
@@ -1348,6 +1350,38 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
               placeholder="Factor de estabilidad..." />
           </div>
         ))}
+      </div>
+
+      {/* Clasificación de Fuero */}
+      <div className="fev-seccion-header">CLASIFICACIÓN DE FUERO</div>
+      <div style={{ display: 'flex', gap: 16, padding: '16px 0' }}>
+        {[
+          { value: 'FGE', sigla: 'FGE', desc: 'Fiscalía General Estatal' },
+          { value: 'FGR', sigla: 'FGR', desc: 'Fiscalía General de la República' },
+        ].map(({ value, sigla, desc }) => {
+          const selected = form.fuero === value;
+          return (
+            <div key={value} onClick={() => s('fuero', value)}
+              style={{
+                flex: 1, cursor: 'pointer', borderRadius: 10,
+                border: selected ? '2px solid #2d6a4f' : '2px solid #e0e0e0',
+                background: selected ? '#f0faf4' : '#fafafa',
+                padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 14,
+                transition: 'all .15s', boxShadow: selected ? '0 2px 8px rgba(45,106,79,.15)' : '0 1px 3px rgba(0,0,0,.06)',
+              }}>
+              <div style={{
+                width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                border: selected ? '6px solid #2d6a4f' : '2px solid #bbb',
+                background: '#fff', transition: 'all .15s',
+              }} />
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '1.05rem', color: selected ? '#1a4731' : '#333', letterSpacing: 1 }}>{sigla}</div>
+                <div style={{ fontSize: '0.78rem', color: selected ? '#2d6a4f' : '#888', marginTop: 2 }}>{desc}</div>
+              </div>
+              {selected && <i className="bi bi-check-circle-fill" style={{ marginLeft: 'auto', color: '#2d6a4f', fontSize: '1.1rem' }} />}
+            </div>
+          );
+        })}
       </div>
 
       {/* Footer evaluador */}

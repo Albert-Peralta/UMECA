@@ -15,6 +15,7 @@ public class NegacionDTO {
     private Integer edad;
     private String causaPenal;
     private String numOficio;
+    private String fuero;
 
     private String dependencia;
     private String cargo;
