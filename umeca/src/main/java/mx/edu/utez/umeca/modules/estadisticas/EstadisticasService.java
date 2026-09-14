@@ -97,25 +97,27 @@ public class EstadisticasService {
 
         // ── Medidas por tipo, estado, cumplimiento ────────────────────────────
         data.put("medidasPorTipo", filtrarZona ? Map.of(
-                "MEDIDA_CAUTELAR",        medidaRepository.countByTipoYRangoYZona("MEDIDA_CAUTELAR",        fInicio, fFin, zona),
-                "SUSPENSION_CONDICIONAL", medidaRepository.countByTipoYRangoYZona("SUSPENSION_CONDICIONAL", fInicio, fFin, zona)
+                "MEDIDA_CAUTELAR",        medidaRepository.countActivasByTipoYRangoYZona("MEDIDA_CAUTELAR",        fInicio, fFin, zona),
+                "SUSPENSION_CONDICIONAL", medidaRepository.countActivasByTipoYRangoYZona("SUSPENSION_CONDICIONAL", fInicio, fFin, zona)
         ) : Map.of(
-                "MEDIDA_CAUTELAR",        medidaRepository.countByTipoYRango("MEDIDA_CAUTELAR",        fInicio, fFin),
-                "SUSPENSION_CONDICIONAL", medidaRepository.countByTipoYRango("SUSPENSION_CONDICIONAL", fInicio, fFin)
+                "MEDIDA_CAUTELAR",        medidaRepository.countActivasByTipoYRango("MEDIDA_CAUTELAR",        fInicio, fFin),
+                "SUSPENSION_CONDICIONAL", medidaRepository.countActivasByTipoYRango("SUSPENSION_CONDICIONAL", fInicio, fFin)
         ));
-        data.put("medidasPorEstado", filtrarZona ? Map.of(
-                "ACTIVO",     medidaRepository.countByEstadoYRangoYZona("ACTIVO",     fInicio, fFin, zona),
-                "SUSPENDIDO", medidaRepository.countByEstadoYRangoYZona("SUSPENDIDO", fInicio, fFin, zona),
-                "FINALIZADO", medidaRepository.countByEstadoYRangoYZona("FINALIZADO", fInicio, fFin, zona),
-                "LEVANTADO",  medidaRepository.countByEstadoYRangoYZona("LEVANTADO",  fInicio, fFin, zona),
-                "REVOCADO",   medidaRepository.countByEstadoYRangoYZona("REVOCADO",   fInicio, fFin, zona)
-        ) : Map.of(
-                "ACTIVO",     medidaRepository.countByEstadoYRango("ACTIVO",     fInicio, fFin),
-                "SUSPENDIDO", medidaRepository.countByEstadoYRango("SUSPENDIDO", fInicio, fFin),
-                "FINALIZADO", medidaRepository.countByEstadoYRango("FINALIZADO", fInicio, fFin),
-                "LEVANTADO",  medidaRepository.countByEstadoYRango("LEVANTADO",  fInicio, fFin),
-                "REVOCADO",   medidaRepository.countByEstadoYRango("REVOCADO",   fInicio, fFin)
-        ));
+        {
+            java.util.Map<String, Long> mpe = new java.util.HashMap<>();
+            if (filtrarZona) {
+                mpe.put("ACTIVO",             medidaRepository.countByEstadoYRangoYZona("ACTIVO",             fInicio, fFin, zona));
+                mpe.put("FINALIZADO",         medidaRepository.countByEstadoYRangoYZona("FINALIZADO",         fInicio, fFin, zona));
+                mpe.put("SUSTRAIDO",          medidaRepository.countByEstadoYRangoYZona("SUSTRAIDO",          fInicio, fFin, zona));
+                mpe.put("PRISION_PREVENTIVA", medidaRepository.countByEstadoYRangoYZona("PRISION_PREVENTIVA", fInicio, fFin, zona));
+            } else {
+                mpe.put("ACTIVO",             medidaRepository.countByEstadoYRango("ACTIVO",             fInicio, fFin));
+                mpe.put("FINALIZADO",         medidaRepository.countByEstadoYRango("FINALIZADO",         fInicio, fFin));
+                mpe.put("SUSTRAIDO",          medidaRepository.countByEstadoYRango("SUSTRAIDO",          fInicio, fFin));
+                mpe.put("PRISION_PREVENTIVA", medidaRepository.countByEstadoYRango("PRISION_PREVENTIVA", fInicio, fFin));
+            }
+            data.put("medidasPorEstado", mpe);
+        }
         data.put("cambiadoAScp",   filtrarZona ? medidaRepository.countByCambiadoAScpYRangoYZona(fInicio, fFin, zona) : medidaRepository.countByCambiadoAScpYRango(fInicio, fFin));
         data.put("cambiadoAMc",    filtrarZona ? medidaRepository.countByCambiadoAMcYRangoYZona(fInicio, fFin, zona) : medidaRepository.countByCambiadoAMcYRango(fInicio, fFin));
         data.put("levantamientos", filtrarZona ? medidaRepository.countByEstadoYRangoYZona("LEVANTADO", fInicio, fFin, zona) : medidaRepository.countByEstadoYRango("LEVANTADO", fInicio, fFin));

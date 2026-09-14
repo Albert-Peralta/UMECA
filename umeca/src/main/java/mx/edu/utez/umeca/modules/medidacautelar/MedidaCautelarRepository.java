@@ -12,6 +12,8 @@ public interface MedidaCautelarRepository extends JpaRepository<MedidaCautelar, 
     long countByImputadoId(Long imputadoId);
     long countByEntrevistaId(Long entrevistaId);
 
+    List<MedidaCautelar> findByEntrevistaId(Long entrevistaId);
+
     List<MedidaCautelar> findAllByOrderByCreatedAtDesc();
 
     List<MedidaCautelar> findByImputadoId(Long imputadoId);
@@ -109,6 +111,12 @@ public interface MedidaCautelarRepository extends JpaRepository<MedidaCautelar, 
 
     @Query("SELECT COUNT(m) FROM MedidaCautelar m WHERE CAST(m.tipo AS string) = :tipo AND m.createdAt >= :inicio AND m.createdAt < :fin AND CAST(m.registradoPor.zona AS string) = :zona")
     long countByTipoYRangoYZona(@Param("tipo") String tipo, @Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin, @Param("zona") String zona);
+
+    @Query("SELECT COUNT(m) FROM MedidaCautelar m WHERE CAST(m.tipo AS string) = :tipo AND CAST(m.estado AS string) = 'ACTIVO' AND m.createdAt >= :inicio AND m.createdAt < :fin")
+    long countActivasByTipoYRango(@Param("tipo") String tipo, @Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin);
+
+    @Query("SELECT COUNT(m) FROM MedidaCautelar m WHERE CAST(m.tipo AS string) = :tipo AND CAST(m.estado AS string) = 'ACTIVO' AND m.createdAt >= :inicio AND m.createdAt < :fin AND CAST(m.registradoPor.zona AS string) = :zona")
+    long countActivasByTipoYRangoYZona(@Param("tipo") String tipo, @Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin, @Param("zona") String zona);
 
     @Query("SELECT COUNT(m) FROM MedidaCautelar m WHERE CAST(m.estado AS string) = :estado AND m.createdAt >= :inicio AND m.createdAt < :fin")
     long countByEstadoYRango(@Param("estado") String estado, @Param("inicio") java.time.LocalDateTime inicio, @Param("fin") java.time.LocalDateTime fin);

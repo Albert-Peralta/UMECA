@@ -468,7 +468,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
         const riesgoLabel = { FLEXIBLE: 'Bajo Riesgo', ESTRICTO: 'Medio Riesgo', DIFICIL_CUMPLIR: 'Alto Riesgo' };
         const estatusEntLabel = { PENDIENTE: 'Pendiente', EN_REVISION: 'En Revisión', COMPLETADO: 'Completado' };
         const estatusEvalLabel = { PENDIENTE: 'Pendiente', TRABAJANDO: 'En Proceso', FINALIZADO: 'Finalizado' };
-        const estadoMedidaLabel = { ACTIVO: 'Activo', SUSPENDIDO: 'Suspendido', FINALIZADO: 'Finalizado' };
+        const estadoMedidaLabel = { ACTIVO: 'Activo', SUSPENDIDO: 'Suspendido', FINALIZADO: 'Finalizado', SUSTRAIDO: 'Sustraído', PRISION_PREVENTIVA: 'Prisión Preventiva' };
 
         const filaEntrevistas = (perfil.entrevistas || []).map(e => `
             <tr><td>${e.folio}</td><td>${e.fechaRegistro ?? '—'}</td><td>${e.tipoSeguimiento ?? '—'}</td>
@@ -614,8 +614,9 @@ const Imputados = ({ onNavigarEntrevista }) => {
             <div className="imp-leyenda">
                 <span className="imp-leyenda-titulo">Estado de medida:</span>
                 <span className="imp-leyenda-item"><span className="medida-estado-dot medida-estado-activo"></span> Activo</span>
-                <span className="imp-leyenda-item"><span className="medida-estado-dot medida-estado-suspendido"></span> Suspendido</span>
                 <span className="imp-leyenda-item"><span className="medida-estado-dot medida-estado-finalizado"></span> Finalizado</span>
+                <span className="imp-leyenda-item"><span className="medida-estado-dot medida-estado-sustraido"></span> Sustraído</span>
+                <span className="imp-leyenda-item"><span className="medida-estado-dot medida-estado-prision"></span> Prisión Preventiva</span>
             </div>
 
             <div className="historico-tabla-wrapper">
@@ -1273,9 +1274,12 @@ const Imputados = ({ onNavigarEntrevista }) => {
 
                                     {tabActiva === 'medidas' && (() => {
                                         const estadoMedidaConfig = {
-                                            ACTIVO:     { label: 'Activo',     cls: 'badge-activo' },
-                                            SUSPENDIDO: { label: 'Suspendido', cls: 'badge-suspendido' },
-                                            FINALIZADO: { label: 'Finalizado', cls: 'badge-finalizado' },
+                                            ACTIVO:             { label: 'Activo',             cls: 'badge-activo' },
+                                            SUSTRAIDO:          { label: 'Sustraído',          cls: 'badge-revocado' },
+                                            PRISION_PREVENTIVA: { label: 'Prisión Preventiva', cls: 'badge-suspendido' },
+                                            FINALIZADO:         { label: 'Finalizado',         cls: 'badge-finalizado' },
+                                            SUSTRAIDO:          { label: 'Sustraído',          cls: 'badge-revocado' },
+                                            PRISION_PREVENTIVA: { label: 'Prisión Preventiva', cls: 'badge-suspendido' },
                                         };
                                         return !perfil.medidas?.length ? (
                                             <div className="exp-empty">

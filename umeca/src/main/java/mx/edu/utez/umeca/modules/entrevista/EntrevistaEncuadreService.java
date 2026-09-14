@@ -5,6 +5,8 @@ import mx.edu.utez.umeca.modules.bitacora.Bitacora;
 import mx.edu.utez.umeca.modules.bitacora.BitacoraService;
 import mx.edu.utez.umeca.modules.imputado.Imputado;
 import mx.edu.utez.umeca.modules.imputado.ImputadoRepository;
+import mx.edu.utez.umeca.modules.evaluacion.EvaluacionRiesgo;
+import mx.edu.utez.umeca.modules.evaluacion.EvaluacionRiesgoRepository;
 import mx.edu.utez.umeca.modules.medidacautelar.MedidaCautelarRepository;
 import mx.edu.utez.umeca.modules.security.user.User;
 import mx.edu.utez.umeca.modules.security.user.UserRepository;
@@ -31,18 +33,21 @@ public class EntrevistaEncuadreService {
     private final ImputadoRepository imputadoRepository;
     private final BitacoraService bitacoraService;
     private final MedidaCautelarRepository medidaRepository;
+    private final EvaluacionRiesgoRepository evaluacionRepository;
 
     @Autowired
     public EntrevistaEncuadreService(EntrevistaEncuadreRepository repository,
                                      UserRepository userRepository,
                                      ImputadoRepository imputadoRepository,
                                      BitacoraService bitacoraService,
-                                     @Lazy MedidaCautelarRepository medidaRepository) {
+                                     @Lazy MedidaCautelarRepository medidaRepository,
+                                     @Lazy EvaluacionRiesgoRepository evaluacionRepository) {
         this.repository = repository;
         this.userRepository = userRepository;
         this.imputadoRepository = imputadoRepository;
         this.bitacoraService = bitacoraService;
         this.medidaRepository = medidaRepository;
+        this.evaluacionRepository = evaluacionRepository;
     }
 
     @Transactional(readOnly = true)
@@ -246,6 +251,7 @@ public class EntrevistaEncuadreService {
                 imp.setNombre(entrevista.getNombre());
                 imp.setApPaterno(entrevista.getApPaterno());
                 imp.setApMaterno(entrevista.getApMaterno());
+                imp.setCausaPenal(entrevista.getCausaPenal());
                 imputadoRepository.save(imp);
             }
             existing.setCausaPenal(entrevista.getCausaPenal());
@@ -343,6 +349,27 @@ public class EntrevistaEncuadreService {
                     .ifPresent(existing::setRegistradoPor);
 
             EntrevistaEncuadre updatedEnt = repository.save(existing);
+
+            // ── Cascade: actualizar causaPenal en todos los MC/SCP vinculados a esta entrevista ──
+            List<mx.edu.utez.umeca.modules.medidacautelar.MedidaCautelar> medidasVinculadas =
+                    medidaRepository.findByEntrevistaId(updatedEnt.getId());
+            if (!medidasVinculadas.isEmpty()) {
+                for (mx.edu.utez.umeca.modules.medidacautelar.MedidaCautelar mc : medidasVinculadas) {
+                    mc.setCausaPenal(updatedEnt.getCausaPenal());
+                }
+                medidaRepository.saveAll(medidasVinculadas);
+            }
+
+            // ── Cascade: actualizar causaPenal en todas las evaluaciones vinculadas ──
+            List<EvaluacionRiesgo> evaluacionesVinculadas =
+                    evaluacionRepository.findByEntrevistaId(updatedEnt.getId());
+            if (!evaluacionesVinculadas.isEmpty()) {
+                for (EvaluacionRiesgo ev : evaluacionesVinculadas) {
+                    ev.setCausaPenal(updatedEnt.getCausaPenal());
+                }
+                evaluacionRepository.saveAll(evaluacionesVinculadas);
+            }
+
             // Forzar carga de colecciones lazy antes de salir de la transacción
             if (updatedEnt.getDomicilios() != null) updatedEnt.getDomicilios().size();
             if (updatedEnt.getPersonasHabita() != null) updatedEnt.getPersonasHabita().size();

@@ -39,6 +39,7 @@ public class Imputado extends BaseEntity {
     @Column(name = "ubicacion_expediente", length = 20, nullable = false)
     private UbicacionExpediente ubicacionExpediente = UbicacionExpediente.ELABORANDO;
 
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password", "authorities", "accountNonExpired", "accountNonLocked", "credentialsNonExpired", "enabled"})
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_expediente_id")
     private User usuarioExpediente;

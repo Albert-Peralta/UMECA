@@ -22,6 +22,8 @@ public interface EvaluacionRiesgoRepository extends JpaRepository<EvaluacionRies
     boolean existsByImputado_CausaPenal(String causaPenal);
 
     List<EvaluacionRiesgo> findByImputadoId(Long imputadoId);
+
+    List<EvaluacionRiesgo> findByEntrevistaId(Long entrevistaId);
     long countByImputadoId(Long imputadoId);
 
     @Query("SELECT e.imputado.id, COUNT(e) FROM EvaluacionRiesgo e WHERE e.imputado.id IN :ids GROUP BY e.imputado.id")

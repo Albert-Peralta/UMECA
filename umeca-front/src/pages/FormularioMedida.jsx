@@ -43,7 +43,7 @@ const FRACCIONES_SCP = [
 // ── Campos adicionales por fracción MC ───────────────────────────────────────
 const DETALLES_MC = {
     I:    [
-        { key: 'periodicidad',       label: 'Periodicidad', type: 'select', options: ['Diaria','Semanal','Quincenal','Mensual'] },
+        { key: 'periodicidad',       label: 'Periodicidad', type: 'select', options: ['Diaria','Semanal','Quincenal','Mensual','Bimestral','Trimestral','Semestral'] },
         { key: 'lugarPresentacion',  label: 'Lugar de presentación', full: true },
     ],
     II:   [
@@ -714,7 +714,8 @@ const FormularioMedida = ({ medidaInicial, onVolver, onGuardado }) => {
                 <Field label="Estado">
                     <select value={form.estado} onChange={e => set('estado', e.target.value)}>
                         <option value="ACTIVO">Activo</option>
-                        <option value="SUSPENDIDO">Suspendido</option>
+                        <option value="SUSTRAIDO">Sustraído</option>
+                        <option value="PRISION_PREVENTIVA">Prisión Preventiva</option>
                     </select>
                 </Field>
                 <Field label="Fecha de inicio">

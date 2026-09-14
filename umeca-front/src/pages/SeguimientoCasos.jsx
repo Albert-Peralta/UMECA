@@ -16,11 +16,14 @@ import { ESTATUS_CIERRE_LABEL } from '../constants/estatusCierre';
 const ITEMS_POR_PAGINA = 50;
 
 const estadoConfig = {
-    ACTIVO:     { label: 'Activo',     clase: 'estatus-atendido' },
-    SUSPENDIDO: { label: 'Suspendido', clase: 'estatus-proceso' },
-    FINALIZADO: { label: 'Finalizado', clase: 'estatus-pendiente' },
-    LEVANTADO:  { label: 'Levantado',  clase: 'estatus-levantado' },
-    REVOCADO:   { label: 'Revocado',   clase: 'estatus-revocado' },
+    ACTIVO:             { label: 'Activo',             clase: 'estatus-atendido' },
+    SUSTRAIDO:          { label: 'Sustraído',          clase: 'estatus-revocado' },
+    PRISION_PREVENTIVA: { label: 'Prisión Preventiva', clase: 'estatus-proceso' },
+    FINALIZADO:         { label: 'Finalizado',         clase: 'estatus-pendiente' },
+    LEVANTADO:          { label: 'Levantado',          clase: 'estatus-levantado' },
+    REVOCADO:           { label: 'Revocado',           clase: 'estatus-revocado' },
+    SUSTRAIDO:          { label: 'Sustraído',          clase: 'estatus-revocado' },
+    PRISION_PREVENTIVA: { label: 'Prisión Preventiva', clase: 'estatus-proceso' },
 };
 
 const SeguimientoCasos = () => {

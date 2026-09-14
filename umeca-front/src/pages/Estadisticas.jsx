@@ -423,8 +423,13 @@ const Estadisticas = () => {
                 <GraficaCard id="chart-medidas-estado" titulo="Estado de Medidas" subtitulo={`Medidas en curso · ${subtituloFiltro}`}>
                     <div className="est-dona-wrap">
                         <Bar options={barCatOpts()} data={{
-                            labels: ['Activo', 'Suspendido', 'Finalizado'],
-                            datasets: [{ data: [datos.medidasPorEstado?.ACTIVO, datos.medidasPorEstado?.SUSPENDIDO, datos.medidasPorEstado?.FINALIZADO], backgroundColor: [COLORES.verdeClaro, COLORES.amarillo, COLORES.gris], borderRadius: 8, borderWidth: 0 }],
+                            labels: ['Activo', 'Finalizado', 'Sustraído', 'Prisión Preventiva'],
+                            datasets: [{ data: [
+                                datos.medidasPorEstado?.ACTIVO             || 0,
+                                datos.medidasPorEstado?.FINALIZADO         || 0,
+                                datos.medidasPorEstado?.SUSTRAIDO          || 0,
+                                datos.medidasPorEstado?.PRISION_PREVENTIVA || 0,
+                            ], backgroundColor: [COLORES.verdeClaro, COLORES.gris, '#f97316', COLORES.azulClaro], borderRadius: 8, borderWidth: 0 }],
                         }} />
                     </div>
                 </GraficaCard>

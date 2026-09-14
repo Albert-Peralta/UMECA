@@ -45,8 +45,8 @@ const Sec = ({ titulo, cafe }) => (
     </div>
 );
 
-const ESTADO_LABELS = { ACTIVO: 'Activo', SUSPENDIDO: 'Suspendido', FINALIZADO: 'Finalizado', LEVANTADO: 'Levantado', REVOCADO: 'Revocado' };
-const ESTADO_CLASE  = { ACTIVO: 'dm-badge-activo', SUSPENDIDO: 'dm-badge-suspendido', FINALIZADO: 'dm-badge-finalizado', LEVANTADO: 'dm-badge-levantado', REVOCADO: 'dm-badge-revocado' };
+const ESTADO_LABELS = { ACTIVO: 'Activo', FINALIZADO: 'Finalizado', SUSTRAIDO: 'Sustraído', PRISION_PREVENTIVA: 'Prisión Preventiva' };
+const ESTADO_CLASE  = { ACTIVO: 'dm-badge-activo', FINALIZADO: 'dm-badge-finalizado', SUSTRAIDO: 'dm-badge-revocado', PRISION_PREVENTIVA: 'dm-badge-suspendido' };
 
 // ── Componente principal ──────────────────────────────────────────────────────
 const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, onEditar, onActualizado, onCambiarSCP, onCambiarMC }) => {

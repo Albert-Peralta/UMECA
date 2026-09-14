@@ -927,11 +927,14 @@
     border-radius: 50%;
     flex-shrink: 0;
 }
-.medida-estado-activo     { background: #22c55e; }
-.medida-estado-suspendido { background: #f59e0b; }
-.medida-estado-finalizado { background: #6b7280; }
-.medida-estado-levantado  { background: #a78bfa; }
-.medida-estado-revocado   { background: #ef4444; }
+.medida-estado-activo              { background: #22c55e; }
+.medida-estado-suspendido          { background: #f59e0b; }
+.medida-estado-finalizado          { background: #6b7280; }
+.medida-estado-levantado           { background: #a78bfa; }
+.medida-estado-revocado            { background: #ef4444; }
+.medida-estado-sustraido           { background: #f97316; }
+.medida-estado-prision_preventiva  { background: #3b82f6; }
+.medida-estado-prision             { background: #3b82f6; }
 
 /* ── Modal Fallecimiento ─────────────────────────────────── */
 .fall-overlay {

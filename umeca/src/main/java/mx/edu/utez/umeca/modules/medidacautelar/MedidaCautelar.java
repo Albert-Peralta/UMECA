@@ -23,7 +23,7 @@ public class MedidaCautelar extends BaseEntity {
     }
 
     public enum Estado {
-        ACTIVO, SUSPENDIDO, FINALIZADO, LEVANTADO, REVOCADO
+        ACTIVO, SUSPENDIDO, FINALIZADO, LEVANTADO, REVOCADO, SUSTRAIDO, PRISION_PREVENTIVA
     }
 
     // ── Relaciones ───────────────────────────────────────────────────────────
