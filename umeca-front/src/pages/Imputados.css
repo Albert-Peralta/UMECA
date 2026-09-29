@@ -880,6 +880,34 @@
     .btn-solicitud     { width: 100%; justify-content: center; }
 }
 
+/* ── Responsive toolbar ── */
+@media (max-width: 1100px) {
+    /* Los selects se encogen un poco */
+    .imp-select-wrap { min-width: 105px; }
+}
+
+@media (max-width: 900px) {
+    /* Zona pills y selects bajan a segunda fila */
+    .imp-toolbar { flex-wrap: wrap; row-gap: 8px; }
+    .imp-search-grow { flex: 1 1 180px; min-width: 0; }
+    .zona-pills { flex: 0 0 auto; }
+    .imp-select-wrap { min-width: 100px; }
+}
+
+@media (max-width: 640px) {
+    .imp-toolbar { flex-wrap: wrap; }
+    /* Búsqueda + refresh en fila 1 */
+    .imp-search-grow { flex: 1 1 calc(100% - 48px); order: -1; }
+    .btn-refresh { order: -1; flex-shrink: 0; }
+    /* Zonas en fila 2 */
+    .zona-pills { flex-wrap: wrap; gap: 5px; }
+    /* Selects juntos en fila 3, tamaño natural */
+    .imp-selects-group { display: flex; gap: 8px; }
+    .imp-selects-group .imp-select-wrap { min-width: auto; width: auto; }
+    /* Leyenda apilada */
+    .imp-leyenda { gap: 8px; font-size: 12px; }
+}
+
 /* ── Badge tipo medida en expediente ─────────────────────────────────────── */
 .tipo-medida-badge {
     display: inline-block;
@@ -1131,9 +1159,11 @@
 .imp-tabla-fixed .td-nombre { white-space: normal; }
 
 /* ── Toolbar ─────────────────────────────────────────────────────────────── */
-.imp-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; margin-bottom: 10px; }
-.imp-search-grow { flex: 1; min-width: 0; max-width: none; }
+.imp-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.imp-search-grow { flex: 1; min-width: 200px; max-width: none; }
 .imp-search-grow input { width: 100%; }
+.zona-pills { flex-wrap: wrap; }
+.imp-selects-group { display: flex; gap: 8px; align-items: center; }
 
 /* ── Tab Cierre de Carpeta ─────────────────────────────────────────────── */
 .imp-tab-cerrada.imp-tab-activa {
@@ -1528,3 +1558,130 @@
 }
 .fall-btn-eliminar:hover:not(:disabled) { background: #b91c1c; }
 .fall-btn-eliminar:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Filtros secundarios ── */
+.imp-filtros-secundarios {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 8px 16px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.imp-filtro-grupo {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.imp-filtro-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    white-space: nowrap;
+    margin-right: 2px;
+}
+
+.imp-filtro-pill {
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1.5px solid #d1d5db;
+    background: #fff;
+    color: #374151;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+.imp-filtro-pill:hover {
+    border-color: #9ca3af;
+    background: #f3f4f6;
+}
+
+.imp-filtro-sep {
+    width: 1.5px;
+    height: 24px;
+    background: #e5e7eb;
+    flex-shrink: 0;
+}
+
+/* ── Select filtro con wrapper ── */
+.imp-select-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    height: 30px;
+    border: 1.5px solid #c7d2e0;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #eef2f7, #e2e8f0);
+    padding: 0 26px 0 26px;
+    min-width: 120px;
+    transition: all 0.15s;
+    cursor: pointer;
+}
+.imp-select-wrap:hover {
+    border-color: #94a3b8;
+    background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+}
+.imp-select-wrap--activo {
+    border-color: var(--pill-color, #1a3a5c);
+    background: linear-gradient(135deg,
+        color-mix(in srgb, var(--pill-color, #1a3a5c) 18%, white),
+        color-mix(in srgb, var(--pill-color, #1a3a5c) 12%, white)
+    );
+}
+.imp-select-wrap--activo .imp-select-icon,
+.imp-select-wrap--activo .imp-select-chevron {
+    color: var(--pill-color, #1a3a5c);
+}
+.imp-select-wrap--activo .imp-select-filtro {
+    color: var(--pill-color, #1a3a5c);
+    font-weight: 700;
+}
+
+/* iconos decorativos — no interceptan clics */
+.imp-select-icon {
+    position: absolute;
+    left: 9px;
+    font-size: 11px;
+    color: #64748b;
+    pointer-events: none;
+    z-index: 1;
+}
+.imp-select-chevron {
+    position: absolute;
+    right: 9px;
+    font-size: 9px;
+    color: #64748b;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* el select cubre todo el wrapper — un solo clic lo abre */
+.imp-select-filtro {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+    border: none;
+    border-radius: 20px;
+    background: transparent;
+    color: #374151;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+    padding: 0 24px 0 24px;
+    text-align: center;
+}
+.imp-select-filtro option {
+    font-weight: 500;
+    color: #111;
+    background: #fff;
+}

@@ -69,6 +69,8 @@ const Imputados = ({ onNavigarEntrevista }) => {
     const [zonaFiltro, setZonaFiltro] = useState('TODAS');
     const [pagina, setPagina] = useState(1);
     const [cargando, setCargando] = useState(true);
+    const [cumplimientoFiltro, setCumplimientoFiltro] = useState('TODAS');
+    const [tipoMedidaFiltro, setTipoMedidaFiltro] = useState('TODAS');
 
     const [showPerfil, setShowPerfil] = useState(false);
     const [perfil, setPerfil] = useState(null);
@@ -320,6 +322,11 @@ const Imputados = ({ onNavigarEntrevista }) => {
             if (tabVista === 'activos'  && (i.fallecido || i.carpetaCerrada)) return false;
             if (tabVista === 'cerrados' && !i.carpetaCerrada && !i.fallecido)  return false;
             if (zonaFiltro !== 'TODAS' && i.zona !== zonaFiltro) return false;
+            if (cumplimientoFiltro === 'CUMPLIMIENTO'   && i.cumplimientoMedidaActiva !== 'CUMPLIMIENTO')   return false;
+            if (cumplimientoFiltro === 'INCUMPLIMIENTO' && i.cumplimientoMedidaActiva !== 'INCUMPLIMIENTO') return false;
+            if (cumplimientoFiltro === 'SIN_ESTATUS'    && !(i.tipoMedidaActiva && !i.cumplimientoMedidaActiva)) return false;
+            if (tipoMedidaFiltro === 'MC'  && i.tipoMedidaActiva !== 'MEDIDA_CAUTELAR')       return false;
+            if (tipoMedidaFiltro === 'SCP' && i.tipoMedidaActiva !== 'SUSPENSION_CONDICIONAL') return false;
             return (
                 i.nombreCompleto?.toLowerCase().includes(busqueda.toLowerCase()) ||
                 i.causaPenal?.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -555,14 +562,14 @@ const Imputados = ({ onNavigarEntrevista }) => {
             <div className="imp-tabs">
                 <button
                     className={`imp-tab${tabVista === 'activos' ? ' imp-tab-activa' : ''}`}
-                    onClick={() => { setTabVista('activos'); setPagina(1); setBusqueda(''); }}
+                    onClick={() => { setTabVista('activos'); setPagina(1); setBusqueda(''); setCumplimientoFiltro('TODAS'); setTipoMedidaFiltro('TODAS'); }}
                 >
                     <i className="bi bi-person-check"></i> Activos
                     <span className="imp-tab-count">{totalActivos}</span>
                 </button>
                 <button
                     className={`imp-tab${tabVista === 'cerrados' ? ' imp-tab-activa imp-tab-cerrada' : ''}`}
-                    onClick={() => { setTabVista('cerrados'); setPagina(1); setBusqueda(''); }}
+                    onClick={() => { setTabVista('cerrados'); setPagina(1); setBusqueda(''); setCumplimientoFiltro('TODAS'); setTipoMedidaFiltro('TODAS'); }}
                 >
                     <i className="bi bi-folder-x"></i> Cierre de Carpeta
                     <span className="imp-tab-count">{totalCerrados}</span>
@@ -607,6 +614,38 @@ const Imputados = ({ onNavigarEntrevista }) => {
                             {z === 'TODAS' ? 'Todas' : z.charAt(0) + z.slice(1).toLowerCase()}
                         </button>
                     ))}
+                </div>
+                <div className="imp-selects-group">
+                <div className={`imp-select-wrap ${cumplimientoFiltro !== 'TODAS' ? 'imp-select-wrap--activo' : ''}`}
+                     style={cumplimientoFiltro === 'CUMPLIMIENTO' ? { '--pill-color': '#16a34a' } :
+                            cumplimientoFiltro === 'INCUMPLIMIENTO' ? { '--pill-color': '#dc2626' } :
+                            cumplimientoFiltro === 'SIN_ESTATUS' ? { '--pill-color': '#6b7280' } : {}}>
+                    <i className="bi bi-funnel-fill imp-select-icon"></i>
+                    <select
+                        className="imp-select-filtro"
+                        value={cumplimientoFiltro}
+                        onChange={e => { setCumplimientoFiltro(e.target.value); setPagina(1); }}
+                    >
+                        <option value="TODAS">Estatus medida</option>
+                        <option value="CUMPLIMIENTO">Cumplimiento</option>
+                        <option value="INCUMPLIMIENTO">Incumplimiento</option>
+                        <option value="SIN_ESTATUS">Sin estatus</option>
+                    </select>
+                    <i className="bi bi-chevron-down imp-select-chevron"></i>
+                </div>
+                <div className={`imp-select-wrap ${tipoMedidaFiltro !== 'TODAS' ? 'imp-select-wrap--activo' : ''}`}>
+                    <i className="bi bi-card-checklist imp-select-icon"></i>
+                    <select
+                        className="imp-select-filtro"
+                        value={tipoMedidaFiltro}
+                        onChange={e => { setTipoMedidaFiltro(e.target.value); setPagina(1); }}
+                    >
+                        <option value="TODAS">MC y SCP</option>
+                        <option value="MC">Medida Cautelar</option>
+                        <option value="SCP">Susp. Condicional</option>
+                    </select>
+                    <i className="bi bi-chevron-down imp-select-chevron"></i>
+                </div>
                 </div>
             </div>
 

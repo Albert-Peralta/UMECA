@@ -31,17 +31,27 @@
 .corr-header-search {
     position: relative; margin-bottom: 1rem;
     display: flex; align-items: center; gap: 10px;
+    flex-wrap: wrap;
 }
 .corr-search-icon {
-    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    position: absolute; left: 14px; top: 12px;
     color: #9ca3af; font-size: 0.9rem;
 }
 .corr-buscar {
-    flex: 1; padding: 10px 14px 10px 38px;
+    flex: 1; min-width: 180px; padding: 10px 14px 10px 38px;
     border: 1.5px solid #d1d5db; border-radius: 10px;
     font-size: 0.88rem; box-sizing: border-box;
 }
 .corr-buscar:focus { outline: none; border-color: #2d6a4f; }
+
+@media (max-width: 700px) {
+    .corr-header-search { gap: 8px; }
+    .corr-buscar { flex: 1 1 100%; min-width: 0; }
+    .corr-filtro-prioridad { flex: 1 1 calc(50% - 4px); min-width: 0; }
+    .corr-hoy-wrap { flex-shrink: 0; }
+    .corr-btn-exportar,
+    .corr-btn-nuevo { flex: 1 1 calc(50% - 4px); justify-content: center; }
+}
 
 .corr-filtro-prioridad {
     padding: 10px 12px;

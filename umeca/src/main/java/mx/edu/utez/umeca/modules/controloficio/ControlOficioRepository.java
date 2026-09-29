@@ -16,3 +16,4 @@ public interface ControlOficioRepository extends JpaRepository<ControlOficio, Lo
     @Query("SELECT COUNT(c) FROM ControlOficio c WHERE c.estado = 'PENDIENTE'")
     long countPendientes();
 }
+
