@@ -120,6 +120,8 @@ const Imputados = ({ onNavigarEntrevista }) => {
     const [reviertiendo, setReviertiendo] = useState(false);
     const [confirmRevertirFall, setConfirmRevertirFall] = useState(false);
     const [reviertindoFall, setReviertindoFall] = useState(false);
+    const [fallDetalleAbierto, setFallDetalleAbierto] = useState(false);
+    const [cierreDetalleAbierto, setCierreDetalleAbierto] = useState(false);
 
     // Editar datos básicos
     const esAdmin = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN';
@@ -312,7 +314,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
                 getImputadoById(Number(id)),
                 getSeguimientosPorImputado(Number(id)).catch(() => ({ data: { data: [] } })),
             ]).then(([res, resSeg]) => {
-                if (res.data.ok) { setPerfil(res.data.data); setShowPerfil(true); }
+                if (res.data.ok) { setPerfil(res.data.data); setShowPerfil(true); setFallDetalleAbierto(false); setCierreDetalleAbierto(false); }
                 setConteoSeg(resSeg.data?.data?.length ?? 0);
                 setTabActiva(tab);
             }).catch(err => console.warn("Error al cargar datos:", err));
@@ -1086,10 +1088,14 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                                 </div>
                                             </div>
                                             {perfil.fallecido ? (
-                                                <div className="exp-info-card exp-info-card-fallecido" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
+                                                <div className="exp-info-card exp-info-card-fallecido" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 0 }}>
+                                                    {/* Cabecera siempre visible — clic para expandir */}
+                                                    <button
+                                                        onClick={() => setFallDetalleAbierto(v => !v)}
+                                                        style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}
+                                                    >
                                                         <i className="bi bi-heartbreak-fill exp-info-icon exp-icon-dark" style={{ flexShrink: 0 }}></i>
-                                                        <div>
+                                                        <div style={{ flex: 1 }}>
                                                             <span className="exp-info-label">Fecha de fallecimiento</span>
                                                             <span className="exp-info-value">
                                                                 {perfil.fechaFallecimiento
@@ -1097,9 +1103,11 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                                                     : '—'}
                                                             </span>
                                                         </div>
-                                                    </div>
-                                                    {(perfil.registradoPorFallecimiento || perfil.quienAviso || perfil.parentescoInformante || perfil.comoSeComprobo || perfil.noActaDefuncion || perfil.observacionesFallecimiento) && (
-                                                        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 4, paddingLeft: 4 }}>
+                                                        <i className={`bi bi-chevron-${fallDetalleAbierto ? 'up' : 'down'}`} style={{ fontSize: 11, color: '#b91c1c', flexShrink: 0 }}></i>
+                                                    </button>
+                                                    {/* Detalle colapsable */}
+                                                    {fallDetalleAbierto && (
+                                                        <div style={{ width: '100%', marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 4, borderTop: '1px solid #fecaca', paddingTop: 10 }}>
                                                             {perfil.registradoPorFallecimiento && (
                                                                 <div className="fall-detalle-row">
                                                                     <span className="fall-detalle-lbl"><i className="bi bi-person-badge-fill" /> Registrado por</span>
@@ -1120,7 +1128,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                                             )}
                                                             {perfil.noActaDefuncion && (
                                                                 <div className="fall-detalle-row">
-                                                                    <span className="fall-detalle-lbl"><i className="bi bi-file-text" /> No. acta de defunción</span>
+                                                                    <span className="fall-detalle-lbl"><i className="bi bi-file-text" /> No. acta</span>
                                                                     <span className="fall-detalle-val">{perfil.noActaDefuncion}</span>
                                                                 </div>
                                                             )}
@@ -1130,41 +1138,39 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                                                     <span className="fall-detalle-val" style={{ fontStyle: 'italic', color: '#4b5563' }}>"{perfil.observacionesFallecimiento}"</span>
                                                                 </div>
                                                             )}
+                                                            {esAdmin && !perfil.carpetaCerrada && (
+                                                                <div style={{ marginTop: 4 }}>
+                                                                    {!confirmRevertirFall ? (
+                                                                        <button
+                                                                            onClick={() => setConfirmRevertirFall(true)}
+                                                                            style={{ background: 'none', border: '1.5px solid #dc2626', color: '#dc2626', borderRadius: 7, padding: '4px 12px', fontSize: 11, cursor: 'pointer', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5, transition: 'all 0.15s' }}
+                                                                            onMouseEnter={e => { e.currentTarget.style.background = '#dc2626'; e.currentTarget.style.color = '#fff'; }}
+                                                                            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#dc2626'; }}
+                                                                        >
+                                                                            <i className="bi bi-arrow-counterclockwise" /> Revertir fallecimiento
+                                                                        </button>
+                                                                    ) : (
+                                                                        <div style={{ background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: 8, padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                                                            <span style={{ fontSize: 11, color: '#991b1b', fontWeight: 700 }}>
+                                                                                <i className="bi bi-exclamation-triangle-fill" style={{ marginRight: 4 }} />
+                                                                                ¿Revertir? El imputado regresará a activos.
+                                                                            </span>
+                                                                            <div style={{ display: 'flex', gap: 6 }}>
+                                                                                <button onClick={handleRevertirFallecimiento} disabled={reviertindoFall}
+                                                                                    style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 7, padding: '4px 12px', fontSize: 11, cursor: 'pointer', fontWeight: 700 }}>
+                                                                                    {reviertindoFall ? 'Revirtiendo...' : 'Sí, revertir'}
+                                                                                </button>
+                                                                                <button onClick={() => setConfirmRevertirFall(false)}
+                                                                                    style={{ background: '#fff', color: '#555', border: '1px solid #d1d5db', borderRadius: 7, padding: '4px 12px', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
+                                                                                    Cancelar
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
-                                                    <div style={{ flex: 1 }}>
-                                                        {esAdmin && !perfil.carpetaCerrada && (
-                                                            <div style={{ marginTop: 10 }}>
-                                                                {!confirmRevertirFall ? (
-                                                                    <button
-                                                                        onClick={() => setConfirmRevertirFall(true)}
-                                                                        style={{ background: 'none', border: '1.5px solid #dc2626', color: '#dc2626', borderRadius: 7, padding: '4px 12px', fontSize: 11, cursor: 'pointer', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5, transition: 'all 0.15s' }}
-                                                                        onMouseEnter={e => { e.currentTarget.style.background = '#dc2626'; e.currentTarget.style.color = '#fff'; }}
-                                                                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#dc2626'; }}
-                                                                    >
-                                                                        <i className="bi bi-arrow-counterclockwise" /> Revertir fallecimiento
-                                                                    </button>
-                                                                ) : (
-                                                                    <div style={{ background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: 8, padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                                                        <span style={{ fontSize: 11, color: '#991b1b', fontWeight: 700 }}>
-                                                                            <i className="bi bi-exclamation-triangle-fill" style={{ marginRight: 4 }} />
-                                                                            ¿Revertir? El imputado regresará a activos.
-                                                                        </span>
-                                                                        <div style={{ display: 'flex', gap: 6 }}>
-                                                                            <button onClick={handleRevertirFallecimiento} disabled={reviertindoFall}
-                                                                                style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 7, padding: '4px 12px', fontSize: 11, cursor: 'pointer', fontWeight: 700 }}>
-                                                                                {reviertindoFall ? 'Revirtiendo...' : 'Sí, revertir'}
-                                                                            </button>
-                                                                            <button onClick={() => setConfirmRevertirFall(false)}
-                                                                                style={{ background: '#fff', color: '#555', border: '1px solid #d1d5db', borderRadius: 7, padding: '4px 12px', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
-                                                                                Cancelar
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
                                                 </div>
                                             ) : (
                                                 <div className="exp-info-card">
@@ -1216,38 +1222,38 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                                     <i className="bi bi-sticky"></i> <strong>Notas:</strong> {perfil.notasCierre}
                                                 </div>
                                             )}
-                                        </div>
-                                        {(user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN') && (
-                                            <div style={{ marginTop: 12 }}>
-                                                {!confirmRevertir ? (
-                                                    <button
-                                                        onClick={() => setConfirmRevertir(true)}
-                                                        style={{ background: 'none', border: '1.5px solid #dc2626', color: '#dc2626', borderRadius: 7, padding: '5px 14px', fontSize: 12, cursor: 'pointer', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6, transition: 'all 0.15s' }}
-                                                        onMouseEnter={e => { e.currentTarget.style.background = '#dc2626'; e.currentTarget.style.color = '#fff'; }}
-                                                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#dc2626'; }}
-                                                    >
-                                                        <i className="bi bi-arrow-counterclockwise" /> Revertir cierre
-                                                    </button>
-                                                ) : (
-                                                    <div style={{ background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: 8, padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                                        <span style={{ fontSize: 12, color: '#991b1b', fontWeight: 700 }}>
-                                                            <i className="bi bi-exclamation-triangle-fill" style={{ marginRight: 5 }} />
-                                                            ¿Revertir el cierre de carpeta? El imputado regresará a activos.
-                                                        </span>
-                                                        <div style={{ display: 'flex', gap: 8 }}>
-                                                            <button onClick={handleRevertirCierre} disabled={reviertiendo}
-                                                                style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 7, padding: '5px 14px', fontSize: 12, cursor: 'pointer', fontWeight: 700 }}>
-                                                                {reviertiendo ? 'Revirtiendo...' : 'Sí, revertir'}
-                                                            </button>
-                                                            <button onClick={() => setConfirmRevertir(false)}
-                                                                style={{ background: '#fff', color: '#555', border: '1px solid #d1d5db', borderRadius: 7, padding: '5px 14px', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>
-                                                                Cancelar
-                                                            </button>
+                                            {(user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN') && (
+                                                <div style={{ marginTop: 12 }}>
+                                                    {!confirmRevertir ? (
+                                                        <button
+                                                            onClick={() => setConfirmRevertir(true)}
+                                                            style={{ background: 'none', border: '1.5px solid #dc2626', color: '#dc2626', borderRadius: 7, padding: '5px 14px', fontSize: 12, cursor: 'pointer', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6, transition: 'all 0.15s' }}
+                                                            onMouseEnter={e => { e.currentTarget.style.background = '#dc2626'; e.currentTarget.style.color = '#fff'; }}
+                                                            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#dc2626'; }}
+                                                        >
+                                                            <i className="bi bi-arrow-counterclockwise" /> Revertir cierre
+                                                        </button>
+                                                    ) : (
+                                                        <div style={{ background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: 8, padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                                            <span style={{ fontSize: 12, color: '#991b1b', fontWeight: 700 }}>
+                                                                <i className="bi bi-exclamation-triangle-fill" style={{ marginRight: 5 }} />
+                                                                ¿Revertir el cierre de carpeta? El imputado regresará a activos.
+                                                            </span>
+                                                            <div style={{ display: 'flex', gap: 8 }}>
+                                                                <button onClick={handleRevertirCierre} disabled={reviertiendo}
+                                                                    style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 7, padding: '5px 14px', fontSize: 12, cursor: 'pointer', fontWeight: 700 }}>
+                                                                    {reviertiendo ? 'Revirtiendo...' : 'Sí, revertir'}
+                                                                </button>
+                                                                <button onClick={() => setConfirmRevertir(false)}
+                                                                    style={{ background: '#fff', color: '#555', border: '1px solid #d1d5db', borderRadius: 7, padding: '5px 14px', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>
+                                                                    Cancelar
+                                                                </button>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
 

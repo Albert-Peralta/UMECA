@@ -297,7 +297,7 @@ public class ImputadoService {
             // Cierre total de carpeta
             LocalDate hoy = LocalDate.now();
             int anio = hoy.getYear();
-            long secuencia = imputadoRepository.countCierresPorAnio(anio) + 1;
+            long secuencia = imputadoRepository.maxSecuenciaCierre(anio) + 1;
             String numero = String.format("CC-%d-%04d", anio, secuencia);
 
             imp.setCarpetaCerrada(true);

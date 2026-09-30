@@ -65,6 +65,6 @@ public interface ImputadoRepository extends JpaRepository<Imputado, Long> {
     long countExpedientesPendientesByUsername(@Param("username") String username);
 
     // Cierre de carpeta
-    @Query("SELECT COUNT(i) FROM Imputado i WHERE i.numeroCierreCarpeta LIKE CONCAT('CC-', :anio, '-%')")
-    long countCierresPorAnio(@Param("anio") int anio);
+    @Query(value = "SELECT COALESCE(MAX(CAST(SUBSTRING(numero_cierre_carpeta, 9) AS UNSIGNED)), 0) FROM imputado WHERE numero_cierre_carpeta LIKE CONCAT('CC-', :anio, '-%')", nativeQuery = true)
+    long maxSecuenciaCierre(@Param("anio") int anio);
 }
