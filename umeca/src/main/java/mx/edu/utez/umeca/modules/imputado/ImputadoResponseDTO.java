@@ -34,6 +34,12 @@ public class ImputadoResponseDTO {
     private String celular;  // teléfono de la última entrevista
     private boolean fallecido;
     private LocalDate fechaFallecimiento;
+    private String quienAviso;
+    private String parentescoInformante;
+    private String comoSeComprobo;
+    private String noActaDefuncion;
+    private String observacionesFallecimiento;
+    private String registradoPorFallecimiento;
     private boolean carpetaCerrada;
     private String numeroCierreCarpeta;
     private LocalDate fechaCierreCarpeta;
@@ -155,6 +161,12 @@ public class ImputadoResponseDTO {
         dto.setCreatedAt(i.getCreatedAt());
         dto.setFallecido(i.isFallecido());
         dto.setFechaFallecimiento(i.getFechaFallecimiento());
+        dto.setQuienAviso(i.getQuienAviso());
+        dto.setParentescoInformante(i.getParentescoInformante());
+        dto.setComoSeComprobo(i.getComoSeComprobo());
+        dto.setNoActaDefuncion(i.getNoActaDefuncion());
+        dto.setObservacionesFallecimiento(i.getObservacionesFallecimiento());
+        dto.setRegistradoPorFallecimiento(i.getRegistradoPorFallecimiento());
         dto.setCarpetaCerrada(i.isCarpetaCerrada());
         dto.setNumeroCierreCarpeta(i.getNumeroCierreCarpeta());
         dto.setFechaCierreCarpeta(i.getFechaCierreCarpeta());
@@ -191,6 +203,12 @@ public class ImputadoResponseDTO {
         dto.setCreatedAt(i.getCreatedAt());
         dto.setFallecido(i.isFallecido());
         dto.setFechaFallecimiento(i.getFechaFallecimiento());
+        dto.setQuienAviso(i.getQuienAviso());
+        dto.setParentescoInformante(i.getParentescoInformante());
+        dto.setComoSeComprobo(i.getComoSeComprobo());
+        dto.setNoActaDefuncion(i.getNoActaDefuncion());
+        dto.setObservacionesFallecimiento(i.getObservacionesFallecimiento());
+        dto.setRegistradoPorFallecimiento(i.getRegistradoPorFallecimiento());
         dto.setCarpetaCerrada(i.isCarpetaCerrada());
         dto.setNumeroCierreCarpeta(i.getNumeroCierreCarpeta());
         dto.setFechaCierreCarpeta(i.getFechaCierreCarpeta());

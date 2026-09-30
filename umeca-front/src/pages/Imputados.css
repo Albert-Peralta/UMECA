@@ -446,6 +446,26 @@
     background: #fef2f2;
     border-color: #fecaca;
 }
+.fall-detalle-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.fall-detalle-lbl {
+    font-size: 10px;
+    font-weight: 700;
+    color: #b91c1c;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.fall-detalle-val {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+}
 
 .exp-info-icon {
     font-size: 18px;
@@ -989,44 +1009,44 @@
     align-items: center;
     gap: 14px;
     padding: 20px 22px 16px;
-    border-bottom: 1px solid #fee2e2;
-    background: #fff5f5;
+    border-bottom: 2px solid #b91c1c;
+    background: linear-gradient(135deg, #b91c1c, #dc2626);
 }
 .fall-header-icon {
     width: 42px;
     height: 42px;
     border-radius: 50%;
-    background: #fee2e2;
+    background: rgba(255,255,255,0.2);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #dc2626;
+    color: #fff;
     font-size: 18px;
     flex-shrink: 0;
 }
 .fall-header-title {
     font-size: 1rem;
     font-weight: 700;
-    color: #111827;
+    color: #fff;
     margin: 0 0 2px;
 }
 .fall-header-sub {
     font-size: 0.8rem;
-    color: #6b7280;
+    color: rgba(255,255,255,0.75);
     margin: 0;
 }
 .fall-close {
     margin-left: auto;
     background: none;
     border: none;
-    color: #9ca3af;
+    color: rgba(255,255,255,0.8);
     font-size: 15px;
     cursor: pointer;
     padding: 4px 6px;
     border-radius: 6px;
     transition: background 0.15s, color 0.15s;
 }
-.fall-close:hover { background: #fee2e2; color: #dc2626; }
+.fall-close:hover { background: rgba(255,255,255,0.15); color: #fff; }
 
 .fall-aviso {
     display: flex;

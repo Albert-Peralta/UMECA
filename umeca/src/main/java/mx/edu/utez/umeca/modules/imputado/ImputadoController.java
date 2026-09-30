@@ -92,6 +92,13 @@ public class ImputadoController {
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
     }
 
+    @PatchMapping("/{id}/revertir-fallecimiento")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
+    public ResponseEntity<ApiResponse> revertirFallecimiento(@PathVariable Long id) {
+        ApiResponse res = service.revertirFallecimiento(id);
+        return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
+    }
+
     @PatchMapping("/{id}/revertir-cierre")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
     public ResponseEntity<ApiResponse> revertirCierreCarpeta(@PathVariable Long id) {

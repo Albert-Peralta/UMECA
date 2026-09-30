@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getImputados, getImputadoById, actualizarImputado, actualizarFotoImputado, registrarFallecimiento, registrarCierreCarpeta, revertirCierreCarpeta, eliminarImputado, cambiarUbicacionExpediente, getUsuariosActivos, confirmarExpediente } from '../api/imputadosApi';
+import { getImputados, getImputadoById, actualizarImputado, actualizarFotoImputado, registrarFallecimiento, registrarCierreCarpeta, revertirCierreCarpeta, revertirFallecimientoImputado, eliminarImputado, cambiarUbicacionExpediente, getUsuariosActivos, confirmarExpediente } from '../api/imputadosApi';
 import { getSeguimientosPorImputado } from '../api/seguimientosApi';
 import { cambiarCumplimiento } from '../api/medidasApi';
 import { useAuth } from '../context/AuthContext';
@@ -71,6 +71,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
     const [cargando, setCargando] = useState(true);
     const [cumplimientoFiltro, setCumplimientoFiltro] = useState('TODAS');
     const [tipoMedidaFiltro, setTipoMedidaFiltro] = useState('TODAS');
+    const [estadoMedidaFiltro, setEstadoMedidaFiltro] = useState('TODAS');
 
     const [showPerfil, setShowPerfil] = useState(false);
     const [perfil, setPerfil] = useState(null);
@@ -117,6 +118,8 @@ const Imputados = ({ onNavigarEntrevista }) => {
     const [cierreConfirmando, setCierreConfirmando] = useState(false);
     const [confirmRevertir, setConfirmRevertir] = useState(false);
     const [reviertiendo, setReviertiendo] = useState(false);
+    const [confirmRevertirFall, setConfirmRevertirFall] = useState(false);
+    const [reviertindoFall, setReviertindoFall] = useState(false);
 
     // Editar datos básicos
     const esAdmin = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN';
@@ -263,6 +266,22 @@ const Imputados = ({ onNavigarEntrevista }) => {
         }
     };
 
+    const handleRevertirFallecimiento = async () => {
+        setReviertindoFall(true);
+        try {
+            const res = await revertirFallecimientoImputado(perfil.id);
+            if (res.data.ok) {
+                const resPerfil = await getImputadoById(perfil.id);
+                if (resPerfil.data.ok) setPerfil(resPerfil.data.data);
+                await cargarDatos();
+                showToast('Fallecimiento revertido. El imputado volvió a activos.');
+            } else {
+                showToast(res.data.message || 'No se pudo revertir el fallecimiento', 'error');
+            }
+        } catch { showToast('Error al revertir el fallecimiento', 'error'); }
+        finally { setReviertindoFall(false); setConfirmRevertirFall(false); }
+    };
+
     const handleRevertirCierre = async () => {
         setReviertiendo(true);
         try {
@@ -319,14 +338,15 @@ const Imputados = ({ onNavigarEntrevista }) => {
 
     const filtrados = datos
         .filter(i => {
-            if (tabVista === 'activos'  && (i.fallecido || i.carpetaCerrada)) return false;
-            if (tabVista === 'cerrados' && !i.carpetaCerrada && !i.fallecido)  return false;
+            if (tabVista === 'activos'  && i.carpetaCerrada) return false;
+            if (tabVista === 'cerrados' && !i.carpetaCerrada) return false;
             if (zonaFiltro !== 'TODAS' && i.zona !== zonaFiltro) return false;
             if (cumplimientoFiltro === 'CUMPLIMIENTO'   && i.cumplimientoMedidaActiva !== 'CUMPLIMIENTO')   return false;
             if (cumplimientoFiltro === 'INCUMPLIMIENTO' && i.cumplimientoMedidaActiva !== 'INCUMPLIMIENTO') return false;
             if (cumplimientoFiltro === 'SIN_ESTATUS'    && !(i.tipoMedidaActiva && !i.cumplimientoMedidaActiva)) return false;
             if (tipoMedidaFiltro === 'MC'  && i.tipoMedidaActiva !== 'MEDIDA_CAUTELAR')       return false;
             if (tipoMedidaFiltro === 'SCP' && i.tipoMedidaActiva !== 'SUSPENSION_CONDICIONAL') return false;
+            if (estadoMedidaFiltro !== 'TODAS' && i.estadoMedidaActiva !== estadoMedidaFiltro) return false;
             return (
                 i.nombreCompleto?.toLowerCase().includes(busqueda.toLowerCase()) ||
                 i.causaPenal?.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -552,8 +572,8 @@ const Imputados = ({ onNavigarEntrevista }) => {
         win.document.close();
     };
 
-    const totalActivos  = datos.filter(i => !i.fallecido && !i.carpetaCerrada).length;
-    const totalCerrados = datos.filter(i =>  i.carpetaCerrada || i.fallecido).length;
+    const totalActivos  = datos.filter(i => !i.carpetaCerrada).length;
+    const totalCerrados = datos.filter(i =>  i.carpetaCerrada).length;
 
     return (
         <div className="historico-wrapper">
@@ -562,14 +582,14 @@ const Imputados = ({ onNavigarEntrevista }) => {
             <div className="imp-tabs">
                 <button
                     className={`imp-tab${tabVista === 'activos' ? ' imp-tab-activa' : ''}`}
-                    onClick={() => { setTabVista('activos'); setPagina(1); setBusqueda(''); setCumplimientoFiltro('TODAS'); setTipoMedidaFiltro('TODAS'); }}
+                    onClick={() => { setTabVista('activos'); setPagina(1); setBusqueda(''); setCumplimientoFiltro('TODAS'); setTipoMedidaFiltro('TODAS'); setEstadoMedidaFiltro('TODAS'); setZonaFiltro('TODAS'); }}
                 >
                     <i className="bi bi-person-check"></i> Activos
                     <span className="imp-tab-count">{totalActivos}</span>
                 </button>
                 <button
                     className={`imp-tab${tabVista === 'cerrados' ? ' imp-tab-activa imp-tab-cerrada' : ''}`}
-                    onClick={() => { setTabVista('cerrados'); setPagina(1); setBusqueda(''); setCumplimientoFiltro('TODAS'); setTipoMedidaFiltro('TODAS'); }}
+                    onClick={() => { setTabVista('cerrados'); setPagina(1); setBusqueda(''); setCumplimientoFiltro('TODAS'); setTipoMedidaFiltro('TODAS'); setEstadoMedidaFiltro('TODAS'); setZonaFiltro('TODAS'); }}
                 >
                     <i className="bi bi-folder-x"></i> Cierre de Carpeta
                     <span className="imp-tab-count">{totalCerrados}</span>
@@ -606,16 +626,35 @@ const Imputados = ({ onNavigarEntrevista }) => {
                 <button className="btn-refresh" onClick={cargarDatos} title="Actualizar lista">
                     <i className="bi bi-arrow-clockwise"></i>
                 </button>
-                <div className="zona-pills">
-                    {['TODAS','XOCHITEPEC','CUAUTLA','JOJUTLA'].map(z => (
-                        <button key={z}
-                            className={`zona-pill zona-pill-${z.toLowerCase()} ${zonaFiltro === z ? 'zona-pill-active' : ''}`}
-                            onClick={() => { setZonaFiltro(z); setPagina(1); }}>
-                            {z === 'TODAS' ? 'Todas' : z.charAt(0) + z.slice(1).toLowerCase()}
-                        </button>
-                    ))}
-                </div>
                 <div className="imp-selects-group">
+                <div className={`imp-select-wrap ${zonaFiltro !== 'TODAS' ? 'imp-select-wrap--activo' : ''}`}
+                     style={zonaFiltro !== 'TODAS' ? { '--pill-color': '#1a3a5c' } : {}}>
+                    <i className="bi bi-geo-alt-fill imp-select-icon"></i>
+                    <select className="imp-select-filtro" value={zonaFiltro}
+                            onChange={e => { setZonaFiltro(e.target.value); setPagina(1); }}>
+                        <option value="TODAS">Zona</option>
+                        <option value="XOCHITEPEC">Xochitepec</option>
+                        <option value="CUAUTLA">Cuautla</option>
+                        <option value="JOJUTLA">Jojutla</option>
+                    </select>
+                    <i className="bi bi-chevron-down imp-select-chevron"></i>
+                </div>
+                <div className={`imp-select-wrap ${estadoMedidaFiltro !== 'TODAS' ? 'imp-select-wrap--activo' : ''}`}
+                     style={estadoMedidaFiltro === 'ACTIVO' ? { '--pill-color': '#16a34a' } :
+                            estadoMedidaFiltro === 'FINALIZADO' ? { '--pill-color': '#6b7280' } :
+                            estadoMedidaFiltro === 'SUSTRAIDO' ? { '--pill-color': '#ea580c' } :
+                            estadoMedidaFiltro === 'PRISION_PREVENTIVA' ? { '--pill-color': '#7c3aed' } : {}}>
+                    <i className="bi bi-shield-fill imp-select-icon"></i>
+                    <select className="imp-select-filtro" value={estadoMedidaFiltro}
+                            onChange={e => { setEstadoMedidaFiltro(e.target.value); setPagina(1); }}>
+                        <option value="TODAS">Estado medida</option>
+                        <option value="ACTIVO">Activo</option>
+                        <option value="FINALIZADO">Finalizado</option>
+                        <option value="SUSTRAIDO">Sustraído</option>
+                        <option value="PRISION_PREVENTIVA">Prisión Preventiva</option>
+                    </select>
+                    <i className="bi bi-chevron-down imp-select-chevron"></i>
+                </div>
                 <div className={`imp-select-wrap ${cumplimientoFiltro !== 'TODAS' ? 'imp-select-wrap--activo' : ''}`}
                      style={cumplimientoFiltro === 'CUMPLIMIENTO' ? { '--pill-color': '#16a34a' } :
                             cumplimientoFiltro === 'INCUMPLIMIENTO' ? { '--pill-color': '#dc2626' } :
@@ -704,7 +743,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                 <tr key={item.id} className={esMiExpedientePendiente ? 'imp-fila-pendiente' : esMiExpedienteConfirmado ? 'imp-fila-confirmada' : ''}>
                                     <td>{inicio + index + 1}</td>
                                     <td className="td-nombre">
-                                        <div style={{ display:'flex', alignItems:'center', gap:'7px' }}>
+                                        <div style={{ display:'flex', alignItems:'center', gap:'7px', flexWrap:'wrap' }}>
                                             {item.nombreCompleto}
                                             {item.zona
                                                 ? <span className={`zona-tag zona-tag-${item.zona.toLowerCase()}`}>
@@ -712,6 +751,11 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                                   </span>
                                                 : <span className="zona-tag zona-tag-sin">Sin entrevista</span>
                                             }
+                                            {item.fallecido && (
+                                                <span style={{ display:'inline-flex', alignItems:'center', gap:3, background:'#fee2e2', color:'#b91c1c', borderRadius:5, fontSize:10, fontWeight:700, padding:'1px 6px' }}>
+                                                    <i className="bi bi-heartbreak-fill" style={{ fontSize:9 }} /> Fallecido
+                                                </span>
+                                            )}
                                         </div>
                                     </td>
                                     <td>{item.causaPenal}</td>
@@ -719,19 +763,16 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                     <td>{item.createdAt ? new Date(item.createdAt).toLocaleDateString('es-MX') : '—'}</td>
                                     {tabVista === 'cerrados' && (
                                         <td>
-                                            {item.fallecido ? (
-                                                <div style={{ lineHeight: 1.3 }}>
-                                                    <span style={{ display:'inline-block', background:'#fee2e2', color:'#b91c1c', borderRadius:6, fontSize:11, fontWeight:700, padding:'2px 8px', marginBottom:2 }}>
-                                                        <i className="bi bi-heartbreak-fill" /> Fallecido
-                                                    </span>
-                                                    <div style={{ fontSize: 11, color: '#6b7280' }}>{item.fechaFallecimiento ? new Date(item.fechaFallecimiento + 'T00:00:00').toLocaleDateString('es-MX') : ''}</div>
+                                            <div style={{ lineHeight: 1.3 }}>
+                                                <div style={{ fontWeight: 600, fontSize: 12 }}>{item.numeroCierreCarpeta || '—'}</div>
+                                                <div style={{ fontSize: 11, color: '#6b7280' }}>
+                                                    {item.fechaCierreCarpeta
+                                                        ? new Date(item.fechaCierreCarpeta + 'T00:00:00').toLocaleDateString('es-MX')
+                                                        : item.fechaFallecimiento
+                                                            ? new Date(item.fechaFallecimiento + 'T00:00:00').toLocaleDateString('es-MX')
+                                                            : ''}
                                                 </div>
-                                            ) : (
-                                                <div style={{ lineHeight: 1.3 }}>
-                                                    <div style={{ fontWeight: 600, fontSize: 12 }}>{item.numeroCierreCarpeta || '—'}</div>
-                                                    <div style={{ fontSize: 11, color: '#6b7280' }}>{item.fechaCierreCarpeta ? new Date(item.fechaCierreCarpeta + 'T00:00:00').toLocaleDateString('es-MX') : ''}</div>
-                                                </div>
-                                            )}
+                                            </div>
                                         </td>
                                     )}
                                     <td style={{ textAlign: 'center' }}>
@@ -1045,15 +1086,84 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                                 </div>
                                             </div>
                                             {perfil.fallecido ? (
-                                                <div className="exp-info-card exp-info-card-fallecido">
-                                                    <i className="bi bi-heartbreak-fill exp-info-icon exp-icon-dark"></i>
-                                                    <div>
-                                                        <span className="exp-info-label">Fecha de fallecimiento</span>
-                                                        <span className="exp-info-value">
-                                                            {perfil.fechaFallecimiento
-                                                                ? new Date(perfil.fechaFallecimiento + 'T00:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })
-                                                                : '—'}
-                                                        </span>
+                                                <div className="exp-info-card exp-info-card-fallecido" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
+                                                        <i className="bi bi-heartbreak-fill exp-info-icon exp-icon-dark" style={{ flexShrink: 0 }}></i>
+                                                        <div>
+                                                            <span className="exp-info-label">Fecha de fallecimiento</span>
+                                                            <span className="exp-info-value">
+                                                                {perfil.fechaFallecimiento
+                                                                    ? new Date(perfil.fechaFallecimiento + 'T00:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })
+                                                                    : '—'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    {(perfil.registradoPorFallecimiento || perfil.quienAviso || perfil.parentescoInformante || perfil.comoSeComprobo || perfil.noActaDefuncion || perfil.observacionesFallecimiento) && (
+                                                        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 4, paddingLeft: 4 }}>
+                                                            {perfil.registradoPorFallecimiento && (
+                                                                <div className="fall-detalle-row">
+                                                                    <span className="fall-detalle-lbl"><i className="bi bi-person-badge-fill" /> Registrado por</span>
+                                                                    <span className="fall-detalle-val">{perfil.registradoPorFallecimiento}</span>
+                                                                </div>
+                                                            )}
+                                                            {perfil.quienAviso && (
+                                                                <div className="fall-detalle-row">
+                                                                    <span className="fall-detalle-lbl"><i className="bi bi-person-fill" /> Quién avisó</span>
+                                                                    <span className="fall-detalle-val">{perfil.quienAviso}{perfil.parentescoInformante ? <span style={{ color: '#9ca3af', fontWeight: 400 }}> ({perfil.parentescoInformante})</span> : ''}</span>
+                                                                </div>
+                                                            )}
+                                                            {perfil.comoSeComprobo && (
+                                                                <div className="fall-detalle-row">
+                                                                    <span className="fall-detalle-lbl"><i className="bi bi-clipboard2-check" /> Cómo se comprobó</span>
+                                                                    <span className="fall-detalle-val">{perfil.comoSeComprobo}</span>
+                                                                </div>
+                                                            )}
+                                                            {perfil.noActaDefuncion && (
+                                                                <div className="fall-detalle-row">
+                                                                    <span className="fall-detalle-lbl"><i className="bi bi-file-text" /> No. acta de defunción</span>
+                                                                    <span className="fall-detalle-val">{perfil.noActaDefuncion}</span>
+                                                                </div>
+                                                            )}
+                                                            {perfil.observacionesFallecimiento && (
+                                                                <div className="fall-detalle-row" style={{ flexDirection: 'column', gap: 2 }}>
+                                                                    <span className="fall-detalle-lbl"><i className="bi bi-sticky" /> Observaciones</span>
+                                                                    <span className="fall-detalle-val" style={{ fontStyle: 'italic', color: '#4b5563' }}>"{perfil.observacionesFallecimiento}"</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    <div style={{ flex: 1 }}>
+                                                        {esAdmin && !perfil.carpetaCerrada && (
+                                                            <div style={{ marginTop: 10 }}>
+                                                                {!confirmRevertirFall ? (
+                                                                    <button
+                                                                        onClick={() => setConfirmRevertirFall(true)}
+                                                                        style={{ background: 'none', border: '1.5px solid #dc2626', color: '#dc2626', borderRadius: 7, padding: '4px 12px', fontSize: 11, cursor: 'pointer', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5, transition: 'all 0.15s' }}
+                                                                        onMouseEnter={e => { e.currentTarget.style.background = '#dc2626'; e.currentTarget.style.color = '#fff'; }}
+                                                                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#dc2626'; }}
+                                                                    >
+                                                                        <i className="bi bi-arrow-counterclockwise" /> Revertir fallecimiento
+                                                                    </button>
+                                                                ) : (
+                                                                    <div style={{ background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: 8, padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                                                        <span style={{ fontSize: 11, color: '#991b1b', fontWeight: 700 }}>
+                                                                            <i className="bi bi-exclamation-triangle-fill" style={{ marginRight: 4 }} />
+                                                                            ¿Revertir? El imputado regresará a activos.
+                                                                        </span>
+                                                                        <div style={{ display: 'flex', gap: 6 }}>
+                                                                            <button onClick={handleRevertirFallecimiento} disabled={reviertindoFall}
+                                                                                style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 7, padding: '4px 12px', fontSize: 11, cursor: 'pointer', fontWeight: 700 }}>
+                                                                                {reviertindoFall ? 'Revirtiendo...' : 'Sí, revertir'}
+                                                                            </button>
+                                                                            <button onClick={() => setConfirmRevertirFall(false)}
+                                                                                style={{ background: '#fff', color: '#555', border: '1px solid #d1d5db', borderRadius: 7, padding: '4px 12px', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
+                                                                                Cancelar
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             ) : (
@@ -1441,7 +1551,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                             </button>
                                         ) : null;
                                     })()}
-                                    {puedeCierreCarpeta && !perfil.fallecido && !perfil.carpetaCerrada && (
+                                    {puedeCierreCarpeta && !perfil.carpetaCerrada && (
                                         <button className="exp-action-btn exp-btn-cierre" onClick={() => {
                                             setShowCierre(true);
                                             setFormCierre(CIERRE_INIT);

@@ -73,4 +73,9 @@ public interface SeguimientoRepository extends JpaRepository<Seguimiento, Long> 
 
     // Seguimientos por evaluacion
     List<Seguimiento> findByEvaluacionIdOrderByFechaRegistroDesc(Long evaluacionId);
+
+    // Eliminar todos los seguimientos de un imputado (cascade manual al borrar imputado)
+    void deleteByImputadoId(Long imputadoId);
+
+    long countByImputadoId(Long imputadoId);
 }

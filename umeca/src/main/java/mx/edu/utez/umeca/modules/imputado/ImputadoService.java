@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import mx.edu.utez.umeca.modules.medidacautelar.MedidaCautelar;
+import mx.edu.utez.umeca.modules.seguimiento.SeguimientoRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -34,6 +35,7 @@ public class ImputadoService {
     private final SupervisionRepository supervisionRepository;
     private final BitacoraService bitacoraService;
     private final UserRepository userRepository;
+    private final SeguimientoRepository seguimientoRepository;
 
     /**
      * Lista todos los imputados con conteos de entrevistas, evaluaciones,
@@ -196,8 +198,14 @@ public class ImputadoService {
         return imputadoRepository.findById(id).map(imp -> {
             if (imp.isFallecido())
                 return new ApiResponse(false, "El imputado ya está registrado como fallecido");
+            String registradoPor = "sistema";
+            try {
+                Authentication authFall = SecurityContextHolder.getContext().getAuthentication();
+                if (authFall != null && authFall.getName() != null) registradoPor = authFall.getName();
+            } catch (Exception ignored) {}
             imp.setFallecido(true);
             imp.setFechaFallecimiento(fecha != null ? fecha : LocalDate.now());
+            imp.setRegistradoPorFallecimiento(registradoPor);
             if (quienAviso    != null) imp.setQuienAviso(quienAviso);
             if (parentesco    != null) imp.setParentescoInformante(parentesco);
             if (comoSeComprobo!= null) imp.setComoSeComprobo(comoSeComprobo);
@@ -209,6 +217,10 @@ public class ImputadoService {
                     Bitacora.Accion.FALLECIMIENTO,
                     "Fallecimiento registrado — fecha: " + imp.getFechaFallecimiento()
                             + (quienAviso != null ? " | informante: " + quienAviso : ""));
+            // Finalizar todas las medidas activas
+            medidaRepository.findByImputadoId(id).stream()
+                    .filter(m -> m.getEstado() == MedidaCautelar.Estado.ACTIVO)
+                    .forEach(m -> { m.setEstado(MedidaCautelar.Estado.FINALIZADO); medidaRepository.save(m); });
             // Cancelar todas las supervisiones pendientes
             List<mx.edu.utez.umeca.modules.supervision.Supervision> pendientes =
                     supervisionRepository.findPendientesByImputadoId(id);
@@ -343,6 +355,29 @@ public class ImputadoService {
         }).orElse(new ApiResponse(false, "Imputado no encontrado"));
     }
 
+    /** Revierte el fallecimiento de un imputado, regresándolo a estado activo. */
+    @Transactional
+    public ApiResponse revertirFallecimiento(Long id) {
+        return imputadoRepository.findById(id).map(imp -> {
+            if (!imp.isFallecido())
+                return new ApiResponse(false, "El imputado no está registrado como fallecido");
+            imp.setFallecido(false);
+            imp.setFechaFallecimiento(null);
+            imp.setRegistradoPorFallecimiento(null);
+            imp.setQuienAviso(null);
+            imp.setParentescoInformante(null);
+            imp.setComoSeComprobo(null);
+            imp.setNoActaDefuncion(null);
+            imp.setObservacionesFallecimiento(null);
+            imputadoRepository.save(imp);
+            bitacoraService.registrar(Bitacora.Entidad.IMPUTADO, imp.getId(),
+                    imp.getNombre() + " " + imp.getApPaterno(),
+                    Bitacora.Accion.EDITAR,
+                    "Fallecimiento revertido — imputado regresado a activos");
+            return new ApiResponse(true, "Fallecimiento revertido. Imputado regresado a activos.", ImputadoResponseDTO.fromSimple(imp));
+        }).orElse(new ApiResponse(false, "Imputado no encontrado"));
+    }
+
     /** Reemplaza la foto del imputado (base64 o URL) y registra el cambio en bitácora. */
     @Transactional
     public ApiResponse actualizarFoto(Long id, String foto) {
@@ -395,12 +430,23 @@ public class ImputadoService {
     @Transactional
     public ApiResponse eliminar(Long id) {
         return imputadoRepository.findById(id).map(imp -> {
-            long entrevistas  = entrevistaRepository.countByImputadoId(id);
-            long evaluaciones = evaluacionRepository.countByImputadoId(id);
-            long medidas      = medidaRepository.countByImputadoId(id);
-            if (entrevistas > 0 || evaluaciones > 0 || medidas > 0)
-                return new ApiResponse(false, "No se puede eliminar: el imputado tiene registros vinculados.");
+            String nombre = imp.getNombre() + " " + imp.getApPaterno()
+                    + (imp.getApMaterno() != null ? " " + imp.getApMaterno() : "");
+            String causa = imp.getCausaPenal();
+
+            // Eliminar en cascada: seguimientos → resto lo maneja la FK de BD
+            seguimientoRepository.deleteByImputadoId(id);
             imputadoRepository.delete(imp);
+
+            // Registrar en bitácora
+            bitacoraService.registrar(
+                Bitacora.Entidad.IMPUTADO,
+                id,
+                nombre,
+                Bitacora.Accion.ELIMINAR,
+                "Imputado eliminado. Causa penal: " + causa
+            );
+
             return new ApiResponse(true, "Imputado eliminado correctamente.");
         }).orElse(new ApiResponse(false, "Imputado no encontrado"));
     }

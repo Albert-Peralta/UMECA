@@ -74,6 +74,9 @@ public class Imputado extends BaseEntity {
     @Column(name = "observaciones_fallecimiento", length = 500)
     private String observacionesFallecimiento;
 
+    @Column(name = "registrado_por_fallecimiento", length = 200)
+    private String registradoPorFallecimiento;
+
     // ── Cierre de Carpeta ────────────────────────────────────
     @Column(name = "carpeta_cerrada", nullable = false)
     private boolean carpetaCerrada = false;
