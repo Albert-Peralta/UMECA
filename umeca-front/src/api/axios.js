@@ -16,21 +16,15 @@ api.interceptors.request.use((config) => {
     const token = localStorage.getItem('token');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
-        // DEBUG: verificar que el token se adjunta y no está expirado
-        try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const expMs = payload.exp * 1000;
-            const ahoraMs = Date.now();
-            const minutosRestantes = Math.round((expMs - ahoraMs) / 60000);
-            console.log(`[UMECA DEBUG] ${config.method?.toUpperCase()} ${config.url} | roles: ${JSON.stringify(payload.roles)} | token expira en: ${minutosRestantes} min`);
-            if (expMs < ahoraMs) {
-                console.warn('[UMECA DEBUG] ⚠️ TOKEN EXPIRADO — el backend va a rechazar esta petición');
-            }
-        } catch (e) {
-            console.warn('[UMECA DEBUG] No se pudo decodificar el token', e);
-        }
+        // DEBUG — descomentar para diagnosticar 403 en producción
+        // try {
+        //     const payload = JSON.parse(atob(token.split('.')[1]));
+        //     const minutosRestantes = Math.round((payload.exp * 1000 - Date.now()) / 60000);
+        //     console.log(`[UMECA DEBUG] ${config.method?.toUpperCase()} ${config.url} | roles: ${JSON.stringify(payload.roles)} | token expira en: ${minutosRestantes} min`);
+        //     if (payload.exp * 1000 < Date.now()) console.warn('[UMECA DEBUG] ⚠️ TOKEN EXPIRADO');
+        // } catch (e) { console.warn('[UMECA DEBUG] No se pudo decodificar el token', e); }
     } else {
-        console.warn(`[UMECA DEBUG] ${config.method?.toUpperCase()} ${config.url} | SIN TOKEN en localStorage`);
+        // console.warn(`[UMECA DEBUG] ${config.method?.toUpperCase()} ${config.url} | SIN TOKEN`);
     }
     return config;
 });
@@ -62,12 +56,10 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         const status = error.response?.status;
-        // DEBUG: loguear todos los errores con detalle
-        console.error(`[UMECA DEBUG] ❌ Error ${status} en ${error.config?.method?.toUpperCase()} ${error.config?.url}`, {
-            status,
-            responseData: error.response?.data,
-            requestHeaders: error.config?.headers,
-        });
+        // DEBUG — descomentar para diagnosticar errores HTTP en producción
+        // console.error(`[UMECA DEBUG] ❌ Error ${status} en ${error.config?.method?.toUpperCase()} ${error.config?.url}`, {
+        //     status, responseData: error.response?.data, requestHeaders: error.config?.headers,
+        // });
         const isLoginRoute = error.config?.url?.includes('/auth/login');
 
         // 401: sesión inválida/expirada
