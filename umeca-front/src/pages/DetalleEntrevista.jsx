@@ -1090,8 +1090,8 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
                 </div>
             )}
 
-            {/* ── Historial de cambios ── */}
-            {entrevista?.id && (
+            {/* ── Historial de cambios ── solo SUPERADMIN */}
+            {entrevista?.id && user?.rol === 'SUPERADMIN' && (
                 <div style={{ marginTop: '1rem' }}>
                     <HistorialRegistro entidad="ENTREVISTA" id={entrevista.id} />
                 </div>

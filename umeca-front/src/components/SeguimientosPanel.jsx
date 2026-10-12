@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { registrarSeguimiento, getSeguimientosPorImputado, TIPOS_ACTIVIDAD } from '../api/seguimientosApi';
+import { registrarSeguimiento, getSeguimientosPorImputado, eliminarSeguimiento, TIPOS_ACTIVIDAD } from '../api/seguimientosApi';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
+import ConfirmModal from './ConfirmModal';
 import './SeguimientosPanel.css';
 
 const SECCION_LABEL = {
@@ -23,6 +24,7 @@ export default function SeguimientosPanel({
     seccion,        // 'MEDIDA' | 'ENTREVISTA' | 'EVALUACION' | 'EXPEDIENTE'
     referenciaId,   // medidaId | entrevistaId | evaluacionId
     readonly = false,
+    onAdded,        // callback opcional para notificar al padre
 }) {
     const { showToast } = useToast();
     const { user } = useAuth();
@@ -41,6 +43,27 @@ export default function SeguimientosPanel({
     const [mostrarForm, setMostrarForm] = useState(false);
     const [guardando, setGuardando]   = useState(false);
     const [form, setForm] = useState({ tipoActividad: '', otroTipo: '', detalles: '' });
+    const [verTodos, setVerTodos]     = useState(false);
+    const [confirmEliminar, setConfirmEliminar] = useState(null); // id del seguimiento a eliminar
+    const [eliminando, setEliminando] = useState(false);
+    const LIMITE = 3;
+
+    const handleEliminar = async () => {
+        if (!confirmEliminar) return;
+        setEliminando(true);
+        try {
+            const res = await eliminarSeguimiento(confirmEliminar);
+            if (res.data.ok) {
+                setLista(prev => prev.filter(s => s.id !== confirmEliminar));
+                showToast('Seguimiento eliminado');
+                onAdded?.();
+            } else showToast(res.data.message || 'Error al eliminar', 'error');
+        } catch { showToast('Error de conexión', 'error'); }
+        finally {
+            setEliminando(false);
+            setConfirmEliminar(null);
+        }
+    };
 
     const cargar = useCallback(async () => {
         if (!imputadoId) return;
@@ -84,6 +107,7 @@ export default function SeguimientosPanel({
             setForm({ tipoActividad: '', otroTipo: '', detalles: '' });
             setMostrarForm(false);
             cargar();
+            onAdded?.();
         } catch {
             showToast('Error al registrar el seguimiento', 'error');
         } finally {
@@ -95,6 +119,7 @@ export default function SeguimientosPanel({
     const grupos = [...new Set(tiposFiltrados.map(t => t.grupo))];
 
     return (
+        <>
         <div className="sp-panel">
             <div className="sp-header">
                 <span className="sp-titulo">
@@ -162,44 +187,77 @@ export default function SeguimientosPanel({
                 ) : lista.length === 0 ? (
                     <p className="sp-empty">Sin seguimientos registrados.</p>
                 ) : (
-                    lista.map(s => (
-                        <div key={s.id} className="sp-item">
-                            <div className="sp-item-header">
-                                <span
-                                    className="sp-seccion-badge"
-                                    style={{ background: SECCION_COLOR[s.seccion] || '#555' }}
-                                >
-                                    {SECCION_LABEL[s.seccion] || s.seccion}
-                                </span>
-                                <span className="sp-tipo">{s.tipoActividadLabel}</span>
-                                <span className="sp-fecha">
-                                    {s.fechaRegistro
-                                        ? new Date(s.fechaRegistro).toLocaleString('es-MX', {
-                                            day: '2-digit', month: '2-digit', year: 'numeric',
-                                            hour: '2-digit', minute: '2-digit'
-                                          })
-                                        : '—'}
-                                </span>
+                    <>
+                        {(verTodos ? lista : lista.slice(0, LIMITE)).map(s => (
+                            <div key={s.id} className="sp-item">
+                                <div className="sp-item-header">
+                                    <span
+                                        className="sp-seccion-badge"
+                                        style={{ background: SECCION_COLOR[s.seccion] || '#555' }}
+                                    >
+                                        {SECCION_LABEL[s.seccion] || s.seccion}
+                                    </span>
+                                    <span className="sp-tipo">{s.tipoActividadLabel}</span>
+                                    <span className="sp-fecha">
+                                        {s.fechaRegistro
+                                            ? new Date(s.fechaRegistro).toLocaleString('es-MX', {
+                                                day: '2-digit', month: '2-digit', year: 'numeric',
+                                                hour: '2-digit', minute: '2-digit'
+                                              })
+                                            : '—'}
+                                    </span>
+                                </div>
+                                <p className="sp-detalles">
+                                    {(() => {
+                                        const match = s.detalles?.match(/^\[([^\]]+)\]\s*([\s\S]*)$/);
+                                        if (match) return (
+                                            <>
+                                                <span className="sp-detalles-otro-tag">{match[1]}</span>
+                                                {match[2] && <span> {match[2]}</span>}
+                                            </>
+                                        );
+                                        return s.detalles;
+                                    })()}
+                                </p>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <p className="sp-autor" style={{ margin: 0 }}>
+                                        <i className="bi bi-person-fill" /> {s.registradoPor || '—'}
+                                    </p>
+                                    {user?.rol === 'SUPERADMIN' && (
+                                        <button onClick={() => setConfirmEliminar(s.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.75rem', padding: '1px 4px', borderRadius: 4 }} title="Eliminar seguimiento">
+                                            <i className="bi bi-trash3" />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                            <p className="sp-detalles">
-                                {(() => {
-                                    const match = s.detalles?.match(/^\[([^\]]+)\]\s*([\s\S]*)$/);
-                                    if (match) return (
-                                        <>
-                                            <span className="sp-detalles-otro-tag">{match[1]}</span>
-                                            {match[2] && <span> {match[2]}</span>}
-                                        </>
-                                    );
-                                    return s.detalles;
-                                })()}
-                            </p>
-                            <p className="sp-autor">
-                                <i className="bi bi-person-fill" /> {s.registradoPor || '—'}
-                            </p>
-                        </div>
-                    ))
+                        ))}
+                        {lista.length > LIMITE && (
+                            <div
+                                onClick={() => setVerTodos(v => !v)}
+                                style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, cursor: 'pointer', userSelect: 'none' }}
+                            >
+                                <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
+                                <span style={{ fontSize: '0.73rem', fontWeight: 600, color: '#94a3b8', whiteSpace: 'nowrap' }}>
+                                    {verTodos ? 'Ver menos' : `${lista.length - LIMITE} más`}
+                                </span>
+                                <i className={`bi bi-chevron-${verTodos ? 'up' : 'down'}`} style={{ fontSize: '0.7rem', color: '#94a3b8' }} />
+                                <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>
+
+        {confirmEliminar && (
+            <ConfirmModal
+                titulo="¿Eliminar seguimiento?"
+                mensaje="Esta acción es permanente y no se puede deshacer."
+                onConfirmar={handleEliminar}
+                onCancelar={() => setConfirmEliminar(null)}
+                cargando={eliminando}
+            />
+        )}
+        </>
     );
 }

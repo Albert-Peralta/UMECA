@@ -9,12 +9,16 @@ import FormularioEntrevista from './FormularioEntrevista';
 import DetalleEntrevista from './DetalleEntrevista';
 import { ESTATUS_CIERRE_LABEL } from '../constants/estatusCierre';
 
-const EntrevistaEncuadre = () => {
+const EntrevistaEncuadre = ({ resetKey = 0 }) => {
     const { showToast } = useToast();
     const { user } = useAuth();
     const puedeCrear = _puedeCrear(user, 'ENTREVISTA');
     const [mostrarFormulario, setMostrarFormulario] = useState(false);
     const [entrevistaSeleccionada, setEntrevistaSeleccionada] = useState(null);
+
+    useEffect(() => {
+        if (resetKey > 0) { setEntrevistaSeleccionada(null); setMostrarFormulario(false); }
+    }, [resetKey]);
     const [entrevistas, setEntrevistas] = useState([]);
     const [busqueda, setBusqueda] = useState('');
     const [filtroEstado, setFiltroEstado] = useState('');

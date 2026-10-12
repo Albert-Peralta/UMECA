@@ -41,14 +41,15 @@ function formatFecha(fechaStr) {
     });
 }
 
-export default function HistorialRegistro({ entidad, id }) {
+export default function HistorialRegistro({ entidad, id, refreshKey = 0 }) {
     const [abierto, setAbierto]     = useState(false);
     const [registros, setRegistros] = useState([]);
     const [cargando, setCargando]   = useState(false);
     const [cargado, setCargado]     = useState(false);
 
+    // Cargar al montar para mostrar el contador aunque esté cerrado
     useEffect(() => {
-        if (abierto && !cargado && id) {
+        if (!cargado && id) {
             setCargando(true);
             getHistorialRegistro(entidad, id)
                 .then(res => {
@@ -56,10 +57,10 @@ export default function HistorialRegistro({ entidad, id }) {
                 })
                 .finally(() => { setCargando(false); setCargado(true); });
         }
-    }, [abierto, cargado, entidad, id]);
+    }, [cargado, entidad, id]);
 
-    // Recargar si cambia el ID
-    useEffect(() => { setCargado(false); setRegistros([]); }, [id]);
+    // Recargar si cambia el ID o refreshKey
+    useEffect(() => { setCargado(false); setRegistros([]); }, [id, refreshKey]);
 
     return (
         <div className="hlog-container">

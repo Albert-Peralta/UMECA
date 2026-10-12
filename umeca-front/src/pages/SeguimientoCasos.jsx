@@ -26,7 +26,7 @@ const estadoConfig = {
     PRISION_PREVENTIVA: { label: 'Prisión Preventiva', clase: 'estatus-proceso' },
 };
 
-const SeguimientoCasos = () => {
+const SeguimientoCasos = ({ resetKey = 0 }) => {
     const { user } = useAuth();
     const { showToast } = useToast();
     const puedeRegistrar   = _puedeCrear(user, 'MEDIDAS');
@@ -64,6 +64,11 @@ const SeguimientoCasos = () => {
     const [vista, setVista]           = useState('lista');
     const [medidaActiva, setMedidaActiva] = useState(null);
     const [detalleActivo, setDetalleActivo] = useState(null);
+
+    // Volver a lista cuando el módulo se re-selecciona desde el sidebar
+    useEffect(() => {
+        if (resetKey > 0) { setVista('lista'); setMedidaActiva(null); setDetalleActivo(null); }
+    }, [resetKey]);
 
     // ── Lista ──────────────────────────────────────────────────────────────────
     const [datos, setDatos]           = useState([]);

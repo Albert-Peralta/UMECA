@@ -18,7 +18,7 @@ const fmtFecha = (iso) => {
 
 const FORM_VACIO = { destinatario: '', asunto: '', supervisado: '' };
 
-export default function ControlOficios() {
+export default function ControlOficios({ resetKey = 0 }) {
     const { user } = useAuth();
     const { showToast } = useToast();
     const rol = user?.rol;
@@ -31,6 +31,8 @@ export default function ControlOficios() {
 
     // ── Vista: 'lista' | 'form' | 'detalle' ──────────────────────────────────
     const [vista,    setVista]    = useState('lista');
+
+    useEffect(() => { if (resetKey > 0) setVista('lista'); }, [resetKey]);
     const [registro, setRegistro] = useState(null);
 
     // ── Formulario ────────────────────────────────────────────────────────────

@@ -55,3 +55,5 @@ export const agregarObservacionSCP = (id, texto) =>
     api.post(`/suspension-condicional/${id}/observaciones`, { texto });
 export const listarObservacionesSCP = (id) =>
     api.get(`/suspension-condicional/${id}/observaciones`);
+export const eliminarObservacionMC = (obsId) =>
+    api.delete(`/medidas/observaciones/${obsId}`);

@@ -438,7 +438,7 @@ const DetalleConsulta = ({ consulta: d, onVolver, onEditar }) => {
 };
 
 // ── Módulo principal ────────────────────────────────────────────────────────
-const ConsultaRegistros = () => {
+const ConsultaRegistros = ({ resetKey = 0 }) => {
     const { user } = useAuth();
     const { showToast } = useToast();
     const puedeCrear  = _puedeCrear(user, 'CONSULTAS');
@@ -449,6 +449,8 @@ const ConsultaRegistros = () => {
     const [filtroResultado, setFiltroResultado] = useState('');
     const [zonaFiltro, setZonaFiltro] = useState('TODAS');
     const [vista, setVista] = useState('lista'); // lista | form | detalle
+
+    useEffect(() => { if (resetKey > 0) setVista('lista'); }, [resetKey]);
     const [seleccionada, setSeleccionada] = useState(null);
     const [pagina, setPagina] = useState(1);
     const POR_PAGINA = 20;

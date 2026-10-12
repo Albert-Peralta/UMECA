@@ -34,7 +34,7 @@ const RESULTADOS = [
     { value: 'DIFICIL_CUMPLIR', label: 'Alto Riesgo — Difícil Cumplir' },
 ];
 
-const EvaluacionRiesgos = () => {
+const EvaluacionRiesgos = ({ resetKey = 0 }) => {
     const { user } = useAuth();
     const { showToast } = useToast();
     const puedeRegistrar = _puedeCrear(user, 'EVALUACION');
@@ -207,6 +207,14 @@ const EvaluacionRiesgos = () => {
     };
 
     useEffect(() => { cargarDatos(); }, []);
+
+    useEffect(() => {
+        if (resetKey > 0) {
+            setShowFormulario(false);
+            setShowDetalle(false);
+            setDetalle(null);
+        }
+    }, [resetKey]);
 
     // Cuando el módulo Imputados/Expediente guarda 'verEvaluacionId' en localStorage,
     // abrimos el detalle automáticamente al montar.

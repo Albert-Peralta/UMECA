@@ -91,6 +91,13 @@ public class MedidaCautelarController {
         return ResponseEntity.ok(service.listarObservaciones(id));
     }
 
+    @DeleteMapping("/observaciones/{obsId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPERADMIN')")
+    public ResponseEntity<ApiResponse> eliminarObservacion(@PathVariable Long obsId) {
+        ApiResponse res = service.eliminarObservacion(obsId);
+        return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
+    }
+
     @PatchMapping("/{id}/cumplimiento")
     @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION')" +
                   " or @moduloChecker.puedeEditar(authentication,'MEDIDAS')")

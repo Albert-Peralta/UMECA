@@ -146,6 +146,7 @@ const Dashboard = () => {
     };
 
     const [activeMenu, setActiveMenu] = useState(() => getValidKey(window.location.hash));
+    const [moduloResetKey, setModuloResetKey] = useState({});
     const [avatarSrc, setAvatarSrc] = useState(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [corrPendientes,        setCorrPendientes]        = useState(0);
@@ -272,13 +273,19 @@ const Dashboard = () => {
             setSidebarOpen(false);
             return;
         }
+        // Si ya estamos en el módulo, resetear su vista interna (volver a lista)
+        if (activeMenu === key) {
+            setModuloResetKey(prev => ({ ...prev, [key]: (prev[key] || 0) + 1 }));
+        }
         navigate(`/dashboard#${key}`);
         setSidebarOpen(false);
-    }, [isFormDirty, navigate]);
+    }, [isFormDirty, navigate, activeMenu]);
 
     const confirmarNavegacion = () => {
         setFormDirty(false);
-        navigate(`/dashboard#${guardConfirm}`);
+        const key = guardConfirm;
+        setModuloResetKey(prev => ({ ...prev, [key]: (prev[key] || 0) + 1 }));
+        navigate(`/dashboard#${key}`);
         setGuardConfirm(null);
     };
 
@@ -354,23 +361,24 @@ const Dashboard = () => {
         case 'entrevista': return <EntrevistaEncuadre
             onNueva={() => {}}
             onVer={() => {}}
+            resetKey={moduloResetKey['entrevista'] || 0}
         />;
         case 'imputados': return <Imputados onNavigarEntrevista={(imp) => {
             // Pasa datos del imputado a EntrevistaEncuadre vía localStorage para pre-llenar el formulario
             localStorage.setItem('entrevistaPreset', JSON.stringify({ causaPenal: imp.causaPenal, nombre: imp.nombreCompleto }));
             navegarA('entrevista');
         }} />;
-        case 'evaluacion': return <EvaluacionRiesgos />;
-        case 'medidas':    return <SeguimientoCasos />;
+        case 'evaluacion': return <EvaluacionRiesgos resetKey={moduloResetKey['evaluacion'] || 0} />;
+        case 'medidas':    return <SeguimientoCasos resetKey={moduloResetKey['medidas'] || 0} />;
         case 'supervision': return <Supervision />;
         case 'graficas': return <Estadisticas />;
         case 'usuarios': return <GestionUsuarios />;
         case 'bitacora':  return <Bitacora />;
-        case 'consultas':   return <ConsultaRegistros />;
-        case 'suspension':  return <SuspensionCondicional />;
+        case 'consultas':   return <ConsultaRegistros resetKey={moduloResetKey['consultas'] || 0} />;
+        case 'suspension':  return <SuspensionCondicional resetKey={moduloResetKey['suspension'] || 0} />;
         case 'reporte':          return <ReporteDiario />;
-        case 'correspondencia':  return <Correspondencia />;
-        case 'control-oficios':  return <ControlOficios />;
+        case 'correspondencia':  return <Correspondencia resetKey={moduloResetKey['correspondencia'] || 0} />;
+        case 'control-oficios':  return <ControlOficios resetKey={moduloResetKey['control-oficios'] || 0} />;
         case 'expedientes':      return <ExpedientesAnteriores />;
         case 'perfil':           return <Perfil />;
         default: {

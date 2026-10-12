@@ -79,4 +79,11 @@ public class SeguimientoController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
         return ResponseEntity.ok(service.getHistorialPorUsuario(desde, hasta));
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPERADMIN')")
+    public ResponseEntity<ApiResponse> eliminar(@PathVariable Long id) {
+        ApiResponse res = service.eliminar(id);
+        return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
+    }
 }

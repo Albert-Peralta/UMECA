@@ -42,7 +42,7 @@ const comprimirImagen = (file, maxPx = 1200, calidad = 0.80) =>
         img.src = URL.createObjectURL(file);
     });
 
-export default function Correspondencia() {
+export default function Correspondencia({ resetKey = 0 }) {
     const { user } = useAuth();
     const { showToast } = useToast();
     const { setFormDirty } = useFormGuard();
@@ -60,6 +60,8 @@ export default function Correspondencia() {
 
     // Vista activa: 'lista' | 'form' | 'detalle'
     const [vista,    setVista]    = useState('lista');
+
+    useEffect(() => { if (resetKey > 0) setVista('lista'); }, [resetKey]);
     useEffect(() => { setFormDirty(vista === 'form'); return () => setFormDirty(false); }, [vista]);
     const [registro, setRegistro] = useState(null);
 

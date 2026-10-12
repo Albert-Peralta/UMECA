@@ -18,7 +18,7 @@ const campoVacio = {
     sobreseguimiento: '', observaciones: '', anio: ''
 };
 
-export default function SuspensionCondicional() {
+export default function SuspensionCondicional({ resetKey = 0 }) {
     const { showToast } = useToast();
     const { user } = useAuth();
     const esAdmin     = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN';
@@ -36,6 +36,8 @@ export default function SuspensionCondicional() {
 
     // Detalle / formulario
     const [detalle,    setDetalle]    = useState(null);
+
+    useEffect(() => { if (resetKey > 0) setDetalle(null); }, [resetKey]);
     const [loadingDet, setLoadingDet] = useState(false);
 
     // Observaciones (historial)

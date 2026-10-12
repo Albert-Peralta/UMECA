@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { agregarSeguimiento, registrarLevantamiento, registrarRevocacion, registrarAmpliacion, eliminarMedida, toggleSobreseimiento, agregarObservacionMC, listarObservacionesMC } from '../api/medidasApi';
+import { agregarSeguimiento, registrarLevantamiento, registrarRevocacion, registrarAmpliacion, eliminarMedida, toggleSobreseimiento, agregarObservacionMC, listarObservacionesMC, eliminarObservacionMC } from '../api/medidasApi';
 import { registrarFallecimiento } from '../api/imputadosApi';
 import HistorialRegistro from '../components/HistorialRegistro';
 import SeguimientosPanel from '../components/SeguimientosPanel';
+import ConfirmModal from '../components/ConfirmModal';
 import './FormularioMedida.css';
 import './DetalleMedida.css';
 import './DetalleEntrevista.css';
@@ -151,17 +152,25 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
     const [obsTexto,       setObsTexto]       = useState('');
     const [loadingObs,     setLoadingObs]     = useState(false);
     const [historialObs,   setHistorialObs]   = useState([]);
+    const [verTodasObs,    setVerTodasObs]    = useState(false);
+    const [confirmEliminarObs, setConfirmEliminarObs] = useState(null);
+    const [eliminandoObs,      setEliminandoObs]      = useState(false);
+    const [historialKey,       setHistorialKey]       = useState(0);
+    const LIMITE_OBS = 3;
     const [cargandoObs,    setCargandoObs]    = useState(false);
 
+    // Carga obs al montar y también al abrir modal
+    const cargarObs = (id) => {
+        setCargandoObs(true);
+        listarObservacionesMC(id)
+            .then(r => { if (r.data.ok) setHistorialObs(r.data.data); })
+            .catch(() => {})
+            .finally(() => setCargandoObs(false));
+    };
+
     useEffect(() => {
-        if (showObsModal && m?.id) {
-            setCargandoObs(true);
-            listarObservacionesMC(m.id)
-                .then(r => { if (r.data.ok) setHistorialObs(r.data.data); })
-                .catch(() => {})
-                .finally(() => setCargandoObs(false));
-        }
-    }, [showObsModal, m?.id]);
+        if (m?.id) cargarObs(m.id);
+    }, [m?.id]);
 
     // ── Fallecimiento ─────────────────────────────────────────────────────────
     const FALL_VACIO = { fechaFallecimiento: '', quienAviso: '', parentescoInformante: '', comoSeComprobo: '', noActaDefuncion: '', observacionesFallecimiento: '' };
@@ -232,8 +241,24 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
 
     const abrirObservaciones = () => {
         setObsTexto('');
-        setHistorialObs([]);
         setShowObsModal(true);
+    };
+
+    const handleEliminarObs = async () => {
+        if (!confirmEliminarObs) return;
+        setEliminandoObs(true);
+        try {
+            const res = await eliminarObservacionMC(confirmEliminarObs);
+            if (res.data.ok) {
+                setHistorialObs(prev => prev.filter(o => o.id !== confirmEliminarObs));
+                showToast('Observación eliminada');
+                setHistorialKey(k => k + 1);
+            } else showToast(res.data.message || 'Error al eliminar', 'error');
+        } catch { showToast('Error de conexión', 'error'); }
+        finally {
+            setEliminandoObs(false);
+            setConfirmEliminarObs(null);
+        }
     };
     const handleGuardarObs = async () => {
         if (!obsTexto.trim()) return;
@@ -243,7 +268,9 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
             if (res.data.ok) {
                 setHistorialObs(prev => [res.data.data, ...prev]);
                 setObsTexto('');
+                setShowObsModal(false);
                 showToast('Observación registrada correctamente');
+                setHistorialKey(k => k + 1);
             } else showToast(res.data.message || 'Error al guardar', 'error');
         } catch { showToast('Error de conexión', 'error'); }
         finally { setLoadingObs(false); }
@@ -501,13 +528,55 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                     <Val label="Vigencia Fin"            value={m.vigenciaFin} />
                     <Val label="Fecha Próxima Revisión"  value={m.fechaProximaRevision} />
                     <Val label="Responsable Seguimiento" value={m.responsableSeguimiento} />
-                    <div style={{ gridColumn: '1 / -1', marginTop: 4, cursor: 'pointer' }} onClick={abrirObservaciones}>
+                    <div style={{ gridColumn: '1 / -1', marginTop: 4 }}>
                         <div style={{ background: '#f0f9ff', border: '1.5px solid #7dd3fc', borderLeft: '4px solid #0369a1', borderRadius: 10, padding: '14px 18px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: historialObs.length > 0 ? 12 : 0 }}>
                                 <i className="bi bi-journal-text" style={{ color: '#0369a1', fontSize: '1rem' }} />
                                 <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0369a1', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Observaciones</span>
-                                <span style={{ background: '#dbeafe', color: '#1e40af', borderRadius: 20, padding: '1px 8px', fontSize: '0.7rem', fontWeight: 700, marginLeft: 4 }}>Ver / Agregar historial</span>
+                                {historialObs.length > 0 && (
+                                    <span style={{ background: '#dbeafe', color: '#1e40af', borderRadius: 20, padding: '1px 8px', fontSize: '0.7rem', fontWeight: 700 }}>{historialObs.length}</span>
+                                )}
+                                <button onClick={abrirObservaciones} style={{ marginLeft: 'auto', background: '#dbeafe', color: '#1e40af', border: 'none', borderRadius: 20, padding: '2px 10px', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer' }}>
+                                    <i className="bi bi-plus" /> Agregar
+                                </button>
                             </div>
+                            {cargandoObs ? (
+                                <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>Cargando...</p>
+                            ) : historialObs.length === 0 ? (
+                                <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>Sin observaciones registradas.</p>
+                            ) : (
+                                <>
+                                    {(verTodasObs ? historialObs : historialObs.slice(0, LIMITE_OBS)).map(obs => (
+                                        <div key={obs.id} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, padding: '10px 12px', marginBottom: 8, borderLeft: '3px solid #0369a1' }}>
+                                            <div style={{ fontSize: '0.85rem', color: '#1f2937', lineHeight: 1.6, marginBottom: 6 }}>{obs.texto}</div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#dbeafe', color: '#1e40af', borderRadius: 20, padding: '2px 8px', fontSize: '0.7rem', fontWeight: 700 }}>
+                                                    <i className="bi bi-person-fill" style={{ fontSize: '0.62rem' }} />{obs.autorNombre}
+                                                </span>
+                                                <span style={{ fontSize: '0.7rem', color: '#9ca3af' }}>
+                                                    <i className="bi bi-clock" style={{ marginRight: 3 }} />
+                                                    {new Date(obs.fechaCreacion).toLocaleString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                                {user?.rol === 'SUPERADMIN' && (
+                                                    <button onClick={() => setConfirmEliminarObs(obs.id)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 4px', borderRadius: 4 }} title="Eliminar observación">
+                                                        <i className="bi bi-trash3" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {historialObs.length > LIMITE_OBS && (
+                                        <div onClick={() => setVerTodasObs(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, cursor: 'pointer', userSelect: 'none' }}>
+                                            <div style={{ flex: 1, height: 1, background: '#bfdbfe' }} />
+                                            <span style={{ fontSize: '0.73rem', fontWeight: 600, color: '#60a5fa', whiteSpace: 'nowrap' }}>
+                                                {verTodasObs ? 'Ver menos' : `${historialObs.length - LIMITE_OBS} más`}
+                                            </span>
+                                            <i className={`bi bi-chevron-${verTodasObs ? 'up' : 'down'}`} style={{ fontSize: '0.7rem', color: '#60a5fa' }} />
+                                            <div style={{ flex: 1, height: 1, background: '#bfdbfe' }} />
+                                        </div>
+                                    )}
+                                </>
+                            )}
                         </div>
                     </div>
                     <Val label="Observaciones Generales" value={m.observacionesGenerales} full />
@@ -562,6 +631,7 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                     seccion="MEDIDA"
                     referenciaId={m.id}
                     readonly={!(puedeSeguimiento ?? puedeRegistrar)}
+                    onAdded={() => setHistorialKey(k => k + 1)}
                 />
             </div>
 
@@ -741,10 +811,10 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                 </div>
             )}
 
-            {/* ── Historial de cambios ── */}
-            {m?.id && (
+            {/* ── Historial de cambios ── solo SUPERADMIN */}
+            {m?.id && user?.rol === 'SUPERADMIN' && (
                 <div style={{ padding: '0 1.5rem 1.5rem' }}>
-                    <HistorialRegistro entidad="MEDIDA_CAUTELAR" id={m.id} />
+                    <HistorialRegistro entidad="MEDIDA_CAUTELAR" id={m.id} refreshKey={historialKey} />
                 </div>
             )}
 
@@ -774,6 +844,16 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
             </div>
         )}
 
+        {confirmEliminarObs && (
+            <ConfirmModal
+                titulo="¿Eliminar observación?"
+                mensaje="Esta acción es permanente y no se puede deshacer."
+                onConfirmar={handleEliminarObs}
+                onCancelar={() => setConfirmEliminarObs(null)}
+                cargando={eliminandoObs}
+            />
+        )}
+
         {/* ── Modal Observaciones (historial) ── */}
         {showObsModal && (
             <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }}>
@@ -796,15 +876,19 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                     <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb', flexShrink: 0 }}>
                         <textarea
                             rows={3}
-                            style={{ width: '100%', resize: 'vertical', borderRadius: 8, padding: '10px 12px', border: '1.5px solid #e5e7eb', fontSize: '0.9rem', fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none', color: '#1f2937', background: '#f8fafc', lineHeight: 1.6 }}
+                            maxLength={500}
+                            style={{ width: '100%', resize: 'vertical', borderRadius: 8, padding: '10px 12px', border: `1.5px solid ${obsTexto.length > 450 ? '#f59e0b' : '#e5e7eb'}`, fontSize: '0.9rem', fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none', color: '#1f2937', background: '#f8fafc', lineHeight: 1.6 }}
                             placeholder="Escribe una nueva observación..."
                             value={obsTexto}
                             onChange={e => setObsTexto(e.target.value)}
                             disabled={loadingObs}
-                            onFocus={e => e.target.style.borderColor = '#0369a1'}
-                            onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+                            onFocus={e => e.target.style.borderColor = obsTexto.length > 450 ? '#f59e0b' : '#0369a1'}
+                            onBlur={e => e.target.style.borderColor = obsTexto.length > 450 ? '#f59e0b' : '#e5e7eb'}
                         />
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, gap: 12, flexWrap: 'wrap' }}>
+                        <div style={{ textAlign: 'right', fontSize: '0.7rem', marginTop: 3, color: obsTexto.length > 450 ? '#f59e0b' : obsTexto.length > 0 ? '#6b7280' : '#d1d5db', fontWeight: obsTexto.length > 450 ? 700 : 400 }}>
+                            {obsTexto.length}/500
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, gap: 12, flexWrap: 'wrap' }}>
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.72rem', color: '#6b7280' }}>
                                 <i className="bi bi-lock-fill" style={{ color: '#d1d5db' }} />
                                 Las observaciones no pueden editarse una vez registradas
@@ -825,7 +909,8 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                                 <i className="bi bi-journal" style={{ fontSize: '1.8rem', display: 'block', marginBottom: 8, opacity: 0.4 }} />
                                 Sin observaciones registradas
                             </div>
-                        ) : historialObs.map(obs => (
+                        ) : (<>
+                            {(verTodasObs ? historialObs : historialObs.slice(0, LIMITE_OBS)).map(obs => (
                             <div key={obs.id} style={{ background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 10, padding: '12px 14px', borderLeft: '3px solid #0369a1' }}>
                                 <div style={{ fontSize: '0.88rem', color: '#1f2937', lineHeight: 1.6, marginBottom: 8 }}>{obs.texto}</div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -839,7 +924,21 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                                     </span>
                                 </div>
                             </div>
-                        ))}
+                            ))}
+                            {historialObs.length > LIMITE_OBS && (
+                                <div
+                                    onClick={() => setVerTodasObs(v => !v)}
+                                    style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, cursor: 'pointer', userSelect: 'none' }}
+                                >
+                                    <div style={{ flex: 1, height: 1, background: '#bfdbfe' }} />
+                                    <span style={{ fontSize: '0.73rem', fontWeight: 600, color: '#93c5fd', whiteSpace: 'nowrap' }}>
+                                        {verTodasObs ? 'Ver menos' : `${historialObs.length - LIMITE_OBS} más`}
+                                    </span>
+                                    <i className={`bi bi-chevron-${verTodasObs ? 'up' : 'down'}`} style={{ fontSize: '0.7rem', color: '#93c5fd' }} />
+                                    <div style={{ flex: 1, height: 1, background: '#bfdbfe' }} />
+                                </div>
+                            )}
+                        </>)}
                     </div>
                 </div>
             </div>

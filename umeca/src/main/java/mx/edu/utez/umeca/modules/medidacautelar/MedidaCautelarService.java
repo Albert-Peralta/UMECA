@@ -203,9 +203,10 @@ public class MedidaCautelarService {
             obs.setAutorNombre(autorNombre);
             obs.setMedida(m);
             observacionRepository.save(obs);
+            String resumenObs = texto.trim().length() > 60 ? texto.trim().substring(0, 60) + "..." : texto.trim();
             bitacoraService.registrar(Bitacora.Entidad.MEDIDA_CAUTELAR, m.getId(),
                     m.getImputado() != null ? m.getImputado().getNombre() + " " + m.getImputado().getApPaterno() : "—",
-                    Bitacora.Accion.EDITAR, "Observación agregada");
+                    Bitacora.Accion.EDITAR, "Observación agregada: \"" + resumenObs + "\"");
             return new ApiResponse(true, "Observación registrada", toDto(obs));
         }).orElse(new ApiResponse(false, "Registro no encontrado"));
     }
@@ -250,6 +251,28 @@ public class MedidaCautelarService {
                 "autorNombre", o.getAutorNombre(),
                 "fechaCreacion", o.getFechaCreacion().toString()
         );
+    }
+
+    @Transactional
+    public ApiResponse eliminarObservacion(Long obsId) {
+        return observacionRepository.findById(obsId).map(obs -> {
+            MedidaCautelar medida = obs.getMedida();
+            String resumen = obs.getTexto().length() > 60
+                    ? obs.getTexto().substring(0, 60) + "..."
+                    : obs.getTexto();
+            observacionRepository.delete(obs);
+            if (medida != null) {
+                String nombreImp = medida.getImputado() != null
+                        ? medida.getImputado().getNombre() + " " + medida.getImputado().getApPaterno()
+                        : "—";
+                bitacoraService.registrar(
+                    Bitacora.Entidad.MEDIDA_CAUTELAR, medida.getId(), nombreImp,
+                    Bitacora.Accion.ELIMINAR,
+                    "Observación eliminada: \"" + resumen + "\""
+                );
+            }
+            return new ApiResponse(true, "Observación eliminada");
+        }).orElse(new ApiResponse(false, "Observación no encontrada"));
     }
 
     /** @deprecated Mantener por compatibilidad – usar agregarObservacion() */

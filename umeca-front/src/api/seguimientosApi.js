@@ -2,6 +2,8 @@ import api from './axios';
 
 export const registrarSeguimiento = (dto) =>
     api.post('/seguimientos', dto);
+export const eliminarSeguimiento = (id) =>
+    api.delete(`/seguimientos/${id}`);
 
 export const getSeguimientosPorImputado = (imputadoId) =>
     api.get(`/seguimientos/imputado/${imputadoId}`);

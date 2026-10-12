@@ -74,11 +74,17 @@ public class SeguimientoService {
         repository.save(seg);
 
         String nombreImputado = imputado.getNombre() + " " + imputado.getApPaterno();
+        String descSeg = "Seguimiento registrado — sección: " + seccion.name() + " | tipo: " + SeguimientoResponseDTO.from(seg).getTipoActividadLabel();
         bitacoraService.registrar(
             Bitacora.Entidad.IMPUTADO, imputado.getId(), nombreImputado,
-            Bitacora.Accion.EDITAR,
-            "Seguimiento registrado — sección: " + seccion.name() + " | tipo: " + SeguimientoResponseDTO.from(seg).getTipoActividadLabel()
+            Bitacora.Accion.EDITAR, descSeg
         );
+        // Registrar también en la entidad asociada (medida/entrevista/evaluación) para que aparezca en su historial
+        if (dto.getMedidaId() != null) {
+            bitacoraService.registrar(Bitacora.Entidad.MEDIDA_CAUTELAR, dto.getMedidaId(), nombreImputado, Bitacora.Accion.EDITAR, descSeg);
+        } else if (dto.getEntrevistaId() != null) {
+            bitacoraService.registrar(Bitacora.Entidad.ENTREVISTA, dto.getEntrevistaId(), nombreImputado, Bitacora.Accion.EDITAR, descSeg);
+        }
 
         return new ApiResponse(true, "Seguimiento registrado", SeguimientoResponseDTO.from(seg));
     }
@@ -191,5 +197,23 @@ public class SeguimientoService {
         }
 
         return new ApiResponse(true, "ok", resultado);
+    }
+
+    @Transactional
+    public ApiResponse eliminar(Long id) {
+        return repository.findById(id).map(s -> {
+            String nombreImputado = s.getImputado() != null
+                    ? s.getImputado().getNombre() + " " + s.getImputado().getApPaterno()
+                    : "—";
+            String tipoLabel = SeguimientoResponseDTO.from(s).getTipoActividadLabel();
+            Long entidadId   = s.getMedidaId() != null ? s.getMedidaId() : s.getImputado() != null ? s.getImputado().getId() : id;
+            Bitacora.Entidad entidad = s.getMedidaId() != null ? Bitacora.Entidad.MEDIDA_CAUTELAR : Bitacora.Entidad.IMPUTADO;
+            repository.delete(s);
+            bitacoraService.registrar(entidad, entidadId, nombreImputado,
+                    Bitacora.Accion.ELIMINAR,
+                    "Seguimiento eliminado — tipo: " + tipoLabel + " | sección: " + s.getSeccion().name()
+            );
+            return new ApiResponse(true, "Seguimiento eliminado");
+        }).orElse(new ApiResponse(false, "Seguimiento no encontrado"));
     }
 }
