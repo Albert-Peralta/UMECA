@@ -61,7 +61,7 @@ export default function Correspondencia({ resetKey = 0 }) {
     // Vista activa: 'lista' | 'form' | 'detalle'
     const [vista,    setVista]    = useState('lista');
 
-    useEffect(() => { if (resetKey > 0) setVista('lista'); }, [resetKey]);
+    useEffect(() => { if (resetKey > 0) { setVista('lista'); setTabCorr('mis'); } }, [resetKey]);
     useEffect(() => { setFormDirty(vista === 'form'); return () => setFormDirty(false); }, [vista]);
     const [registro, setRegistro] = useState(null);
 
@@ -103,6 +103,10 @@ export default function Correspondencia({ resetKey = 0 }) {
     // Exportar
     const [exportando, setExportando] = useState(false);
 
+    // Pestañas para rol CORRESPONDENCIA
+    const [tabCorr, setTabCorr] = useState('mis'); // 'mis' | 'asignados'
+    const [listaAsignados, setListaAsignados] = useState([]);
+
     // Filtro contador
     const [filtroCont,     setFiltroCont]     = useState('hoy');
     const [fechaCont,      setFechaCont]      = useState(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; });
@@ -112,12 +116,20 @@ export default function Correspondencia({ resetKey = 0 }) {
     const cargar = useCallback(async () => {
         setLoading(true);
         try {
-            let res;
-            if (esPersonal) res = await getMisAsignados();
-            else            res = await getCorrespondencia(); // admin + CORRESPONDENCIA ven todos
-            setLista(res.data?.data || []);
-            // Contadores de pendientes (solo admin y personal, no CORRESPONDENCIA)
-            if (!esCorrespondencia) {
+            if (esCorrespondencia) {
+                const [resMis, resAsig] = await Promise.all([getCorrespondencia(), getMisAsignados()]);
+                setLista(resMis.data?.data || []);
+                setListaAsignados(resAsig.data?.data || []);
+                const cnt = await getContadoresCorrespondencia();
+                if (cnt.data?.ok) setContadores(cnt.data.data || {});
+            } else if (esPersonal) {
+                const res = await getMisAsignados();
+                setLista(res.data?.data || []);
+                const cnt = await getContadoresCorrespondencia();
+                if (cnt.data?.ok) setContadores(cnt.data.data || {});
+            } else {
+                const res = await getCorrespondencia();
+                setLista(res.data?.data || []);
                 const cnt = await getContadoresCorrespondencia();
                 if (cnt.data?.ok) setContadores(cnt.data.data || {});
             }
@@ -128,7 +140,8 @@ export default function Correspondencia({ resetKey = 0 }) {
     useEffect(() => { cargar(); }, [cargar]);
 
     // ── Filtrado y paginación ───────────────────────────────────────────────
-    const filtrada = lista.filter(r => {
+    const listaActiva = esCorrespondencia ? (tabCorr === 'mis' ? lista : listaAsignados) : lista;
+    const filtrada = listaActiva.filter(r => {
         const coincideTexto = !buscar || [r.noTurno, r.noOficio, r.remitente, r.asunto, r.asignadoANombre]
             .some(v => v?.toLowerCase().includes(buscar.toLowerCase()));
         const coincidePrioridad = !filtroPrioridad || r.prioridad === filtroPrioridad;
@@ -770,7 +783,7 @@ export default function Correspondencia({ resetKey = 0 }) {
                 </div>
 
                 {/* Pasos de estado para personal */}
-                {esPersonal && registro.asignadoAId === user?.id && (() => {
+                {(esPersonal || (esCorrespondencia && tabCorr === 'asignados')) && registro.asignadoAId === user?.id && (() => {
                     const flujo = ['LEIDO', 'EN_ESPERA', 'FINALIZADO'];
                     const etiquetas = { LEIDO: 'Leído', EN_ESPERA: 'En Espera', FINALIZADO: 'Finalizado' };
                     const idxActual = flujo.indexOf(registro.estado);
@@ -838,12 +851,34 @@ export default function Correspondencia({ resetKey = 0 }) {
                     </span>
                 </div>
             )}
-            {esPersonal && contadores.misAsignados > 0 && (
+            {(esPersonal || esCorrespondencia) && contadores.misAsignados > 0 && (
                 <div className="corr-alerta corr-alerta-personal">
                     <i className="bi bi-bell-fill" />
                     <span>
                         Tienes <strong>{contadores.misAsignados}</strong> oficio{contadores.misAsignados !== 1 ? 's' : ''} asignado{contadores.misAsignados !== 1 ? 's' : ''} pendiente{contadores.misAsignados !== 1 ? 's' : ''} de atender
                     </span>
+                </div>
+            )}
+
+            {/* Pestañas para CORRESPONDENCIA */}
+            {esCorrespondencia && (
+                <div style={{ display: 'flex', gap: 8, margin: '12px 0 4px' }}>
+                    <button
+                        onClick={() => { setTabCorr('mis'); setPagina(1); }}
+                        style={{ padding: '6px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13,
+                            background: tabCorr === 'mis' ? '#2d6a4f' : '#f3f4f6',
+                            color: tabCorr === 'mis' ? '#fff' : '#374151' }}>
+                        <i className="bi bi-list-ul" style={{ marginRight: 6 }} />
+                        Registros <span style={{ background: tabCorr === 'mis' ? 'rgba(255,255,255,0.25)' : '#e5e7eb', borderRadius: 10, padding: '1px 7px', marginLeft: 4 }}>{lista.length}</span>
+                    </button>
+                    <button
+                        onClick={() => { setTabCorr('asignados'); setPagina(1); }}
+                        style={{ padding: '6px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13,
+                            background: tabCorr === 'asignados' ? '#2d6a4f' : '#f3f4f6',
+                            color: tabCorr === 'asignados' ? '#fff' : '#374151' }}>
+                        <i className="bi bi-envelope-arrow-down" style={{ marginRight: 6 }} />
+                        Asignados <span style={{ background: tabCorr === 'asignados' ? 'rgba(255,255,255,0.25)' : '#e5e7eb', borderRadius: 10, padding: '1px 7px', marginLeft: 4 }}>{listaAsignados.filter(r => r.estado !== 'FINALIZADO' && r.estado !== 'CANCELADO').length}</span>
+                    </button>
                 </div>
             )}
 
@@ -980,10 +1015,11 @@ export default function Correspondencia({ resetKey = 0 }) {
                             const filaRoja = r.requiereRespuesta && r.estado !== 'CANCELADO';
                             const filaPendiente = r.estado === 'PENDIENTE';
                             const filaCancelada = r.estado === 'CANCELADO';
+                            const filaFinalizada = r.estado === 'FINALIZADO';
                             const filaSinAsignar = esAdmin && !r.asignadoAId && !filaCancelada;
-                            const filaPorAtender = esPersonal && r.estado !== 'FINALIZADO' && !filaCancelada;
+                            const filaPorAtender = esPersonal && r.estado !== 'FINALIZADO' && r.estado !== 'PENDIENTE' && !filaCancelada;
                             return (
-                                <tr key={r.id} className={`${filaRoja ? 'corr-fila-alerta' : ''} ${filaPendiente ? 'corr-fila-pendiente' : ''} ${filaCancelada ? 'corr-fila-cancelada' : ''} ${filaSinAsignar ? 'corr-fila-sin-asignar' : ''} ${filaPorAtender ? 'corr-fila-por-atender' : ''}`}>
+                                <tr key={r.id} className={`${filaRoja ? 'corr-fila-alerta' : ''} ${filaPendiente ? 'corr-fila-pendiente' : ''} ${filaCancelada ? 'corr-fila-cancelada' : ''} ${filaFinalizada ? 'corr-fila-finalizada' : ''} ${filaSinAsignar ? 'corr-fila-sin-asignar' : ''} ${filaPorAtender ? 'corr-fila-por-atender' : ''}`}>
                                     <td className="corr-turno">
                                         <span className="corr-turno-seq">{r.noTurno?.split('-')[2]}</span>
                                     </td>
@@ -1064,12 +1100,17 @@ export default function Correspondencia({ resetKey = 0 }) {
             {/* Modal asignación */}
             {showAsigModal && (
                 <div className="corr-modal-overlay" onClick={() => !loadingAsig && setShowAsigModal(false)}>
-                    <div className="corr-modal-box" onClick={e => e.stopPropagation()}>
-                        <div className="corr-modal-icon corr-modal-icon-asig">
-                            <i className="bi bi-person-check-fill" />
+                    <div className="corr-modal-box" style={{ padding: 0, overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+                        <div className="corr-modal-asig-header">
+                            <div className="corr-modal-asig-icon">
+                                <i className="bi bi-person-check-fill" />
+                            </div>
+                            <div>
+                                <h3 className="corr-modal-asig-titulo">Asignar correspondencia</h3>
+                                <p className="corr-modal-asig-sub">Selecciona el personal a asignar</p>
+                            </div>
                         </div>
-                        <h3 className="corr-modal-titulo">Asignar correspondencia</h3>
-
+                        <div style={{ padding: '1.4rem 1.6rem 1.6rem' }}>
                         {/* Info del oficio */}
                         <div className="corr-modal-info-card">
                             <div className="corr-modal-info-row">
@@ -1094,7 +1135,7 @@ export default function Correspondencia({ resetKey = 0 }) {
                         <div className="corr-personal-lista">
                             {personal.map(p => {
                                 const pendientes = lista.filter(r =>
-                                    r.asignadoAId === p.id && (r.estado === 'PENDIENTE' || r.estado === 'EN_PROCESO')
+                                    r.asignadoAId === p.id && (r.estado === 'ASIGNADO' || r.estado === 'LEIDO' || r.estado === 'EN_ESPERA')
                                 ).length;
                                 const seleccionado = String(p.id) === asignadoSel;
                                 return (
@@ -1108,7 +1149,7 @@ export default function Correspondencia({ resetKey = 0 }) {
                                                 <i className="bi bi-person-fill" /> {p.nombre}
                                             </span>
                                             <span className="corr-personal-sub">
-                                                {p.rol === 'SUPERVISION' ? 'Supervisión' : 'Evaluación'}{p.zona ? ` · ${p.zona}` : ''}
+                                                {p.rol === 'SUPERVISION' ? 'Supervisión' : p.rol === 'CORRESPONDENCIA' ? 'Correspondencia' : 'Evaluación'}{p.zona ? ` · ${p.zona}` : ''}
                                             </span>
                                         </div>
                                         {pendientes > 0 ? (
@@ -1133,6 +1174,7 @@ export default function Correspondencia({ resetKey = 0 }) {
                                 {loadingAsig ? 'Asignando...' : 'Asignar'}
                             </button>
                         </div>
+                        </div>
                     </div>
                 </div>
             )}
@@ -1141,10 +1183,16 @@ export default function Correspondencia({ resetKey = 0 }) {
             {showQuitarModal && (
                 <div className="corr-modal-overlay" onClick={() => setShowQuitarModal(false)}>
                     <div className="corr-modal-box corr-modal-box-danger" onClick={e => e.stopPropagation()}>
-                        <div className="corr-modal-icon corr-modal-icon-danger">
-                            <i className="bi bi-person-x-fill"></i>
+                        <div className="corr-modal-danger-header">
+                            <div className="corr-modal-danger-icon">
+                                <i className="bi bi-person-x-fill" />
+                            </div>
+                            <div>
+                                <h3 className="corr-modal-danger-titulo">¿Quitar asignación?</h3>
+                                <p className="corr-modal-danger-sub">El oficio regresará a estado Pendiente</p>
+                            </div>
                         </div>
-                        <h3 className="corr-modal-titulo">¿Quitar asignación?</h3>
+                        <div style={{ padding: '1.6rem 2rem 2rem' }}>
 
                         <div className="corr-modal-info-card" style={{ borderColor: '#fca5a5' }}>
                             <div className="corr-modal-info-row">
@@ -1171,6 +1219,7 @@ export default function Correspondencia({ resetKey = 0 }) {
                             <button className="corr-modal-btn-danger" onClick={confirmarQuitarAsignacion}>
                                 Sí, quitar
                             </button>
+                        </div>
                         </div>
                     </div>
                 </div>

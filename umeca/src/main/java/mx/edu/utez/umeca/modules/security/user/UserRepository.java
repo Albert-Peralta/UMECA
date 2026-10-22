@@ -23,7 +23,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByResetToken(String resetToken);
 
-    @Query("SELECT u FROM User u WHERE u.rol IN ('SUPERVISION', 'EVALUADOR_RIESGO') AND u.activo = true ORDER BY u.nombre ASC")
+    @Query("SELECT u FROM User u WHERE u.rol IN ('SUPERVISION', 'EVALUADOR_RIESGO', 'CORRESPONDENCIA') AND u.activo = true ORDER BY u.nombre ASC")
     java.util.List<User> findPersonalAsignable();
 
     @Query("SELECT MAX(CAST(SUBSTRING(u.identificador, LENGTH(u.identificador) - 3, 4) AS int)) " +

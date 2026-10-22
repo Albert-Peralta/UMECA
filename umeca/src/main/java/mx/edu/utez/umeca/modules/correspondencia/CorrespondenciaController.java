@@ -40,7 +40,7 @@ public class CorrespondenciaController {
 
     /** Personal (SUPERVISION/EVALUADOR): ver solo los asignados a ellos */
     @GetMapping("/mis-asignados")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO','ROLE_CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> misAsignados() {
         return ResponseEntity.ok(service.findMisAsignados());
     }
@@ -156,7 +156,7 @@ public class CorrespondenciaController {
 
     /** Contadores para notificaciones en el dashboard */
     @GetMapping("/contadores")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN','ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO','ROLE_CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> contadores() {
         return ResponseEntity.ok(service.getContadores());
     }

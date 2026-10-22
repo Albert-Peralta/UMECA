@@ -18,7 +18,7 @@ public interface CorrespondenciaRepository extends JpaRepository<Correspondencia
     @Query("SELECT COUNT(c) FROM Correspondencia c WHERE c.estado = 'PENDIENTE'")
     long contarPendientes();
 
-    @Query("SELECT COUNT(c) FROM Correspondencia c WHERE c.asignadoA.id = :userId AND c.estado NOT IN ('FINALIZADO')")
+    @Query("SELECT COUNT(c) FROM Correspondencia c WHERE c.asignadoA.id = :userId AND c.estado NOT IN ('FINALIZADO', 'CANCELADO')")
     long contarAsignadosPendientesParaUsuario(Long userId);
 
     @Query("SELECT c FROM Correspondencia c WHERE " +

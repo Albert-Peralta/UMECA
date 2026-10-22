@@ -449,6 +449,26 @@
     padding: 0; overflow: hidden; text-align: left;
     border-top: 4px solid #dc2626;
 }
+.corr-modal-asig-header {
+    background: linear-gradient(135deg, #2e6b5e 0%, #1e4f45 40%, #3a7a6a 70%, #264f45 100%);
+    padding: 1.2rem 1.5rem;
+    border-radius: 12px 12px 0 0;
+    display: flex; align-items: center; gap: 14px;
+}
+.corr-modal-asig-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: rgba(255,255,255,0.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; color: #fff; flex-shrink: 0;
+}
+.corr-modal-asig-titulo {
+    font-size: 1.05rem; font-weight: 700; color: #fff;
+    margin: 0 0 2px;
+}
+.corr-modal-asig-sub {
+    font-size: 0.78rem; color: rgba(255,255,255,0.75); margin: 0;
+}
+
 .corr-modal-danger-header {
     background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
     padding: 1.2rem 1.5rem;
@@ -467,7 +487,7 @@
 .corr-modal-danger-sub {
     font-size: 0.78rem; color: rgba(255,255,255,0.8); margin: 0;
 }
-.corr-modal-danger-body { padding: 1.3rem 1.5rem 1.5rem; }
+.corr-modal-danger-body { padding: 1.6rem 2rem 2rem; }
 .corr-modal-danger-aviso {
     font-size: 0.83rem; color: #7f1d1d; background: #fff5f5;
     border: 1px solid #fecaca; border-radius: 8px;
@@ -723,6 +743,14 @@
 .corr-fila-por-atender:hover {
     background: #fef3c7 !important;
 }
+.corr-fila-por-atender td:first-child { border-left: 3px solid #f59e0b; }
+.corr-fila-finalizada {
+    background: #f0fdf4 !important;
+}
+.corr-fila-finalizada:hover {
+    background: #dcfce7 !important;
+}
+.corr-fila-finalizada td:first-child { border-left: 3px solid #4ade80; }
 
 /* ── Badge grande en detalle ─────────────────────────────────────────────── */
 .corr-badge-lg {

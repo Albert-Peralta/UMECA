@@ -428,7 +428,7 @@ public class ImputadoService {
     }
 
     @Transactional
-    public ApiResponse eliminar(Long id) {
+        public ApiResponse eliminar(Long id) {
         return imputadoRepository.findById(id).map(imp -> {
             String nombre = imp.getNombre() + " " + imp.getApPaterno()
                     + (imp.getApMaterno() != null ? " " + imp.getApMaterno() : "");
