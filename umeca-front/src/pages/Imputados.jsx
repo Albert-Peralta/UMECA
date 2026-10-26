@@ -8,6 +8,7 @@ import SeguimientosPanel from '../components/SeguimientosPanel';
 import './Historico.css';
 import './Imputados.css';
 import { ESTATUS_CIERRE_LABEL } from '../constants/estatusCierre';
+import { puedeCrear as _puedeCrear, puedeEditar as _puedeEditar } from '../utils/permisos';
 
 const ITEMS_POR_PAGINA = 50;
 
@@ -1487,6 +1488,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                             imputadoId={perfil.id}
                                             seccion="EXPEDIENTE"
                                             referenciaId={null}
+                                            readonly={!(_puedeCrear(user, 'MEDIDAS') || _puedeEditar(user, 'MEDIDAS'))}
                                         />
                                     )}
                                 </div>

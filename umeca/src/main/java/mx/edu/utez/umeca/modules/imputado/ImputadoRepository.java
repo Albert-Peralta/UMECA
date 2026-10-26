@@ -16,6 +16,9 @@ public interface ImputadoRepository extends JpaRepository<Imputado, Long> {
     List<Imputado> findByNombreContainingIgnoreCaseOrApPaternoContainingIgnoreCase(
             String nombre, String apPaterno);
 
+    List<Imputado> findByNombreContainingIgnoreCaseAndApPaternoContainingIgnoreCase(
+            String nombre, String apPaterno);
+
     @Query("""
         SELECT i FROM Imputado i
         WHERE LOWER(CONCAT(i.nombre, ' ', i.apPaterno, ' ', COALESCE(i.apMaterno, ''))) LIKE LOWER(CONCAT('%', :termino, '%'))

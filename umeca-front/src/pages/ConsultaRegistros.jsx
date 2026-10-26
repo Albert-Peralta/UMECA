@@ -71,6 +71,7 @@ const FormularioConsulta = ({ consulta, onVolver, onGuardado }) => {
                 const params = {};
                 if (nombre) params.nombre = nombre;
                 if (apPaterno) params.apPaterno = apPaterno;
+                if (primerImp.apMaterno) params.apMaterno = primerImp.apMaterno;
                 if (causaPenal) params.causaPenal = causaPenal;
 
                 const [antRes, regRes] = await Promise.all([
@@ -89,7 +90,7 @@ const FormularioConsulta = ({ consulta, onVolver, onGuardado }) => {
         setBusquedaTimer(timer);
         return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [form.imputados?.[0]?.nombre, form.imputados?.[0]?.apPaterno, form.causaPenal]);
+    }, [form.imputados?.[0]?.nombre, form.imputados?.[0]?.apPaterno, form.imputados?.[0]?.apMaterno, form.causaPenal]);
 
     const setImp = (idx, campo, valor) => setForm(prev => {
         const imps = prev.imputados.map((imp, i) => i === idx ? { ...imp, [campo]: valor } : imp);

@@ -29,14 +29,29 @@ export default function SeguimientosPanel({
     const { showToast } = useToast();
     const { user } = useAuth();
 
-    // Filtra los tipos de actividad según el rol del usuario
+    // Filtra los tipos de actividad según el rol + módulos extra del usuario
     const tiposFiltrados = (() => {
         const rol = user?.rol;
+        if (rol === 'SUPERADMIN' || rol === 'ADMINISTRADOR')
+            return TIPOS_ACTIVIDAD;
+
+        const grupos = new Set();
+        // Grupos base por rol
         if (rol === 'SUPERVISION')
-            return TIPOS_ACTIVIDAD.filter(t => t.grupo === 'SUPERVISIÓN');
-        if (rol === 'EVALUADOR_RIESGO')
-            return TIPOS_ACTIVIDAD.filter(t => t.grupo === 'EVALUACIÓN');
-        return TIPOS_ACTIVIDAD; // admin y otros ven todo
+            grupos.add('SUPERVISIÓN');
+        if (rol === 'CORRESPONDENCIA')
+            grupos.add('CORRESPONDENCIA');
+
+        // Grupos extra por módulos habilitados con crear/editar
+        const extras = user?.modulosExtra || [];
+        const tieneExtra = (modulo) => extras.some(m => m.modulo === modulo && (m.puedeCrear || m.puedeEditar));
+        if (tieneExtra('MEDIDAS') || tieneExtra('SUPERVISION'))
+            grupos.add('SUPERVISIÓN');
+        if (tieneExtra('CORRESPONDENCIA'))
+            grupos.add('CORRESPONDENCIA');
+
+        if (grupos.size === 0) return TIPOS_ACTIVIDAD;
+        return TIPOS_ACTIVIDAD.filter(t => grupos.has(t.grupo));
     })();
     const [lista, setLista]           = useState([]);
     const [loading, setLoading]       = useState(true);

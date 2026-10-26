@@ -54,8 +54,9 @@ public class ConsultaRegistroController {
             @RequestParam(required = false) String curp,
             @RequestParam(required = false) String nombre,
             @RequestParam(required = false) String apPaterno,
+            @RequestParam(required = false) String apMaterno,
             @RequestParam(required = false) String causaPenal) {
-        return ResponseEntity.ok(service.buscarRegistros(curp, nombre, apPaterno, causaPenal));
+        return ResponseEntity.ok(service.buscarRegistros(curp, nombre, apPaterno, apMaterno, causaPenal));
     }
 
     @DeleteMapping("/{id}")

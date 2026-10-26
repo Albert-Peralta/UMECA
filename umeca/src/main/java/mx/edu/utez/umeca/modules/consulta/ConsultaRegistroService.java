@@ -211,7 +211,7 @@ public class ConsultaRegistroService {
      * Se usa en la pantalla de Consulta de Registros para dar una vista unificada.
      */
     @Transactional(readOnly = true)
-    public ApiResponse buscarRegistros(String curp, String nombre, String apPaterno, String causaPenal) {
+    public ApiResponse buscarRegistros(String curp, String nombre, String apPaterno, String apMaterno, String causaPenal) {
         RegistrosImputadoDTO result = new RegistrosImputadoDTO();
 
         // 1. Buscar el imputado
@@ -222,10 +222,13 @@ public class ConsultaRegistroService {
         }
         if (candidatos.isEmpty() && nombre != null && apPaterno != null) {
             candidatos = imputadoRepo
-                    .findByNombreContainingIgnoreCaseOrApPaternoContainingIgnoreCase(nombre, apPaterno)
-                    .stream()
-                    .filter(i -> i.getApPaterno().equalsIgnoreCase(apPaterno))
+                    .findByNombreContainingIgnoreCaseAndApPaternoContainingIgnoreCase(nombre, apPaterno);
+            if (apMaterno != null && !apMaterno.isBlank()) {
+                candidatos = candidatos.stream()
+                    .filter(i -> i.getApMaterno() != null &&
+                                 i.getApMaterno().toLowerCase().contains(apMaterno.toLowerCase()))
                     .collect(Collectors.toList());
+            }
         }
 
         if (candidatos.isEmpty()) {
