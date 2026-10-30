@@ -91,12 +91,12 @@ const Imputados = ({ onNavigarEntrevista }) => {
     const [fallMsg, setFallMsg] = useState(null);
 
     // Cumplimiento
-    const [showCumplimientoMenu, setShowCumplimientoMenu] = useState(false);
+    const [showCumplimientoMenu, setShowCumplimientoMenu] = useState(null); // medidaId o null
     const [guardandoCumplimiento, setGuardandoCumplimiento] = useState(false);
 
     const handleCambiarCumplimiento = async (medidaId, valor) => {
         setGuardandoCumplimiento(true);
-        setShowCumplimientoMenu(false);
+        setShowCumplimientoMenu(null);
         try {
             const res = await cambiarCumplimiento(medidaId, valor);
             if (res.data.ok) {
@@ -698,6 +698,11 @@ const Imputados = ({ onNavigarEntrevista }) => {
                 <span className="imp-leyenda-item"><span className="medida-estado-dot medida-estado-finalizado"></span> Finalizado</span>
                 <span className="imp-leyenda-item"><span className="medida-estado-dot medida-estado-sustraido"></span> Sustraído</span>
                 <span className="imp-leyenda-item"><span className="medida-estado-dot medida-estado-prision"></span> Prisión Preventiva</span>
+                <span className="imp-leyenda-sep">|</span>
+                <span className="imp-leyenda-titulo">Cumplimiento:</span>
+                <span className="imp-leyenda-item"><span className="cumpl-icon-leyenda cumpl-icon-ok"><i className="bi bi-check-lg" /></span> Cumplimiento</span>
+                <span className="imp-leyenda-item"><span className="cumpl-icon-leyenda cumpl-icon-no"><i className="bi bi-x-lg" /></span> Incumplimiento</span>
+                <span className="imp-leyenda-item"><span style={{ color: '#6b7280', fontSize: 13, fontWeight: 700 }}>—</span> Sin estatus</span>
             </div>
 
             <div className="historico-tabla-wrapper">
@@ -725,7 +730,6 @@ const Imputados = ({ onNavigarEntrevista }) => {
                             <th style={{ textAlign: 'center' }}>ENTREVISTAS</th>
                             <th style={{ textAlign: 'center', paddingRight: 20 }}>EVALUACIONES</th>
                             <th style={{ textAlign: 'center', paddingLeft: 20 }}>MEDIDA</th>
-                            <th style={{ textAlign: 'center', minWidth: 140, whiteSpace: 'nowrap' }}>CUMPLIMIENTO</th>
                             <th style={{ textAlign: 'center', width: 80 }}>EXPEDIENTE</th>
                         </tr>
                     </thead>
@@ -804,8 +808,27 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                             {item.totalEvaluaciones ?? 0}
                                         </span>
                                     </td>
-                                    <td style={{ textAlign: 'center', paddingLeft: 20 }}>
-                                        {item.tipoMedidaActiva ? (
+                                    <td style={{ textAlign: 'center', padding: '6px 8px' }}>
+                                        {item.medidasActivas?.length > 0 ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', width: '100%' }}>
+                                                {item.medidasActivas.map((m, idx) => (
+                                                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: '34px 10px 20px', alignItems: 'center', gap: 4, margin: '0 auto' }}>
+                                                        <span className={`tipo-medida-badge ${m.tipo === 'MEDIDA_CAUTELAR' ? 'tipo-mc' : 'tipo-scp'}`} style={{ textAlign: 'center' }}>
+                                                            {m.tipo === 'MEDIDA_CAUTELAR' ? 'MC' : 'SCP'}
+                                                        </span>
+                                                        <span className="medida-estado-dot medida-estado-activo" title="Activo" style={{ justifySelf: 'center' }}></span>
+                                                        {m.cumplimiento === 'CUMPLIMIENTO'
+                                                            ? <span className="cumpl-icon-tabla cumpl-icon-ok" title="Cumplimiento" style={{ justifySelf: 'center' }}><i className="bi bi-check-lg" /></span>
+                                                            : m.cumplimiento === 'INCUMPLIMIENTO'
+                                                            ? <span className="cumpl-icon-tabla cumpl-icon-no" title="Incumplimiento" style={{ justifySelf: 'center' }}><i className="bi bi-x-lg" /></span>
+                                                            : <span style={{ color: '#6b7280', fontSize: 13, justifySelf: 'center' }}>—</span>
+                                                        }
+                                                    </div>
+                                                ))}
+                                                {item.vieneDeMC && <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 1 }}>M.C. → S.C.P.</div>}
+                                                {item.vieneDeScp && <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 1 }}>S.C.P. → M.C.</div>}
+                                            </div>
+                                        ) : item.tipoMedidaActiva ? (
                                             <div style={{ display: 'inline-block', textAlign: 'center' }}>
                                                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                                                     <span className={`tipo-medida-badge ${item.tipoMedidaActiva === 'MEDIDA_CAUTELAR' ? 'tipo-mc' : 'tipo-scp'}`}>
@@ -813,50 +836,19 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                                     </span>
                                                     <span className={`medida-estado-dot medida-estado-${item.estadoMedidaActiva?.toLowerCase()}`}
                                                           title={item.estadoMedidaActiva}></span>
+                                                    {item.cumplimientoMedidaActiva === 'CUMPLIMIENTO'
+                                                        ? <span className="cumpl-icon-tabla cumpl-icon-ok" title="Cumplimiento"><i className="bi bi-check-lg" /></span>
+                                                        : item.cumplimientoMedidaActiva === 'INCUMPLIMIENTO'
+                                                        ? <span className="cumpl-icon-tabla cumpl-icon-no" title="Incumplimiento"><i className="bi bi-x-lg" /></span>
+                                                        : <span style={{ color: '#d1d5db', fontSize: 12 }}>—</span>
+                                                    }
                                                 </div>
-                                                {item.vieneDeMC && (
-                                                    <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>M.C. → S.C.P.</div>
-                                                )}
-                                                {item.vieneDeScp && (
-                                                    <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>S.C.P. → M.C.</div>
-                                                )}
+                                                {item.vieneDeMC && <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>M.C. → S.C.P.</div>}
+                                                {item.vieneDeScp && <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>S.C.P. → M.C.</div>}
                                             </div>
                                         ) : (
                                             <span style={{ color: '#d1d5db', fontSize: 13 }}>—</span>
                                         )}
-                                    </td>
-                                    <td style={{ textAlign: 'center' }}>
-                                        {(() => {
-                                            if (item.carpetaCerrada) {
-                                                if (!item.estatusCumplimientoCierre)
-                                                    return <span className="cumpl-badge-tabla cumpl-sin-asignar">Sin estatus</span>;
-                                                const label = ESTATUS_CIERRE_LABEL[item.estatusCumplimientoCierre] ?? item.estatusCumplimientoCierre;
-                                                return <span className="cumpl-badge-cierre-wrap"
-                                                    onMouseEnter={e => {
-                                                        const t = e.currentTarget.querySelector('.cumpl-tooltip-cierre');
-                                                        const r = e.currentTarget.getBoundingClientRect();
-                                                        t.style.display = 'block';
-                                                        t.style.top = (r.bottom + 6) + 'px';
-                                                        t.style.left = (r.left + r.width / 2) + 'px';
-                                                    }}
-                                                    onMouseLeave={e => {
-                                                        e.currentTarget.querySelector('.cumpl-tooltip-cierre').style.display = 'none';
-                                                    }}>
-                                                    <span className="cumpl-badge-tabla cumpl-cumplimiento cumpl-badge-cierre"
-                                                        style={{ fontSize: 10, padding: '4px 8px', maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block' }}>
-                                                        {label}
-                                                    </span>
-                                                    <span className="cumpl-tooltip-cierre">{label}</span>
-                                                </span>;
-                                            }
-                                            if (item.cumplimientoMedidaActiva === 'CUMPLIMIENTO')
-                                                return <span className="cumpl-badge-tabla cumpl-cumplimiento"><i className="bi bi-check-circle-fill" /> Cumplimiento</span>;
-                                            if (item.cumplimientoMedidaActiva === 'INCUMPLIMIENTO')
-                                                return <span className="cumpl-badge-tabla cumpl-incumplimiento"><i className="bi bi-x-circle-fill" /> Incumplimiento</span>;
-                                            if (item.tipoMedidaActiva)
-                                                return <span className="cumpl-badge-tabla cumpl-sin-asignar">Sin estatus</span>;
-                                            return <span style={{ color: '#d1d5db', fontSize: 13 }}>—</span>;
-                                        })()}
                                     </td>
                                     <td style={{ textAlign: 'center' }}>
                                         <div className="imp-tooltip-wrap">
@@ -926,7 +918,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                         <div className="exp-hero-info">
                                             {(() => {
                                                 const ultimaEval = perfil.evaluaciones?.find(e => e.resultado);
-                                                const medidaActiva = perfil.medidas?.find(m => m.estado === 'ACTIVO');
+                                                const medidasActivas = (perfil.medidas || []).filter(m => m.estado === 'ACTIVO');
                                                 return (
                                                     <div className="exp-hero-badges">
                                                         <span className="exp-badge-causa">
@@ -938,25 +930,20 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                                                 {resultadoConfig[ultimaEval.resultado]?.label ?? ultimaEval.resultado}
                                                             </span>
                                                         )}
-                                                        {medidaActiva && (
-                                                            <span className="exp-badge-medida">
-                                                                <i className="bi bi-card-checklist"></i>
-                                                                {medidaActiva.tipo === 'MEDIDA_CAUTELAR' ? 'MC Activa' : 'SCP Activa'}
-                                                            </span>
-                                                        )}
-                                                        {medidaActiva && !perfil.carpetaCerrada && !perfil.fallecido && (
-                                                            <div style={{ position: 'relative', display: 'inline-block' }}>
+                                                        {!perfil.carpetaCerrada && !perfil.fallecido && medidasActivas.map(medidaActiva => (
+                                                            <div key={`cumpl-${medidaActiva.id}`} style={{ position: 'relative', display: 'inline-block' }}>
                                                                 <button
                                                                     className={`exp-badge-cumplimiento ${medidaActiva.cumpliendoIncumpliendo === 'CUMPLIMIENTO' ? 'badge-cumplimiento' : medidaActiva.cumpliendoIncumpliendo === 'INCUMPLIMIENTO' ? 'badge-incumplimiento' : 'badge-sin-asignar'}`}
-                                                                    onClick={() => setShowCumplimientoMenu(v => !v)}
+                                                                    onClick={() => setShowCumplimientoMenu(v => v === medidaActiva.id ? null : medidaActiva.id)}
                                                                     disabled={guardandoCumplimiento}
-                                                                    title="Cambiar estatus de cumplimiento"
+                                                                    title={`Cambiar cumplimiento — ${medidaActiva.tipo === 'MEDIDA_CAUTELAR' ? 'MC' : 'SCP'}`}
                                                                 >
                                                                     <i className={`bi ${medidaActiva.cumpliendoIncumpliendo === 'CUMPLIMIENTO' ? 'bi-check-circle-fill' : medidaActiva.cumpliendoIncumpliendo === 'INCUMPLIMIENTO' ? 'bi-x-circle-fill' : 'bi-dash-circle'}`} />
                                                                     {medidaActiva.cumpliendoIncumpliendo === 'CUMPLIMIENTO' ? 'Cumplimiento' : medidaActiva.cumpliendoIncumpliendo === 'INCUMPLIMIENTO' ? 'Incumplimiento' : 'Sin estatus'}
+                                                                    <span style={{ fontSize: 10, opacity: 0.7, marginLeft: 2 }}>· {medidaActiva.tipo === 'MEDIDA_CAUTELAR' ? 'MC' : 'SCP'}</span>
                                                                     <i className="bi bi-chevron-down" style={{ fontSize: 10 }} />
                                                                 </button>
-                                                                {showCumplimientoMenu && (
+                                                                {showCumplimientoMenu === medidaActiva.id && (
                                                                     <div className="cumplimiento-menu">
                                                                         <button onClick={() => handleCambiarCumplimiento(medidaActiva.id, 'CUMPLIMIENTO')}>
                                                                             <i className="bi bi-check-circle-fill" style={{ color: '#16a34a' }} /> Cumplimiento
@@ -970,7 +957,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                                                     </div>
                                                                 )}
                                                             </div>
-                                                        )}
+                                                        ))}
                                                         {perfil.fallecido && (
                                                             <span className="exp-badge-fallecido">
                                                                 <i className="bi bi-heartbreak-fill"></i> Fallecido

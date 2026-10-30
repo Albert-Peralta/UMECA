@@ -36,6 +36,10 @@ public interface MedidaCautelarRepository extends JpaRepository<MedidaCautelar, 
     @Query("SELECT m.imputado.id, m.tipo, m.estado, m.vieneDeMC, m.vieneDeScp, m.cumpliendoIncumpliendo FROM MedidaCautelar m WHERE m.imputado.id IN :ids AND m.createdAt = (SELECT MAX(m2.createdAt) FROM MedidaCautelar m2 WHERE m2.imputado.id = m.imputado.id)")
     List<Object[]> tipoActivoPorImputados(@Param("ids") List<Long> ids);
 
+    /** Devuelve [imputadoId, medidaId, tipo, estado, cumpliendoIncumpliendo] de TODAS las medidas activas por imputado */
+    @Query("SELECT m.imputado.id, m.id, m.tipo, m.estado, m.cumpliendoIncumpliendo FROM MedidaCautelar m WHERE m.imputado.id IN :ids AND m.estado = 'ACTIVO'")
+    List<Object[]> todasActivasPorImputados(@Param("ids") List<Long> ids);
+
     @Query("SELECT m FROM MedidaCautelar m WHERE " +
             "LOWER(m.imputado.nombre) LIKE LOWER(CONCAT('%',:q,'%')) OR " +
             "LOWER(m.imputado.apPaterno) LIKE LOWER(CONCAT('%',:q,'%')) OR " +

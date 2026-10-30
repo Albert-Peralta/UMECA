@@ -237,9 +237,9 @@ const SeguimientoCasos = ({ resetKey = 0 }) => {
             const res = await buscarEntrevistasParaMedida('');
             const todas = res.data?.data || [];
             // Set de imputadoIds que ya tienen al menos una medida registrada
-            const conMedidaIds = new Set((datos || []).map(d => d.imputadoId).filter(Boolean));
-            const sinMedida = todas.filter(e => !conMedidaIds.has(e.imputadoId));
-            const conMedida = todas.filter(e =>  conMedidaIds.has(e.imputadoId));
+            const conMedidaEntIds = new Set((datos || []).map(d => d.entrevistaId).filter(Boolean));
+            const sinMedida = todas.filter(e => !conMedidaEntIds.has(e.id));
+            const conMedida = todas.filter(e =>  conMedidaEntIds.has(e.id));
             // Marcar cada entrevista con flag para el badge
             const marcar = (arr, tiene) => arr.map(e => ({ ...e, tieneMedida: tiene }));
             setRecientesPre([...marcar(sinMedida, false), ...marcar(conMedida, true)].slice(0, 5));

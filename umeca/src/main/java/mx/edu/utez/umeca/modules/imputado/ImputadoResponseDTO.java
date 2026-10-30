@@ -55,11 +55,21 @@ public class ImputadoResponseDTO {
     private String cumplimientoMedidaActiva; // "CUMPLIMIENTO" | "INCUMPLIMIENTO" | null
     private String zona;               // zona de la última entrevista del imputado
     private String ultimaEntrevistaEstado;
+    private List<MedidaActivaResumen> medidasActivas; // todas las medidas activas (para cumplimiento individual)
 
     // Resúmenes relacionados
     private List<EntrevistaResumen> entrevistas;
     private List<EvaluacionResumen> evaluaciones;
     private List<MedidaResumen>     medidas;
+
+    @Getter
+    @Setter
+    public static class MedidaActivaResumen {
+        private Long id;
+        private String tipo;         // "MEDIDA_CAUTELAR" | "SUSPENSION_CONDICIONAL"
+        private String cumplimiento; // "CUMPLIMIENTO" | "INCUMPLIMIENTO" | null
+        private String estado;       // "ACTIVO" | etc.
+    }
 
     // ── Constructores de resúmenes ────────────────────
 

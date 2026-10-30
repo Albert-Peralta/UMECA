@@ -606,34 +606,43 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                                 <i className="bi bi-search"></i> Buscar
                             </button>
                         </div>
-                        {impDuplicadoEntrevistas.length > 0 && (
-                            <div style={{ width: '100%', borderTop: '1px solid #fca5a5', paddingTop: 8 }}>
-                                <p style={{ fontSize: 12, fontWeight: 600, color: '#991b1b', marginBottom: 6 }}>
-                                    <i className="bi bi-journal-text"></i> Entrevistas registradas ({impDuplicadoEntrevistas.length}):
-                                </p>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                    {impDuplicadoEntrevistas.map(ent => (
-                                        <div key={ent.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, background: '#fff1f1', borderRadius: 6, padding: '5px 10px', flexWrap: 'wrap' }}>
-                                            <span style={{ fontWeight: 700, color: '#7f1d1d' }}>{ent.folio || '—'}</span>
-                                            <span style={{ color: '#6b7280' }}>|</span>
-                                            <span style={{ color: '#374151' }}>{ent.causaPenal || 'Sin causa penal'}</span>
-                                            <span style={{ color: '#6b7280' }}>|</span>
-                                            <span style={{ color: '#374151' }}>{ent.fechaRegistro || '—'}</span>
-                                            <span style={{ color: '#6b7280' }}>|</span>
-                                            <span style={{
-                                                fontWeight: 600,
-                                                color: ent.estado === 'COMPLETADO' ? '#065f46' : '#92400e',
-                                                background: ent.estado === 'COMPLETADO' ? '#d1fae5' : '#fef3c7',
-                                                borderRadius: 4, padding: '1px 7px', fontSize: 11
-                                            }}>{ent.estado}</span>
-                                            {ent.tipoSeguimiento && (
-                                                <span style={{ color: '#4b5563', fontSize: 11 }}>• {ent.tipoSeguimiento}</span>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                        <div style={{ width: '100%', borderTop: '1px solid #fca5a5', paddingTop: 8 }}>
+                            <p style={{ fontSize: 12, fontWeight: 600, color: '#991b1b', marginBottom: 6 }}>
+                                <i className="bi bi-person-fill" style={{ marginRight: 4 }}></i>
+                                {[impDuplicado?.nombre, impDuplicado?.apPaterno, impDuplicado?.apMaterno].filter(Boolean).join(' ')}
+                            </p>
+                            {impDuplicadoEntrevistas.length > 0 && (
+                                <>
+                                    <p style={{ fontSize: 12, fontWeight: 600, color: '#991b1b', marginBottom: 6 }}>
+                                        <i className="bi bi-journal-text"></i> Entrevistas registradas ({impDuplicadoEntrevistas.length}):
+                                    </p>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                        {impDuplicadoEntrevistas.map(ent => (
+                                            <div key={ent.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, background: '#fff1f1', borderRadius: 6, padding: '5px 10px', flexWrap: 'wrap' }}>
+                                                <span><span style={{ color: '#9ca3af', fontSize: 11 }}>Folio: </span><span style={{ fontWeight: 700, color: '#7f1d1d' }}>{ent.folio || '—'}</span></span>
+                                                <span style={{ color: '#e5e7eb' }}>|</span>
+                                                <span><span style={{ color: '#9ca3af', fontSize: 11 }}>Causa penal: </span><span style={{ color: '#374151' }}>{ent.causaPenal || '—'}</span></span>
+                                                <span style={{ color: '#e5e7eb' }}>|</span>
+                                                <span><span style={{ color: '#9ca3af', fontSize: 11 }}>Fecha: </span><span style={{ color: '#374151' }}>{ent.fechaRegistro || '—'}</span></span>
+                                                <span style={{ color: '#e5e7eb' }}>|</span>
+                                                <span style={{
+                                                    fontWeight: 600,
+                                                    color: ent.estado === 'COMPLETADO' ? '#065f46' : '#92400e',
+                                                    background: ent.estado === 'COMPLETADO' ? '#d1fae5' : '#fef3c7',
+                                                    borderRadius: 4, padding: '1px 7px', fontSize: 11
+                                                }}>{ent.estado}</span>
+                                                {ent.tipoSeguimiento && (
+                                                    <>
+                                                        <span style={{ color: '#e5e7eb' }}>|</span>
+                                                        <span><span style={{ color: '#9ca3af', fontSize: 11 }}>Tipo: </span><span style={{ color: '#4b5563' }}>{ent.tipoSeguimiento}</span></span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     </div>
                 )}
                 {/* Imputado seleccionado sin entrevista (situación normal al crear) */}

@@ -72,6 +72,10 @@ public class ImputadoService {
                         (a, b) -> a
                 ));
 
+        // 1 query: todas las medidas activas por imputado (para cumplimiento individual)
+        Map<Long, List<Object[]>> todasActivas = medidaRepository.todasActivasPorImputados(ids)
+                .stream().collect(Collectors.groupingBy(r -> (Long) r[0]));
+
         // 1 query: zona de la última entrevista por imputado
         Map<Long, String> zonas = entrevistaRepository.zonasPorImputados(ids)
                 .stream().collect(Collectors.toMap(
@@ -102,6 +106,16 @@ public class ImputadoService {
                 dto.setVieneDeScp(Boolean.TRUE.equals(mInfo[4]));
                 dto.setCumplimientoMedidaActiva(mInfo.length > 5 && mInfo[5] != null ? mInfo[5].toString() : null);
             }
+            List<Object[]> activas = todasActivas.getOrDefault(i.getId(), List.of());
+            List<ImputadoResponseDTO.MedidaActivaResumen> resumenes = activas.stream().map(r -> {
+                ImputadoResponseDTO.MedidaActivaResumen mar = new ImputadoResponseDTO.MedidaActivaResumen();
+                mar.setId(r[1] != null ? ((Number) r[1]).longValue() : null);
+                mar.setTipo(r[2] != null ? r[2].toString() : null);
+                mar.setEstado(r[3] != null ? r[3].toString() : null);
+                mar.setCumplimiento(r[4] != null ? r[4].toString() : null);
+                return mar;
+            }).collect(Collectors.toList());
+            dto.setMedidasActivas(resumenes);
             dto.setZona(zonas.get(i.getId()));
             Object[] ue = ultimaEnt.get(i.getId());
             if (ue != null && ue[1] != null) dto.setUltimaEntrevistaEstado(ue[1].toString());
