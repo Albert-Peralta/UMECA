@@ -32,7 +32,7 @@ const DETALLES_SCP = {
         { key: 'frecuencia',       label: 'Frecuencia de asistencia' },
         { key: 'esTTA',            label: '¿Pertenece al programa TTA?', type: 'checkbox' },
     ],
-    V:    [],
+    V:    [{ key: 'detallesCondicionV', label: 'Detalles / Especificaciones', type: 'textarea', full: true, maxLength: 300 }],
     VI:   [
         { key: 'institucionServicio', label: 'Institución beneficiaria', full: true },
         { key: 'horasSemanales',      label: 'Horas semanales', type: 'number' },
@@ -53,7 +53,7 @@ const DETALLES_SCP = {
     ],
     X:    [],
     XI:   [],
-    XII:  [],
+    XII:  [{ key: 'detallesCondicionXII', label: 'Detalles / Restricciones de viaje', type: 'textarea', full: true, maxLength: 300 }],
     XIII: [
         { key: 'montoPension',  label: 'Monto de pensión ($)', type: 'number' },
         { key: 'beneficiarios', label: 'Beneficiarios', full: true },
@@ -634,9 +634,18 @@ const FormularioSCP = ({ medidaInicial, onVolver, onGuardado }) => {
                                             {campo.options?.map(o => <option key={o} value={o}>{o}</option>)}
                                         </select>
                                     ) : campo.type === 'textarea' ? (
-                                        <textarea rows={2} value={detalles[fracKey]?.[campo.key] || ''}
-                                            onChange={e => setDetalle(fracKey, campo.key, e.target.value)}
-                                            placeholder={campo.placeholder} />
+                                        <div style={{ position: 'relative' }}>
+                                            <textarea rows={2} value={detalles[fracKey]?.[campo.key] || ''}
+                                                onChange={e => setDetalle(fracKey, campo.key, e.target.value)}
+                                                placeholder={campo.placeholder}
+                                                maxLength={campo.maxLength}
+                                                style={{ width: '100%', paddingBottom: 18 }} />
+                                            {campo.maxLength && (
+                                                <span style={{ position: 'absolute', bottom: 6, right: 8, fontSize: 11, color: (detalles[fracKey]?.[campo.key] || '').length >= campo.maxLength ? '#dc2626' : '#9ca3af', pointerEvents: 'none' }}>
+                                                    {(detalles[fracKey]?.[campo.key] || '').length}/{campo.maxLength}
+                                                </span>
+                                            )}
+                                        </div>
                                     ) : (
                                         <input type={campo.type || 'text'}
                                             value={detalles[fracKey]?.[campo.key] || ''}

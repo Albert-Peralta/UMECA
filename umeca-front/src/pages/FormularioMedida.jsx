@@ -95,7 +95,7 @@ const DETALLES_SCP = {
         { key: 'frecuencia',       label: 'Frecuencia de asistencia' },
         { key: 'esTTA',            label: '¿Pertenece al programa TTA?', type: 'checkbox' },
     ],
-    V:    [],
+    V:    [{ key: 'detallesCondicionV', label: 'Detalles / Especificaciones', type: 'textarea', full: true }],
     VI:   [
         { key: 'institucionServicio', label: 'Institución beneficiaria', full: true },
         { key: 'horasSemanales',      label: 'Horas semanales', type: 'number' },
@@ -116,7 +116,7 @@ const DETALLES_SCP = {
     ],
     X:    [],
     XI:   [],
-    XII:  [],
+    XII:  [{ key: 'detallesCondicionXII', label: 'Detalles / Restricciones de viaje', type: 'textarea', full: true }],
     XIII: [
         { key: 'montoPension',  label: 'Monto de pensión ($)', type: 'number' },
         { key: 'beneficiarios', label: 'Beneficiarios', full: true },
