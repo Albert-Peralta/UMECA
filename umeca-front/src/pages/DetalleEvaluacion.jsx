@@ -78,6 +78,13 @@ const DetalleEvaluacion = ({ evaluacion: d, onVolver, onEditar, puedeEditar }) =
                             <i className="bi bi-person-vcard"></i> Volver al Expediente
                         </button>
                     )}
+                    {localStorage.getItem('volverConsultasBusqueda') && (
+                        <button className="de-btn-volver de-btn-expediente" onClick={() => {
+                            window.dispatchEvent(new CustomEvent('navigate', { detail: 'consultas' }));
+                        }}>
+                            <i className="bi bi-search"></i> Volver a Búsqueda
+                        </button>
+                    )}
                 </div>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     <button className="de-btn-imprimir" onClick={() => setImprimiendo(true)}>

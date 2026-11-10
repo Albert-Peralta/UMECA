@@ -327,12 +327,16 @@ const GestionUsuarios = () => {
             </div>
 
             <div className="gu-filtros">
-                <input
-                    className="gu-buscador"
-                    placeholder="Buscar por nombre o usuario..."
-                    value={busqueda}
-                    onChange={e => setBusqueda(e.target.value)}
-                />
+                <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+                    <input
+                        className="gu-buscador"
+                        style={{ width: '100%', boxSizing: 'border-box' }}
+                        placeholder="Buscar por nombre o usuario..."
+                        value={busqueda}
+                        onChange={e => setBusqueda(e.target.value)}
+                    />
+                    {busqueda && <button onClick={() => setBusqueda('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: '#e5e7eb', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 11, lineHeight: 1, padding: 0, width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Limpiar búsqueda"><i className="bi bi-x-lg" /></button>}
+                </div>
                 <select className="gu-select-filtro" value={filtroRol} onChange={e => setFiltroRol(e.target.value)}>
                     <option value="">Todos los roles</option>
                     {ROLES.map(r => <option key={r} value={r}>{ETIQUETA_ROL[r] || r}</option>)}

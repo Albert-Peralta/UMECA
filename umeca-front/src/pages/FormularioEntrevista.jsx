@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { toUpperNoAccent } from '../utils/text';
 import { crearEntrevista } from '../api/entrevistasApi';
 import { getImputados, getImputadoById } from '../api/imputadosApi';
 import { useFormGuard } from '../context/FormGuardContext';
@@ -342,7 +343,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
         const d = new Date(); d.setFullYear(d.getFullYear() - 18); return d.toISOString().split('T')[0];
     })();
 
-    const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
+    const set = (key, val) => setForm(prev => ({ ...prev, [key]: typeof val === 'string' && key !== 'email' ? toUpperNoAccent(val) : val }));
 
     const handleFechaNacimiento = (fecha) => {
         set('fechaNacimiento', fecha);
@@ -368,7 +369,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
 
     const setTatuaje = (i, key, val) => {
         const nuevos = [...tatuajes];
-        nuevos[i][key] = val;
+        nuevos[i][key] = typeof val === 'string' ? toUpperNoAccent(val) : val;
         setTatuajes(nuevos);
     };
 
@@ -504,7 +505,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
 
     const setDomicilio = (i, key, val) => {
         const nuevos = [...domicilios];
-        nuevos[i][key] = val;
+        nuevos[i][key] = typeof val === 'string' ? toUpperNoAccent(val) : val;
         setDomicilios(nuevos);
     };
 
@@ -766,7 +767,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                         <input
                             id="fe-curp"
                             value={form.curp}
-                            onChange={e => { setCurpManual(true); set('curp', e.target.value.toUpperCase()); setErrores(p => ({...p, curp: false})); }}
+                            onChange={e => { setCurpManual(true); set('curp', e.target.value); setErrores(p => ({...p, curp: false})); }}
                             className="fe-input-full"
                             placeholder="Se genera automáticamente"
                             maxLength={18}
@@ -1103,8 +1104,8 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                     <tbody>
                         {personasHabita.map((p, i) => (
                             <tr key={i}>
-                                <td><input value={p.nombre}      onChange={e => { const n=[...personasHabita]; n[i]={...n[i],nombre:e.target.value};      setPersonasHabita(n); }} /></td>
-                                <td><input value={p.parentesco}  onChange={e => { const n=[...personasHabita]; n[i]={...n[i],parentesco:e.target.value};  setPersonasHabita(n); }} /></td>
+                                <td><input value={p.nombre}      onChange={e => { const n=[...personasHabita]; n[i]={...n[i],nombre:toUpperNoAccent(e.target.value)};      setPersonasHabita(n); }} /></td>
+                                <td><input value={p.parentesco}  onChange={e => { const n=[...personasHabita]; n[i]={...n[i],parentesco:toUpperNoAccent(e.target.value)};  setPersonasHabita(n); }} /></td>
                                 <td><input value={p.edad}        onChange={e => { const n=[...personasHabita]; n[i]={...n[i],edad:e.target.value};        setPersonasHabita(n); }} type="number" /></td>
                                 <td><input value={p.telefono}    onChange={e => { const n=[...personasHabita]; n[i]={...n[i],telefono:e.target.value};    setPersonasHabita(n); }} /></td>
                                 <td>
@@ -1113,7 +1114,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                                         {['Sin estudios','Primaria','Secundaria','Bachillerato / Preparatoria','Carrera técnica','Normal (Formación docente)','Licenciatura','Posgrado'].map(o => <option key={o}>{o}</option>)}
                                     </select>
                                 </td>
-                                <td><input value={p.ocupacion}   onChange={e => { const n=[...personasHabita]; n[i]={...n[i],ocupacion:e.target.value};   setPersonasHabita(n); }} /></td>
+                                <td><input value={p.ocupacion}   onChange={e => { const n=[...personasHabita]; n[i]={...n[i],ocupacion:toUpperNoAccent(e.target.value)};   setPersonasHabita(n); }} /></td>
                                 <td>{personasHabita.length > 1 && <button className="fe-btn-eliminar-dom" onClick={() => setPersonasHabita(personasHabita.filter((_,idx)=>idx!==i))}>✕</button>}</td>
                             </tr>
                         ))}
@@ -1131,11 +1132,11 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                     <tbody>
                         {referencias.map((r, i) => (
                             <tr key={i}>
-                                <td><input value={r.nombre}     onChange={e => { const n=[...referencias]; n[i]={...n[i],nombre:e.target.value};     setReferencias(n); }} /></td>
-                                <td><input value={r.parentesco} onChange={e => { const n=[...referencias]; n[i]={...n[i],parentesco:e.target.value}; setReferencias(n); }} /></td>
+                                <td><input value={r.nombre}     onChange={e => { const n=[...referencias]; n[i]={...n[i],nombre:toUpperNoAccent(e.target.value)};     setReferencias(n); }} /></td>
+                                <td><input value={r.parentesco} onChange={e => { const n=[...referencias]; n[i]={...n[i],parentesco:toUpperNoAccent(e.target.value)}; setReferencias(n); }} /></td>
                                 <td><input value={r.edad}       onChange={e => { const n=[...referencias]; n[i]={...n[i],edad:e.target.value};       setReferencias(n); }} type="number" /></td>
                                 <td><input value={r.telefono}   onChange={e => { const n=[...referencias]; n[i]={...n[i],telefono:e.target.value};   setReferencias(n); }} /></td>
-                                <td><input value={r.direccion}  onChange={e => { const n=[...referencias]; n[i]={...n[i],direccion:e.target.value};  setReferencias(n); }} /></td>
+                                <td><input value={r.direccion}  onChange={e => { const n=[...referencias]; n[i]={...n[i],direccion:toUpperNoAccent(e.target.value)};  setReferencias(n); }} /></td>
                                 <td>{referencias.length > 1 && <button className="fe-btn-eliminar-dom" onClick={() => setReferencias(referencias.filter((_,idx)=>idx!==i))}>✕</button>}</td>
                             </tr>
                         ))}
@@ -1178,15 +1179,15 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                                 <td>
                                     <strong>{row.sustancia}</strong>
                                     {row.sustancia === 'Otra' && row.consume && (
-                                        <input style={{marginTop:'4px',display:'block'}} placeholder="¿Cuál?" value={row.otraEsp} onChange={e => { const n=[...consumoSustancias]; n[i]={...n[i],otraEsp:e.target.value}; setConsumoSustancias(n); }} />
+                                        <input style={{marginTop:'4px',display:'block'}} placeholder="¿Cuál?" value={row.otraEsp} onChange={e => { const n=[...consumoSustancias]; n[i]={...n[i],otraEsp:toUpperNoAccent(e.target.value)}; setConsumoSustancias(n); }} />
                                     )}
                                 </td>
                                 <td className="fe-td-center"><input type="radio" checked={row.consume === true}  onChange={() => { const n=[...consumoSustancias]; n[i]={...n[i],consume:true};  setConsumoSustancias(n); }} /></td>
                                 <td className="fe-td-center"><input type="radio" checked={row.consume === false} onChange={() => { const n=[...consumoSustancias]; n[i]={...n[i],consume:false}; setConsumoSustancias(n); }} /></td>
-                                <td><input value={row.desde}              disabled={!row.consume} onChange={e => { const n=[...consumoSustancias]; n[i]={...n[i],desde:e.target.value};              setConsumoSustancias(n); }} /></td>
-                                <td><input value={row.periodicidad}       disabled={!row.consume} onChange={e => { const n=[...consumoSustancias]; n[i]={...n[i],periodicidad:e.target.value};       setConsumoSustancias(n); }} /></td>
-                                <td><input value={row.cantidad}           disabled={!row.consume} onChange={e => { const n=[...consumoSustancias]; n[i]={...n[i],cantidad:e.target.value};           setConsumoSustancias(n); }} /></td>
-                                <td><input value={row.fechaUltimoConsumo} disabled={!row.consume} onChange={e => { const n=[...consumoSustancias]; n[i]={...n[i],fechaUltimoConsumo:e.target.value}; setConsumoSustancias(n); }} /></td>
+                                <td><input value={row.desde}              disabled={!row.consume} onChange={e => { const n=[...consumoSustancias]; n[i]={...n[i],desde:toUpperNoAccent(e.target.value)};              setConsumoSustancias(n); }} /></td>
+                                <td><input value={row.periodicidad}       disabled={!row.consume} onChange={e => { const n=[...consumoSustancias]; n[i]={...n[i],periodicidad:toUpperNoAccent(e.target.value)};       setConsumoSustancias(n); }} /></td>
+                                <td><input value={row.cantidad}           disabled={!row.consume} onChange={e => { const n=[...consumoSustancias]; n[i]={...n[i],cantidad:toUpperNoAccent(e.target.value)};           setConsumoSustancias(n); }} /></td>
+                                <td><input value={row.fechaUltimoConsumo} disabled={!row.consume} onChange={e => { const n=[...consumoSustancias]; n[i]={...n[i],fechaUltimoConsumo:toUpperNoAccent(e.target.value)}; setConsumoSustancias(n); }} /></td>
                             </tr>
                         ))}
                     </tbody>

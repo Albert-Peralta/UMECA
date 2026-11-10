@@ -80,23 +80,24 @@ export default function ExpedientesAnteriores() {
             let tipoIn    = undefined;
             let zona      = undefined;
 
-            if (SUBTIPOS_POR_BASE[tipoFiltro]) {
-                // Es una base (XOCHI/JOJU/CUAT/INACTIVOS_XOCHI)
-                zona = tipoFiltro === 'BASE_XOCHI' ? 'XOCHITEPEC'
-                     : tipoFiltro === 'BASE_JOJU'  ? 'JOJUTLA'
-                     : tipoFiltro === 'BASE_CUAT'  ? 'CUAUTLA'
-                     : tipoFiltro === 'INACTIVOS_XOCHI' ? 'XOCHITEPEC'
-                     : 'CUAUTLA';
-                if (subtipoFiltro) {
-                    tipo = subtipoFiltro;
+            if (!busqueda) {
+                if (SUBTIPOS_POR_BASE[tipoFiltro]) {
+                    zona = tipoFiltro === 'BASE_XOCHI' ? 'XOCHITEPEC'
+                         : tipoFiltro === 'BASE_JOJU'  ? 'JOJUTLA'
+                         : tipoFiltro === 'BASE_CUAT'  ? 'CUAUTLA'
+                         : tipoFiltro === 'INACTIVOS_XOCHI' ? 'XOCHITEPEC'
+                         : 'CUAUTLA';
+                    if (subtipoFiltro) {
+                        tipo = subtipoFiltro;
+                    } else {
+                        tipoIn = SUBTIPOS_POR_BASE[tipoFiltro].join(',');
+                    }
                 } else {
-                    tipoIn = SUBTIPOS_POR_BASE[tipoFiltro].join(',');
+                    tipo = tipoFiltro;
+                    zona = zonaFiltro || undefined;
                 }
-            } else {
-                // SUSTRAIDO o REGISTRO_HISTORICO
-                tipo = tipoFiltro;
-                zona = zonaFiltro || undefined;
             }
+            // Si hay búsqueda activa, se omiten los filtros de base/zona para buscar globalmente
 
             const res = await getExpedientes({
                 tipo,
@@ -578,22 +579,32 @@ export default function ExpedientesAnteriores() {
                         Mostrando <b>{total === 0 ? 0 : pagina * ITEMS_POR_PAGINA + 1}</b>–<b>{Math.min((pagina + 1) * ITEMS_POR_PAGINA, total)}</b> de <b>{total}</b>
                     </span>
                     <div className="exp-topbar-sep" />
-                    <div className="exp-tipo-pills">
-                        {[
-                            ['BASE_XOCHI',         'Base Xochi'],
-                            ['BASE_JOJU',          'Base Joju'],
-                            ['BASE_CUAT',          'Base Cuautla'],
-                            ['INACTIVOS_XOCHI',    'Inactivos Xochi'],
-                            ['REGISTRO_HISTORICO', 'Reg. Histórico'],
-                            ['SUSTRAIDO',          'Sustraídos'],
-                            ['CIERRE_CARPETA',     'Cierre Carpetas'],
-                        ].map(([v, l]) => (
-                            <button key={v}
-                                className={`exp-tipo-pill ${tipoFiltro === v ? 'exp-tipo-pill-active' : ''} exp-tipo-pill-${v.toLowerCase()}`}
-                                onClick={() => { setTipoFiltro(v); setSubtipoFiltro(null); setZonaFiltro(''); }}>
-                                {l}
-                            </button>
-                        ))}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <div className="exp-tipo-pills">
+                            {[
+                                ['BASE_XOCHI',         'Base Xochi'],
+                                ['BASE_JOJU',          'Base Joju'],
+                                ['BASE_CUAT',          'Base Cuautla'],
+                                ['INACTIVOS_XOCHI',    'Inactivos Xochi'],
+                                ['REGISTRO_HISTORICO', 'Reg. Histórico'],
+                                ['SUSTRAIDO',          'Sustraídos'],
+                                ['CIERRE_CARPETA',     'Cierre Carpetas'],
+                            ].map(([v, l]) => (
+                                <button key={v}
+                                    className={`exp-tipo-pill ${tipoFiltro === v ? 'exp-tipo-pill-active' : ''} exp-tipo-pill-${v.toLowerCase()}`}
+                                    onClick={() => { if (!busqueda) { setTipoFiltro(v); setSubtipoFiltro(null); setZonaFiltro(''); } }}
+                                    disabled={!!busqueda}
+                                    style={busqueda ? { opacity: 0.4, cursor: 'not-allowed' } : {}}>
+                                    {l}
+                                </button>
+                            ))}
+                        </div>
+                        {busqueda && (
+                            <span style={{ fontSize: 11, color: '#dc2626', paddingLeft: 2 }}>
+                                <i className="bi bi-info-circle" style={{ marginRight: 4 }} />
+                                Los filtros están desactivados mientras haya una búsqueda activa
+                            </span>
+                        )}
                     </div>
                     <div className="exp-topbar-spacer" />
                     <div className="exp-topbar-sep" />
@@ -638,6 +649,13 @@ export default function ExpedientesAnteriores() {
                         value={busqueda}
                         onChange={e => setBusqueda(e.target.value)}
                     />
+                    {busqueda && !loading && (
+                        <button onClick={() => setBusqueda('')}
+                            style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: '#e5e7eb', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 11, lineHeight: 1, padding: 0, width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            title="Limpiar búsqueda">
+                            <i className="bi bi-x-lg" />
+                        </button>
+                    )}
                     {loading && <i className="bi bi-arrow-repeat exp-spin exp-buscador-loading" />}
                 </div>
                 {/* Pills de zona — solo para Reg. Histórico y Sustraídos */}

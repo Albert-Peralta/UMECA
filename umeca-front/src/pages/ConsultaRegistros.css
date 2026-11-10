@@ -19,18 +19,18 @@
 .cr-stat-num  { font-size: 26px; font-weight: 800; color: #222; line-height: 1; }
 .cr-stat-lbl  { font-size: 12px; color: #888; margin-top: 2px; }
 
-.cr-toolbar {
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 10px; margin-bottom: 16px; flex-wrap: nowrap;
+/* barra unificada (una sola línea) */
+.cr-barra-unica {
+    display: flex; align-items: center; gap: 8px; flex-wrap: nowrap;
 }
-.cr-toolbar-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
-.cr-search-box {
+.cr-barra-search {
     display: flex; align-items: center; gap: 8px;
-    border: 1px solid #d0d0d0; border-radius: 8px;
-    padding: 9px 14px; background: #fff; flex: 1; min-width: 0;
+    background: #fff; border: 1px solid #d1d5db; border-radius: 10px;
+    padding: 8px 14px;
+    flex: 1; min-width: 0;
 }
-.cr-search-box i { color: #999; font-size: 14px; flex-shrink: 0; }
-.cr-search-box input { border: none; outline: none; font-size: 14px; width: 100%; min-width: 0; }
+.cr-barra-search > i { color: #376842; font-size: 15px; flex-shrink: 0; }
+.cr-barra-sep { width: 1px; height: 24px; background: #d1d5db; flex-shrink: 0; }
 
 .cr-btn-nuevo {
     background: #376842; color: white; border: none;
@@ -59,20 +59,31 @@
 .cr-td-nombre span   { display: block; font-size: 12px; color: #999; margin-top: 1px; }
 
 /* ── Buscador global ───────────────────────────────────────── */
-.cr-global-wrap { position: relative; margin-bottom: 12px; }
-.cr-global-box {
-    display: flex; align-items: center; gap: 10px;
-    background: #fff; border: 1.5px solid #376842;
-    border-radius: 10px; padding: 10px 16px;
-    box-shadow: 0 2px 8px rgba(55,104,66,.10);
-}
-.cr-global-box i { color: #376842; font-size: 16px; flex-shrink: 0; }
-.cr-global-input { border: none; outline: none; font-size: 14px; width: 100%; color: #222; }
+.cr-global-wrap { position: relative; margin-bottom: 16px; }
+.cr-global-input { border: none; outline: none; font-size: 14px; width: 100%; color: #222; min-width: 0; }
 .cr-global-input::placeholder { color: #aaa; }
-.cr-global-clear { background: none; border: none; cursor: pointer; color: #aaa; font-size: 18px; padding: 0; line-height: 1; }
-.cr-global-clear:hover { color: #666; }
+.cr-global-clear { background: #e5e7eb; border: none; cursor: pointer; color: #6b7280; font-size: 11px; padding: 0; line-height: 1; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.cr-global-clear:hover { background: #d1d5db; }
 .cr-spin { animation: spin .7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.cr-modo-toggle {
+    display: flex; align-items: center; gap: 2px;
+    background: #e8f0e9; border-radius: 6px; padding: 2px; flex-shrink: 0;
+    border: 1px solid #c5d9c8;
+}
+.cr-modo-btn {
+    display: flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border: none; cursor: pointer; border-radius: 5px;
+    font-size: 11px; font-weight: 600; color: #5a7a5e;
+    background: transparent; transition: background .15s, color .15s; white-space: nowrap;
+}
+.cr-modo-btn i { font-size: 11px; }
+.cr-modo-btn:hover:not(.cr-modo-active) { background: #d2e5d4; color: #376842; }
+.cr-modo-active {
+    background: #376842 !important; color: #fff !important;
+    box-shadow: 0 2px 6px rgba(55,104,66,.30);
+}
 
 .cr-global-dropdown {
     position: absolute; top: calc(100% + 6px); left: 0; right: 0;

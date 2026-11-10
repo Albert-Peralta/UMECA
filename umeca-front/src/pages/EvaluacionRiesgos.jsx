@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { toUpperNoAccent } from '../utils/text';
 import { useAuth } from '../context/AuthContext';
 import { puedeCrear as _puedeCrear, puedeEditar as _puedeEditar } from '../utils/permisos';
 import { useToast } from '../context/ToastContext';
@@ -175,7 +176,7 @@ const EvaluacionRiesgos = ({ resetKey = 0 }) => {
     const setImputado = (idx, campo, valor) => {
         setNegacionData(p => {
             const imps = [...p.imputados];
-            imps[idx] = { ...imps[idx], [campo]: valor };
+            imps[idx] = { ...imps[idx], [campo]: typeof valor === 'string' ? toUpperNoAccent(valor) : valor };
             return { ...p, imputados: imps };
         });
     };
@@ -405,6 +406,7 @@ const EvaluacionRiesgos = ({ resetKey = 0 }) => {
                             value={busqueda}
                             onChange={handleBusqueda}
                         />
+                        {busqueda && <button onClick={() => handleBusqueda({ target: { value: '' } })} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: '#e5e7eb', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 11, lineHeight: 1, padding: 0, width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Limpiar búsqueda"><i className="bi bi-x-lg" /></button>}
                     </div>
                 </div>
                 <div className="zona-pills">
@@ -689,7 +691,7 @@ const EvaluacionRiesgos = ({ resetKey = 0 }) => {
                             <div style={{ marginBottom: 8 }}>
                                 <label style={{ fontSize: 11, fontWeight: 600, color: negacionErrores.causaPenal ? '#c0392b' : '#444', display: 'block', marginBottom: 3 }}>Carpeta / Causa penal *</label>
                                 <input value={negacionData.causaPenal}
-                                    onChange={e => { setNegacionData(p => ({ ...p, causaPenal: e.target.value })); setSugerenciasPorIdx(p => ({ ...p, causa: [] })); setNegacionErrores(p => ({ ...p, causaPenal: '' })); }}
+                                    onChange={e => { setNegacionData(p => ({ ...p, causaPenal: toUpperNoAccent(e.target.value) })); setSugerenciasPorIdx(p => ({ ...p, causa: [] })); setNegacionErrores(p => ({ ...p, causaPenal: '' })); }}
                                     onBlur={e => handleCausaPenalBlur(e.target.value)}
                                     style={{ width: '100%', boxSizing: 'border-box', border: `1px solid ${negacionErrores.causaPenal ? '#c0392b' : '#ddd'}`, borderRadius: 6, padding: '7px 10px', fontSize: 13, outline: 'none' }} />
                                 {negacionErrores.causaPenal && <span style={{ fontSize: 10, color: '#c0392b' }}>{negacionErrores.causaPenal}</span>}
@@ -700,7 +702,7 @@ const EvaluacionRiesgos = ({ resetKey = 0 }) => {
                                 <label style={{ fontSize: 11, fontWeight: 600, color: '#444', display: 'block', marginBottom: 3 }}>Número de oficio</label>
                                 <input
                                     value={negacionData.numeroOficio}
-                                    onChange={e => setNegacionData(p => ({ ...p, numeroOficio: e.target.value }))}
+                                    onChange={e => setNegacionData(p => ({ ...p, numeroOficio: toUpperNoAccent(e.target.value) }))}
                                     placeholder="Ej. 001"
                                     style={{ width: '100%', boxSizing: 'border-box', border: '1px solid #ddd', borderRadius: 6, padding: '7px 10px', fontSize: 13, outline: 'none' }} />
                                 <span style={{ fontSize: 10, color: '#888' }}>Aparecerá en el encabezado del documento como SSyPC/CSP/DGRS/DUMCySA/<strong>{negacionData.numeroOficio || 'NUM'}</strong>/mes/año</span>
@@ -880,7 +882,7 @@ const EvaluacionRiesgos = ({ resetKey = 0 }) => {
                                 ].map(([key, label]) => (
                                     <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                         <label style={{ fontSize: 11, fontWeight: 600, color: negacionErrores[key] ? '#c0392b' : '#444' }}>{label}</label>
-                                        <input value={negacionData[key]} onChange={e => { setNegacionData(p => ({ ...p, [key]: e.target.value })); setNegacionErrores(p => ({ ...p, [key]: '' })); }}
+                                        <input value={negacionData[key]} onChange={e => { setNegacionData(p => ({ ...p, [key]: toUpperNoAccent(e.target.value) })); setNegacionErrores(p => ({ ...p, [key]: '' })); }}
                                             style={{ border: `1px solid ${negacionErrores[key] ? '#c0392b' : '#ddd'}`, borderRadius: 6, padding: '7px 10px', fontSize: 13, outline: 'none', background: negacionErrores[key] ? '#fff5f5' : '#fff' }} />
                                         {negacionErrores[key] && <span style={{ fontSize: 10, color: '#c0392b' }}>{negacionErrores[key]}</span>}
                                     </div>
@@ -896,7 +898,7 @@ const EvaluacionRiesgos = ({ resetKey = 0 }) => {
                                 ].map(([key, label, type = 'text']) => (
                                     <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                         <label style={{ fontSize: 11, fontWeight: 600, color: negacionErrores[key] ? '#c0392b' : '#444' }}>{label}</label>
-                                        <input type={type} value={negacionData[key]} onChange={e => { setNegacionData(p => ({ ...p, [key]: e.target.value })); setNegacionErrores(p => ({ ...p, [key]: '' })); }}
+                                        <input type={type} value={negacionData[key]} onChange={e => { setNegacionData(p => ({ ...p, [key]: type === 'text' ? toUpperNoAccent(e.target.value) : e.target.value })); setNegacionErrores(p => ({ ...p, [key]: '' })); }}
                                             style={{ border: `1px solid ${negacionErrores[key] ? '#c0392b' : '#ddd'}`, borderRadius: 6, padding: '7px 10px', fontSize: 13, outline: 'none', background: negacionErrores[key] ? '#fff5f5' : '#fff' }} />
                                         {negacionErrores[key] && <span style={{ fontSize: 10, color: '#c0392b' }}>{negacionErrores[key]}</span>}
                                     </div>
@@ -904,7 +906,7 @@ const EvaluacionRiesgos = ({ resetKey = 0 }) => {
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                 <label style={{ fontSize: 11, fontWeight: 600, color: '#444' }}>Lugar de entrevista</label>
-                                <input value={negacionData.lugarEntrevista} onChange={e => setNegacionData(p => ({ ...p, lugarEntrevista: e.target.value }))}
+                                <input value={negacionData.lugarEntrevista} onChange={e => setNegacionData(p => ({ ...p, lugarEntrevista: toUpperNoAccent(e.target.value) }))}
                                     style={{ border: '1px solid #ddd', borderRadius: 6, padding: '7px 10px', fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' }} />
                             </div>
                         </div>

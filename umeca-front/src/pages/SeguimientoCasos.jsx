@@ -416,6 +416,7 @@ const SeguimientoCasos = ({ resetKey = 0 }) => {
                         value={busqueda}
                         onChange={e => { setBusqueda(e.target.value); setPagina(1); }}
                     />
+                    {busqueda && <button onClick={() => { setBusqueda(''); setPagina(1); }} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: '#e5e7eb', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 11, lineHeight: 1, padding: 0, width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Limpiar búsqueda"><i className="bi bi-x-lg" /></button>}
                 </div>
                 <div className="zona-pills">
                     {['TODAS','XOCHITEPEC','CUAUTLA','JOJUTLA'].map(z => (

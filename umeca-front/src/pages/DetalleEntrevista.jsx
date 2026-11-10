@@ -309,7 +309,7 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
             {imprimiendo && <PrintEntrevista entrevista={form} onCerrar={() => setImprimiendo(false)} autoImprimir={true} />}
             <div className="de-toolbar">
                 <div style={{ display: 'flex', gap: '8px' }}>
-                    <button className="de-btn-volver" onClick={editando ? cancelarEdicion : onVolver}>
+                    <button className="de-btn-volver" onClick={() => { localStorage.removeItem('volverConsultasBusqueda'); editando ? cancelarEdicion() : onVolver(); }}>
                         {editando ? '✕ Cancelar edición' : '← Volver'}
                     </button>
                     {localStorage.getItem('volverExpedienteId') && (
@@ -321,6 +321,13 @@ const DetalleEntrevista = ({ entrevista, onVolver }) => {
                             window.dispatchEvent(new CustomEvent('navigate', { detail: 'imputados' }));
                         }}>
                             <i className="bi bi-person-vcard"></i> Volver al Expediente
+                        </button>
+                    )}
+                    {localStorage.getItem('volverConsultasBusqueda') && (
+                        <button className="de-btn-volver de-btn-expediente" onClick={() => {
+                            window.dispatchEvent(new CustomEvent('navigate', { detail: 'consultas' }));
+                        }}>
+                            <i className="bi bi-search"></i> Volver a Búsqueda
                         </button>
                     )}
                 </div>

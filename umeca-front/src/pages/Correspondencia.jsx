@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { toUpperNoAccent } from '../utils/text';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useFormGuard } from '../context/FormGuardContext';
@@ -451,7 +452,7 @@ export default function Correspondencia({ resetKey = 0 }) {
                     </div>
                     <div className="corr-field">
                         <label><i className="bi bi-hash" /> No. de Oficio</label>
-                        <input value={form.noOficio} onChange={e => setForm(f => ({ ...f, noOficio: e.target.value }))} placeholder="Ej: OFI-2026-001" />
+                        <input value={form.noOficio} onChange={e => setForm(f => ({ ...f, noOficio: toUpperNoAccent(e.target.value) }))} placeholder="Ej: OFI-2026-001" />
                     </div>
                     <div className="corr-field">
                         <label><i className="bi bi-calendar3" /> Fecha del Oficio</label>
@@ -482,12 +483,12 @@ export default function Correspondencia({ resetKey = 0 }) {
 
                     <div id="corr-field-remitente" className={`corr-field corr-field-full ${erroresCampo.remitente ? 'corr-field-error' : ''}`}>
                         <label><i className="bi bi-person" /> Remitente *</label>
-                        <input value={form.remitente} onChange={e => { setForm(f => ({ ...f, remitente: e.target.value })); setErroresCampo(er => ({ ...er, remitente: '' })); }} placeholder="Nombre o institución que envía" />
+                        <input value={form.remitente} onChange={e => { setForm(f => ({ ...f, remitente: toUpperNoAccent(e.target.value) })); setErroresCampo(er => ({ ...er, remitente: '' })); }} placeholder="Nombre o institución que envía" />
                         {erroresCampo.remitente && <span className="corr-field-msg-error">{erroresCampo.remitente}</span>}
                     </div>
                     <div id="corr-field-asunto" className={`corr-field corr-field-full ${erroresCampo.asunto ? 'corr-field-error' : ''}`}>
                         <label><i className="bi bi-chat-text" /> Asunto *</label>
-                        <textarea rows={3} value={form.asunto} onChange={e => { setForm(f => ({ ...f, asunto: e.target.value })); setErroresCampo(er => ({ ...er, asunto: '' })); }} placeholder="Descripción del asunto o motivo del documento..." />
+                        <textarea rows={3} value={form.asunto} onChange={e => { setForm(f => ({ ...f, asunto: toUpperNoAccent(e.target.value) })); setErroresCampo(er => ({ ...er, asunto: '' })); }} placeholder="Descripción del asunto o motivo del documento..." />
                         {erroresCampo.asunto && <span className="corr-field-msg-error">{erroresCampo.asunto}</span>}
                     </div>
 
@@ -883,7 +884,7 @@ export default function Correspondencia({ resetKey = 0 }) {
             )}
 
             {/* Barra de búsqueda + contador hoy + botones */}
-            <div className="corr-header-search">
+            <div className="corr-header-search" style={{ position: 'relative' }}>
                 <i className="bi bi-search corr-search-icon" />
                 <input
                     className="corr-buscar"
@@ -891,6 +892,7 @@ export default function Correspondencia({ resetKey = 0 }) {
                     value={buscar}
                     onChange={e => { setBuscar(e.target.value); setPagina(1); }}
                 />
+                {buscar && <button onClick={() => { setBuscar(''); setPagina(1); }} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: '#e5e7eb', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 11, lineHeight: 1, padding: 0, width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Limpiar búsqueda"><i className="bi bi-x-lg" /></button>}
                 <select
                     className="corr-filtro-prioridad"
                     value={filtroPrioridad}
@@ -1271,7 +1273,7 @@ export default function Correspondencia({ resetKey = 0 }) {
                                     autoFocus
                                     rows={3}
                                     value={motivoCancelar}
-                                    onChange={e => { setMotivoCancelar(e.target.value); if (e.target.value.trim()) setMotivoError(''); }}
+                                    onChange={e => { setMotivoCancelar(toUpperNoAccent(e.target.value)); if (e.target.value.trim()) setMotivoError(''); }}
                                     placeholder="Describe el motivo por el que se cancela este registro..."
                                     style={{ width: '100%', borderRadius: 7, border: motivoError ? '1.5px solid #dc2626' : '1.5px solid #d1d5db', padding: '9px 11px', fontSize: 13, resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', background: '#fff', outline: 'none', lineHeight: 1.5 }}
                                 />

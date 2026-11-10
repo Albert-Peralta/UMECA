@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toUpperNoAccent } from '../utils/text';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { agregarSeguimiento, registrarLevantamiento, registrarRevocacion, registrarAmpliacion, eliminarMedida, toggleSobreseimiento, agregarObservacionMC, listarObservacionesMC, eliminarObservacionMC } from '../api/medidasApi';
@@ -296,6 +297,13 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                                 window.dispatchEvent(new CustomEvent('navigate', { detail: 'imputados' }));
                             }}>
                                 <i className="bi bi-person-vcard" /> Volver al Expediente
+                            </button>
+                        )}
+                        {localStorage.getItem('volverConsultasBusqueda') && (
+                            <button className="dm-btn-volver de-btn-expediente" onClick={() => {
+                                window.dispatchEvent(new CustomEvent('navigate', { detail: 'consultas' }));
+                            }}>
+                                <i className="bi bi-search" /> Volver a Búsqueda
                             </button>
                         )}
                     </div>
@@ -659,7 +667,7 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                                 <label>MOTIVO DE LA AMPLIACIÓN *</label>
                                 <textarea rows={3} placeholder="Describa el motivo de la ampliación..."
                                     value={ampForm.motivoAmpliacion}
-                                    onChange={e => setAmpForm({ ...ampForm, motivoAmpliacion: e.target.value })} />
+                                    onChange={e => setAmpForm({ ...ampForm, motivoAmpliacion: toUpperNoAccent(e.target.value) })} />
                             </div>
                             {ampError && <p className="modal-error">{ampError}</p>}
                             <div className="modal-buttons" style={{ padding: 0 }}>
@@ -759,13 +767,13 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                                     <label>¿QUIÉN AVISÓ? *</label>
                                     <input type="text" placeholder="Nombre completo del informante"
                                         value={fallForm.quienAviso}
-                                        onChange={e => setFallForm(f => ({ ...f, quienAviso: e.target.value }))} />
+                                        onChange={e => setFallForm(f => ({ ...f, quienAviso: toUpperNoAccent(e.target.value) }))} />
                                 </div>
                                 <div className="modal-field">
                                     <label>PARENTESCO / RELACIÓN</label>
                                     <input type="text" placeholder="Ej. Familiar, Abogado, Autoridad..."
                                         value={fallForm.parentescoInformante}
-                                        onChange={e => setFallForm(f => ({ ...f, parentescoInformante: e.target.value }))} />
+                                        onChange={e => setFallForm(f => ({ ...f, parentescoInformante: toUpperNoAccent(e.target.value) }))} />
                                 </div>
                             </div>
 
@@ -774,7 +782,7 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                                 <div className="modal-field">
                                     <label>¿CÓMO SE COMPROBÓ? *</label>
                                     <select value={fallForm.comoSeComprobo}
-                                        onChange={e => setFallForm(f => ({ ...f, comoSeComprobo: e.target.value }))}>
+                                        onChange={e => setFallForm(f => ({ ...f, comoSeComprobo: toUpperNoAccent(e.target.value) }))}>
                                         <option value="">-- Seleccionar --</option>
                                         <option value="Acta de Defunción">Acta de Defunción</option>
                                         <option value="Oficio de Autoridad">Oficio de Autoridad</option>
@@ -787,7 +795,7 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                                     <label>NO. DE ACTA DE DEFUNCIÓN</label>
                                     <input type="text" placeholder="Si aplica"
                                         value={fallForm.noActaDefuncion}
-                                        onChange={e => setFallForm(f => ({ ...f, noActaDefuncion: e.target.value }))} />
+                                        onChange={e => setFallForm(f => ({ ...f, noActaDefuncion: toUpperNoAccent(e.target.value) }))} />
                                 </div>
                             </div>
 
@@ -796,7 +804,7 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                                 <label>OBSERVACIONES</label>
                                 <textarea rows={3} placeholder="Información adicional relevante..."
                                     value={fallForm.observacionesFallecimiento}
-                                    onChange={e => setFallForm(f => ({ ...f, observacionesFallecimiento: e.target.value }))} />
+                                    onChange={e => setFallForm(f => ({ ...f, observacionesFallecimiento: toUpperNoAccent(e.target.value) }))} />
                             </div>
 
                             {fallError && <p className="modal-error">{fallError}</p>}
@@ -880,7 +888,7 @@ const DetalleMedida = ({ medida: m, puedeRegistrar, puedeSeguimiento, onVolver, 
                             style={{ width: '100%', resize: 'vertical', borderRadius: 8, padding: '10px 12px', border: `1.5px solid ${obsTexto.length > 450 ? '#f59e0b' : '#e5e7eb'}`, fontSize: '0.9rem', fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none', color: '#1f2937', background: '#f8fafc', lineHeight: 1.6 }}
                             placeholder="Escribe una nueva observación..."
                             value={obsTexto}
-                            onChange={e => setObsTexto(e.target.value)}
+                            onChange={e => setObsTexto(toUpperNoAccent(e.target.value))}
                             disabled={loadingObs}
                             onFocus={e => e.target.style.borderColor = obsTexto.length > 450 ? '#f59e0b' : '#0369a1'}
                             onBlur={e => e.target.style.borderColor = obsTexto.length > 450 ? '#f59e0b' : '#e5e7eb'}

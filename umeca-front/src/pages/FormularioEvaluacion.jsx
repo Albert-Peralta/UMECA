@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { toUpperNoAccent } from '../utils/text';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useFormGuard } from '../context/FormGuardContext';
@@ -332,7 +333,7 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form, domAnteriores, empleosAnt]);
 
-  const s = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
+  const s = (k, v) => setForm(prev => ({ ...prev, [k]: typeof v === 'string' ? toUpperNoAccent(v) : v }));
 
   const hoy = new Date().toISOString().split('T')[0];
   const maxFechaNac = (() => {
@@ -1127,10 +1128,10 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
           <tbody>
             {domAnteriores.map((d, i) => (
               <tr key={i}>
-                <td><input value={d.direccion} onChange={e => { const n=[...domAnteriores]; n[i]={...n[i],direccion:e.target.value}; setDomAnteriores(n); }} /></td>
+                <td><input value={d.direccion} onChange={e => { const n=[...domAnteriores]; n[i]={...n[i],direccion:toUpperNoAccent(e.target.value)}; setDomAnteriores(n); }} /></td>
                 <td className="fev-td-center"><input type="checkbox" checked={!!d.casaPropia} onChange={e => { const n=[...domAnteriores]; n[i]={...n[i],casaPropia:e.target.checked}; setDomAnteriores(n); }} /></td>
-                <td><input value={d.tiempoResidencia} onChange={e => { const n=[...domAnteriores]; n[i]={...n[i],tiempoResidencia:e.target.value}; setDomAnteriores(n); }} /></td>
-                <td><input value={d.motivoMudanza} onChange={e => { const n=[...domAnteriores]; n[i]={...n[i],motivoMudanza:e.target.value}; setDomAnteriores(n); }} /></td>
+                <td><input value={d.tiempoResidencia} onChange={e => { const n=[...domAnteriores]; n[i]={...n[i],tiempoResidencia:toUpperNoAccent(e.target.value)}; setDomAnteriores(n); }} /></td>
+                <td><input value={d.motivoMudanza} onChange={e => { const n=[...domAnteriores]; n[i]={...n[i],motivoMudanza:toUpperNoAccent(e.target.value)}; setDomAnteriores(n); }} /></td>
                 <td><button className="fev-btn-rm" onClick={() => setDomAnteriores(domAnteriores.filter((_,j)=>j!==i))}>✕</button></td>
               </tr>
             ))}
@@ -1149,7 +1150,7 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
             {personasHabita.map((p, i) => (
               <tr key={i}>
                 {['nombre','parentesco','tiempoCohabitar','edad','telefono','identificacion'].map(f => (
-                  <td key={f}><input value={p[f]||''} onChange={e => { const n=[...personasHabita]; n[i]={...n[i],[f]:e.target.value}; setPersonasHabita(n); }} /></td>
+                  <td key={f}><input value={p[f]||''} onChange={e => { const n=[...personasHabita]; n[i]={...n[i],[f]:toUpperNoAccent(e.target.value)}; setPersonasHabita(n); }} /></td>
                 ))}
                 <td><button className="fev-btn-rm" onClick={() => setPersonasHabita(personasHabita.filter((_,j)=>j!==i))}>✕</button></td>
               </tr>
@@ -1169,7 +1170,7 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
             {referencias.map((r, i) => (
               <tr key={i}>
                 {['nombre','parentesco','telefono','direccion'].map(f => (
-                  <td key={f}><input value={r[f]||''} onChange={e => { const n=[...referencias]; n[i]={...n[i],[f]:e.target.value}; setReferencias(n); }} /></td>
+                  <td key={f}><input value={r[f]||''} onChange={e => { const n=[...referencias]; n[i]={...n[i],[f]:toUpperNoAccent(e.target.value)}; setReferencias(n); }} /></td>
                 ))}
                 <td><button className="fev-btn-rm" onClick={() => setReferencias(referencias.filter((_,j)=>j!==i))}>✕</button></td>
               </tr>
@@ -1253,7 +1254,7 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
                   </select>
                 </td>
                 {['inicio','grms','meses','cantidad','fechaUltimoConsumo'].map(f => (
-                  <td key={f}><input value={s2[f]||''} disabled={!s2.consume} onChange={e => { const n=[...sustancias]; n[i]={...n[i],[f]:e.target.value}; setSustancias(n); }} /></td>
+                  <td key={f}><input value={s2[f]||''} disabled={!s2.consume} onChange={e => { const n=[...sustancias]; n[i]={...n[i],[f]:toUpperNoAccent(e.target.value)}; setSustancias(n); }} /></td>
                 ))}
               </tr>
             ))}
@@ -1344,9 +1345,9 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
         {Array.from({length:7}, (_,i) => (
           <div key={i} className="fev-riesgos-row">
             <span className="fev-riesgos-num">{i+1}</span>
-            <input type="text" value={form.riesgosProcesales[i]||''} onChange={e => { const a=[...form.riesgosProcesales]; a[i]=e.target.value; s('riesgosProcesales',a); }}
+            <input type="text" value={form.riesgosProcesales[i]||''} onChange={e => { const a=[...form.riesgosProcesales]; a[i]=toUpperNoAccent(e.target.value); s('riesgosProcesales',a); }}
               placeholder="Riesgo procesal..." />
-            <input type="text" value={form.factoresEstabilidad[i]||''} onChange={e => { const a=[...form.factoresEstabilidad]; a[i]=e.target.value; s('factoresEstabilidad',a); }}
+            <input type="text" value={form.factoresEstabilidad[i]||''} onChange={e => { const a=[...form.factoresEstabilidad]; a[i]=toUpperNoAccent(e.target.value); s('factoresEstabilidad',a); }}
               placeholder="Factor de estabilidad..." />
           </div>
         ))}

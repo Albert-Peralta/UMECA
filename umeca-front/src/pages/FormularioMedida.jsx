@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toUpperNoAccent } from '../utils/text';
 import { crearMedida, actualizarMedida, getMedidasByImputado } from '../api/medidasApi';
 import { useAuth } from '../context/AuthContext';
 import { useFormGuard } from '../context/FormGuardContext';
@@ -95,7 +96,7 @@ const DETALLES_SCP = {
         { key: 'frecuencia',       label: 'Frecuencia de asistencia' },
         { key: 'esTTA',            label: '¿Pertenece al programa TTA?', type: 'checkbox' },
     ],
-    V:    [{ key: 'detallesCondicionV', label: 'Detalles / Especificaciones', type: 'textarea', full: true }],
+    V:    [],
     VI:   [
         { key: 'institucionServicio', label: 'Institución beneficiaria', full: true },
         { key: 'horasSemanales',      label: 'Horas semanales', type: 'number' },
@@ -116,7 +117,7 @@ const DETALLES_SCP = {
     ],
     X:    [],
     XI:   [],
-    XII:  [{ key: 'detallesCondicionXII', label: 'Detalles / Restricciones de viaje', type: 'textarea', full: true }],
+    XII:  [],
     XIII: [
         { key: 'montoPension',  label: 'Monto de pensión ($)', type: 'number' },
         { key: 'beneficiarios', label: 'Beneficiarios', full: true },
@@ -195,7 +196,7 @@ const FormularioMedida = ({ medidaInicial, onVolver, onGuardado }) => {
 
     const setDelito = (i, key, val) => {
         const arr = [...delitos];
-        arr[i] = { ...arr[i], [key]: val };
+        arr[i] = { ...arr[i], [key]: typeof val === 'string' ? toUpperNoAccent(val) : val };
         setDelitos(arr);
     };
     const agregarDelito = () => setDelitos([...delitos, { delito: '', modalidad: '' }]);
@@ -282,7 +283,7 @@ const FormularioMedida = ({ medidaInicial, onVolver, onGuardado }) => {
             .catch(err => console.warn("Error al cargar datos:", err));
     }, []);
 
-    const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
+    const set = (key, val) => setForm(f => ({ ...f, [key]: typeof val === 'string' ? toUpperNoAccent(val) : val }));
 
     const toggleFraccion = (key) => {
         setFracciones(prev => {
@@ -295,7 +296,7 @@ const FormularioMedida = ({ medidaInicial, onVolver, onGuardado }) => {
     const setDetalle = (fracKey, fieldKey, val) => {
         setDetalles(prev => ({
             ...prev,
-            [fracKey]: { ...(prev[fracKey] || {}), [fieldKey]: val },
+            [fracKey]: { ...(prev[fracKey] || {}), [fieldKey]: typeof val === 'string' ? toUpperNoAccent(val) : val },
         }));
     };
 

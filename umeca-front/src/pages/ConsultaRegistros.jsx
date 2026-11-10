@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { toUpperNoAccent } from '../utils/text';
 import PrintConsulta from './PrintConsulta';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
@@ -56,7 +57,7 @@ const FormularioConsulta = ({ consulta, onVolver, onGuardado }) => {
     const [error, setError] = useState('');
     const [busquedaTimer, setBusquedaTimer] = useState(null);
 
-    const s = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
+    const s = (k, v) => setForm(prev => ({ ...prev, [k]: typeof v === 'string' ? toUpperNoAccent(v) : v }));
 
     // Buscar antecedentes + registros al cambiar nombre/apellido del primer imputado o causa penal
     useEffect(() => {
@@ -449,6 +450,17 @@ const ConsultaRegistros = ({ resetKey = 0 }) => {
     const [busqueda, setBusqueda] = useState('');
     const [filtroResultado, setFiltroResultado] = useState('');
     const [zonaFiltro, setZonaFiltro] = useState('TODAS');
+    const [modoBusqueda, setModoBusqueda] = useState('modulo'); // 'modulo' | 'global'
+
+    // Restaurar búsqueda global al volver desde un resultado
+    useEffect(() => {
+        const q = localStorage.getItem('volverConsultasBusqueda');
+        if (q) {
+            localStorage.removeItem('volverConsultasBusqueda');
+            setModoBusqueda('global');
+            setBusquedaGlobal(q);
+        }
+    }, []);
     const [vista, setVista] = useState('lista'); // lista | form | detalle
 
     useEffect(() => { if (resetKey > 0) setVista('lista'); }, [resetKey]);
@@ -579,20 +591,74 @@ const ConsultaRegistros = ({ resetKey = 0 }) => {
                 </div>
             </div>
 
-            {/* Buscador global */}
+            {/* Barra unificada: búsqueda + filtros + botón en una sola línea */}
             <div className="cr-global-wrap" ref={dropdownRef}>
-                <div className="cr-global-box">
-                    <i className={`bi ${buscandoGlobal ? 'bi-arrow-repeat cr-spin' : 'bi-search'}`} />
-                    <input
-                        className="cr-global-input"
-                        placeholder="Buscar en todo el sistema (imputados, entrevistas, evaluaciones)..."
-                        value={busquedaGlobal}
-                        onChange={e => setBusquedaGlobal(e.target.value)}
-                        onFocus={() => resultadosGlobal && setDropdownVisible(true)}
-                    />
-                    {busquedaGlobal && (
-                        <button className="cr-global-clear" onClick={() => { setBusquedaGlobal(''); setResultadosGlobal(null); setDropdownVisible(false); }}>
-                            <i className="bi bi-x" />
+                <div className="cr-barra-unica">
+                    {/* Sección búsqueda */}
+                    <div className="cr-barra-search">
+                        <i className={`bi ${buscandoGlobal && modoBusqueda === 'global' ? 'bi-arrow-repeat cr-spin' : 'bi-search'}`} />
+                        <input
+                            className="cr-global-input"
+                            placeholder={modoBusqueda === 'global'
+                                ? 'Buscar en todo el sistema...'
+                                : 'Buscar por nombre, causa penal...'}
+                            value={modoBusqueda === 'global' ? busquedaGlobal : busqueda}
+                            onChange={e => {
+                                if (modoBusqueda === 'global') setBusquedaGlobal(e.target.value);
+                                else { setBusqueda(e.target.value); setPagina(1); }
+                            }}
+                            onFocus={() => modoBusqueda === 'global' && resultadosGlobal && setDropdownVisible(true)}
+                        />
+                        {(modoBusqueda === 'global' ? busquedaGlobal : busqueda) && (
+                            <button className="cr-global-clear" onClick={() => {
+                                if (modoBusqueda === 'global') { setBusquedaGlobal(''); setResultadosGlobal(null); setDropdownVisible(false); }
+                                else { setBusqueda(''); setPagina(1); }
+                            }}>
+                                <i className="bi bi-x" />
+                            </button>
+                        )}
+                        {/* Toggle modo */}
+                        <div className="cr-modo-toggle">
+                            <button
+                                className={`cr-modo-btn ${modoBusqueda === 'modulo' ? 'cr-modo-active' : ''}`}
+                                onClick={() => { setModoBusqueda('modulo'); setBusquedaGlobal(''); setResultadosGlobal(null); setDropdownVisible(false); }}
+                            >
+                                <i className="bi bi-funnel-fill" /> Módulo
+                            </button>
+                            <button
+                                className={`cr-modo-btn ${modoBusqueda === 'global' ? 'cr-modo-active' : ''}`}
+                                onClick={() => { setModoBusqueda('global'); setBusqueda(''); setPagina(1); }}
+                            >
+                                <i className="bi bi-globe2" /> Sistema
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Separador */}
+                    <div className="cr-barra-sep" />
+
+                    {/* Pills de zona */}
+                    <div className="zona-pills">
+                        {['TODAS','XOCHITEPEC','CUAUTLA','JOJUTLA'].map(z => (
+                            <button key={z}
+                                className={`zona-pill zona-pill-${z.toLowerCase()} ${zonaFiltro === z ? 'zona-pill-active' : ''}`}
+                                onClick={() => { setZonaFiltro(z); setPagina(1); }}>
+                                {z === 'TODAS' ? 'Todas' : z.charAt(0) + z.slice(1).toLowerCase()}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Filtro resultado */}
+                    <select className="cr-select-filtro" value={filtroResultado} onChange={e => { setFiltroResultado(e.target.value); setPagina(1); }}>
+                        <option value="">Todos</option>
+                        <option value="POSITIVO">Positivo</option>
+                        <option value="NEGATIVO">Negativo</option>
+                    </select>
+
+                    {/* Botón nueva consulta */}
+                    {puedeCrear && (
+                        <button className="cr-btn-nuevo" onClick={() => { setSeleccionada(null); setVista('form'); }}>
+                            <i className="bi bi-plus-lg" /> Nueva Consulta
                         </button>
                     )}
                 </div>
@@ -614,7 +680,7 @@ const ConsultaRegistros = ({ resetKey = 0 }) => {
                                             <span className="cr-dd-count">{resultadosGlobal.imputados.length}</span>
                                         </div>
                                         {resultadosGlobal.imputados.slice(0, 4).map(i => (
-                                            <button key={i.id} className="cr-dd-item" onClick={() => { setDropdownVisible(false); setBusquedaGlobal(''); window.dispatchEvent(new CustomEvent('navigate', { detail: 'imputados' })); }}>
+                                            <button key={i.id} className="cr-dd-item" onClick={() => { setDropdownVisible(false); localStorage.setItem('abrirImputadoId', i.id); localStorage.setItem('volverConsultasBusqueda', busquedaGlobal); setBusquedaGlobal(''); window.dispatchEvent(new CustomEvent('navigate', { detail: 'imputados' })); }}>
                                                 <span className="cr-dd-avatar cr-dd-avatar-imp">
                                                     {(i.nombreCompleto || '?')[0].toUpperCase()}
                                                 </span>
@@ -640,7 +706,7 @@ const ConsultaRegistros = ({ resetKey = 0 }) => {
                                             <span className="cr-dd-count">{resultadosGlobal.entrevistas.length}</span>
                                         </div>
                                         {resultadosGlobal.entrevistas.slice(0, 4).map(e => (
-                                            <button key={e.id} className="cr-dd-item" onClick={() => { setDropdownVisible(false); setBusquedaGlobal(''); window.dispatchEvent(new CustomEvent('navigate', { detail: 'entrevista' })); }}>
+                                            <button key={e.id} className="cr-dd-item" onClick={() => { setDropdownVisible(false); localStorage.setItem('verEntrevistaId', e.id); localStorage.setItem('volverConsultasBusqueda', busquedaGlobal); setBusquedaGlobal(''); window.dispatchEvent(new CustomEvent('navigate', { detail: 'entrevista' })); }}>
                                                 <span className="cr-dd-avatar cr-dd-avatar-ent">
                                                     <i className="bi bi-file-earmark-text" />
                                                 </span>
@@ -669,7 +735,7 @@ const ConsultaRegistros = ({ resetKey = 0 }) => {
                                             <span className="cr-dd-count">{resultadosGlobal.medidas.length}</span>
                                         </div>
                                         {resultadosGlobal.medidas.slice(0, 4).map(m => (
-                                            <button key={m.id} className="cr-dd-item" onClick={() => { setDropdownVisible(false); setBusquedaGlobal(''); window.dispatchEvent(new CustomEvent('navigate', { detail: 'medidas' })); }}>
+                                            <button key={m.id} className="cr-dd-item" onClick={() => { setDropdownVisible(false); localStorage.setItem('verMedidaId', m.id); localStorage.setItem('volverConsultasBusqueda', busquedaGlobal); setBusquedaGlobal(''); window.dispatchEvent(new CustomEvent('navigate', { detail: 'medidas' })); }}>
                                                 <span className="cr-dd-avatar cr-dd-avatar-med">
                                                     <i className="bi bi-shield" />
                                                 </span>
@@ -701,7 +767,7 @@ const ConsultaRegistros = ({ resetKey = 0 }) => {
                                             <span className="cr-dd-count">{resultadosGlobal.evaluaciones.length}</span>
                                         </div>
                                         {resultadosGlobal.evaluaciones.slice(0, 4).map(e => (
-                                            <button key={e.id} className="cr-dd-item" onClick={() => { setDropdownVisible(false); setBusquedaGlobal(''); window.dispatchEvent(new CustomEvent('navigate', { detail: 'evaluacion' })); }}>
+                                            <button key={e.id} className="cr-dd-item" onClick={() => { setDropdownVisible(false); localStorage.setItem('verEvaluacionId', e.id); localStorage.setItem('volverConsultasBusqueda', busquedaGlobal); setBusquedaGlobal(''); window.dispatchEvent(new CustomEvent('navigate', { detail: 'evaluacion' })); }}>
                                                 <span className="cr-dd-avatar cr-dd-avatar-eval">
                                                     <i className="bi bi-clipboard-check" />
                                                 </span>
@@ -730,38 +796,6 @@ const ConsultaRegistros = ({ resetKey = 0 }) => {
                 )}
             </div>
 
-            {/* Toolbar: buscador + filtro resultado + botón */}
-            <div className="cr-toolbar">
-                <div className="cr-toolbar-left">
-                    <div className="cr-search-box">
-                        <i className="bi bi-search" />
-                        <input
-                            placeholder="Buscar por nombre, causa penal..."
-                            value={busqueda}
-                            onChange={e => { setBusqueda(e.target.value); setPagina(1); }}
-                        />
-                    </div>
-                    <div className="zona-pills">
-                        {['TODAS','XOCHITEPEC','CUAUTLA','JOJUTLA'].map(z => (
-                            <button key={z}
-                                className={`zona-pill zona-pill-${z.toLowerCase()} ${zonaFiltro === z ? 'zona-pill-active' : ''}`}
-                                onClick={() => { setZonaFiltro(z); setPagina(1); }}>
-                                {z === 'TODAS' ? 'Todas' : z.charAt(0) + z.slice(1).toLowerCase()}
-                            </button>
-                        ))}
-                    </div>
-                    <select className="cr-select-filtro" value={filtroResultado} onChange={e => { setFiltroResultado(e.target.value); setPagina(1); }}>
-                        <option value="">Todos</option>
-                        <option value="POSITIVO">Positivo</option>
-                        <option value="NEGATIVO">Negativo</option>
-                    </select>
-                </div>
-                {puedeCrear && (
-                    <button className="cr-btn-nuevo" onClick={() => { setSeleccionada(null); setVista('form'); }}>
-                        <i className="bi bi-plus-lg" /> Nueva Consulta
-                    </button>
-                )}
-            </div>
 
             {loading ? (
                 <div className="cr-loading"><i className="bi bi-arrow-repeat" /> Cargando...</div>

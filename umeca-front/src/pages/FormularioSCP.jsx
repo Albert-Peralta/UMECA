@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toUpperNoAccent } from '../utils/text';
 import { crearMedida, actualizarMedida, getMedidasByImputado } from '../api/medidasApi';
 import { useAuth } from '../context/AuthContext';
 import { useFormGuard } from '../context/FormGuardContext';
@@ -129,7 +130,7 @@ const FormularioSCP = ({ medidaInicial, onVolver, onGuardado }) => {
 
     const setDelito = (i, key, val) => {
         const arr = [...delitos];
-        arr[i] = { ...arr[i], [key]: val };
+        arr[i] = { ...arr[i], [key]: typeof val === 'string' ? toUpperNoAccent(val) : val };
         setDelitos(arr);
     };
     const agregarDelito = () => setDelitos([...delitos, { delito: '', modalidad: '' }]);
@@ -217,7 +218,7 @@ const FormularioSCP = ({ medidaInicial, onVolver, onGuardado }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
+    const set = (key, val) => setForm(f => ({ ...f, [key]: typeof val === 'string' ? toUpperNoAccent(val) : val }));
 
     const toggleFraccion = (key) => {
         setFracciones(prev => {
@@ -230,7 +231,7 @@ const FormularioSCP = ({ medidaInicial, onVolver, onGuardado }) => {
     const setDetalle = (fracKey, fieldKey, val) => {
         setDetalles(prev => ({
             ...prev,
-            [fracKey]: { ...(prev[fracKey] || {}), [fieldKey]: val },
+            [fracKey]: { ...(prev[fracKey] || {}), [fieldKey]: typeof val === 'string' ? toUpperNoAccent(val) : val },
         }));
     };
 

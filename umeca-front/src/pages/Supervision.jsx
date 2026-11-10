@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { toUpperNoAccent } from '../utils/text';
 import { useAuth } from '../context/AuthContext';
 import { puedeCrear as _puedeCrear, puedeEditar as _puedeEditar } from '../utils/permisos';
 import { useToast } from '../context/ToastContext';
@@ -341,6 +342,7 @@ const Supervision = () => {
                                     value={busqueda}
                                     onChange={e => setBusqueda(e.target.value)}
                                 />
+                                {busqueda && <button onClick={() => setBusqueda('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: '#e5e7eb', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 11, lineHeight: 1, padding: 0, width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Limpiar búsqueda"><i className="bi bi-x-lg" /></button>}
                             </div>
                         )}
                     </div>
@@ -526,7 +528,7 @@ const Supervision = () => {
                                                 <div className="sv-field">
                                                     <label>Nombre</label>
                                                     <input type="text" value={dest.victima.nombre} disabled={modoVer}
-                                                        onChange={e => setDest(d => ({ ...d, victima: { ...d.victima, nombre: e.target.value } }))}
+                                                        onChange={e => setDest(d => ({ ...d, victima: { ...d.victima, nombre: toUpperNoAccent(e.target.value) } }))}
                                                         placeholder="Nombre completo de la víctima" />
                                                 </div>
                                                 <div className="sv-field">
@@ -547,13 +549,13 @@ const Supervision = () => {
                                                 <div className="sv-field">
                                                     <label>Empresa / Lugar de trabajo</label>
                                                     <input type="text" value={dest.medioLaboral.nombre} disabled={modoVer}
-                                                        onChange={e => setDest(d => ({ ...d, medioLaboral: { ...d.medioLaboral, nombre: e.target.value } }))}
+                                                        onChange={e => setDest(d => ({ ...d, medioLaboral: { ...d.medioLaboral, nombre: toUpperNoAccent(e.target.value) } }))}
                                                         placeholder="Empresa, negocio o lugar de trabajo" />
                                                 </div>
                                                 <div className="sv-field">
                                                     <label>Nombre del jefe / contacto</label>
                                                     <input type="text" value={dest.medioLaboral.nombreJefe || ''} disabled={modoVer}
-                                                        onChange={e => setDest(d => ({ ...d, medioLaboral: { ...d.medioLaboral, nombreJefe: e.target.value } }))}
+                                                        onChange={e => setDest(d => ({ ...d, medioLaboral: { ...d.medioLaboral, nombreJefe: toUpperNoAccent(e.target.value) } }))}
                                                         placeholder="Nombre del jefe o supervisor" />
                                                 </div>
                                                 <div className="sv-field">
@@ -605,7 +607,7 @@ const Supervision = () => {
                                 <div className="sv-field sv-field-full">
                                     <label>Observaciones</label>
                                     <textarea rows={3} value={form.observaciones} disabled={modoVer}
-                                        onChange={e => setForm(f => ({ ...f, observaciones: e.target.value }))}
+                                        onChange={e => setForm(f => ({ ...f, observaciones: toUpperNoAccent(e.target.value) }))}
                                         placeholder="Resultado de la llamada o visita, comentarios..." />
                                 </div>
                             </div>

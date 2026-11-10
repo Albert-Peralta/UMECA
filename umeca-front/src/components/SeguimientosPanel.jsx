@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { toUpperNoAccent } from '../utils/text';
 import { registrarSeguimiento, getSeguimientosPorImputado, eliminarSeguimiento, TIPOS_ACTIVIDAD } from '../api/seguimientosApi';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
@@ -174,7 +175,7 @@ export default function SeguimientosPanel({
                                 type="text"
                                 placeholder="Ej: Oficio de autorización, Acuerdo interno..."
                                 value={form.otroTipo}
-                                onChange={e => setForm({ ...form, otroTipo: e.target.value })}
+                                onChange={e => setForm({ ...form, otroTipo: toUpperNoAccent(e.target.value) })}
                                 className="sp-input-otro"
                             />
                         </div>
@@ -185,7 +186,7 @@ export default function SeguimientosPanel({
                             rows={3}
                             placeholder="Describe el seguimiento realizado..."
                             value={form.detalles}
-                            onChange={e => setForm({ ...form, detalles: e.target.value })}
+                            onChange={e => setForm({ ...form, detalles: toUpperNoAccent(e.target.value) })}
                         />
                     </div>
                     <div className="sp-form-actions">

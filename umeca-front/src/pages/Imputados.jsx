@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { toUpperNoAccent } from '../utils/text';
 import { getImputados, getImputadoById, actualizarImputado, actualizarFotoImputado, registrarFallecimiento, registrarCierreCarpeta, revertirCierreCarpeta, revertirFallecimientoImputado, eliminarImputado, cambiarUbicacionExpediente, getUsuariosActivos, confirmarExpediente } from '../api/imputadosApi';
 import { getSeguimientosPorImputado } from '../api/seguimientosApi';
 import { cambiarCumplimiento } from '../api/medidasApi';
@@ -302,6 +303,22 @@ const Imputados = ({ onNavigarEntrevista }) => {
     };
 
     useEffect(() => { cargarDatos(); }, []);
+
+    // Auto-abrir perfil desde búsqueda global
+    useEffect(() => {
+        const id = localStorage.getItem('abrirImputadoId');
+        if (id) {
+            localStorage.removeItem('abrirImputadoId');
+            Promise.all([
+                getImputadoById(Number(id)),
+                getSeguimientosPorImputado(Number(id)).catch(() => ({ data: { data: [] } })),
+            ]).then(([res, resSeg]) => {
+                if (res.data.ok) { setPerfil(res.data.data); setShowPerfil(true); setFallDetalleAbierto(false); setCierreDetalleAbierto(false); }
+                setConteoSeg(resSeg.data?.data?.length ?? 0);
+                setTabActiva('entrevistas');
+            }).catch(() => {});
+        }
+    }, []);
 
     // Auto-reabrir drawer si volvemos desde un detalle externo
     useEffect(() => {
@@ -625,6 +642,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
                         value={busqueda}
                         onChange={e => { setBusqueda(e.target.value); setPagina(1); }}
                     />
+                    {busqueda && <button onClick={() => { setBusqueda(''); setPagina(1); }} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: '#e5e7eb', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 11, lineHeight: 1, padding: 0, width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Limpiar búsqueda"><i className="bi bi-x-lg" /></button>}
                 </div>
                 <button className="btn-refresh" onClick={cargarDatos} title="Actualizar lista">
                     <i className="bi bi-arrow-clockwise"></i>
@@ -868,14 +886,24 @@ const Imputados = ({ onNavigarEntrevista }) => {
 
             {/* ── Drawer Expediente ── */}
             {showPerfil && (
-                <div className="exp-overlay" onClick={() => { setShowPerfil(false); setPerfil(null); }}>
+                <div className="exp-overlay" onClick={() => { setShowPerfil(false); setPerfil(null); localStorage.removeItem('volverConsultasBusqueda'); }}>
                     <div className="exp-drawer" onClick={e => e.stopPropagation()}>
 
                         {/* ── HERO HEADER ── */}
                         <div className="exp-hero">
-                            <button className="exp-close" onClick={() => { setShowPerfil(false); setPerfil(null); }}>
-                                <i className="bi bi-x-lg"></i>
-                            </button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                {localStorage.getItem('volverConsultasBusqueda') && (
+                                    <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', fontSize: '0.78rem', fontWeight: 600, background: '#e8f5e9', color: '#376842', border: '1px solid #c8e6c9', borderRadius: 7, cursor: 'pointer' }} onClick={() => {
+                                        setShowPerfil(false); setPerfil(null);
+                                        window.dispatchEvent(new CustomEvent('navigate', { detail: 'consultas' }));
+                                    }}>
+                                        <i className="bi bi-search" /> Volver a Búsqueda
+                                    </button>
+                                )}
+                                <button className="exp-close" onClick={() => { setShowPerfil(false); setPerfil(null); localStorage.removeItem('volverConsultasBusqueda'); }}>
+                                    <i className="bi bi-x-lg"></i>
+                                </button>
+                            </div>
 
                             {cargandoPerfil ? (
                                 <div className="exp-hero-loading">
@@ -1620,7 +1648,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                         <label>Motivo del cierre <span className="fall-req">*</span></label>
                                         <textarea rows={3} placeholder="Describe el motivo del cierre de carpeta..."
                                             value={formCierre.motivoCierreCarpeta}
-                                            onChange={e => setFormCierre(p => ({ ...p, motivoCierreCarpeta: e.target.value }))} />
+                                            onChange={e => setFormCierre(p => ({ ...p, motivoCierreCarpeta: toUpperNoAccent(e.target.value) }))} />
                                     </div>
                                     <div className="fall-field fall-field-full" style={{ maxWidth: 260 }}>
                                         <label>Fecha de cierre</label>
@@ -1665,7 +1693,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                         <label>Notas adicionales</label>
                                         <textarea rows={2} placeholder="Observaciones o notas del cierre (opcional)..."
                                             value={formCierre.notasCierre}
-                                            onChange={e => setFormCierre(p => ({ ...p, notasCierre: e.target.value }))} />
+                                            onChange={e => setFormCierre(p => ({ ...p, notasCierre: toUpperNoAccent(e.target.value) }))} />
                                     </div>
                                 </div>
 
@@ -1810,31 +1838,31 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                 <label>¿Quién avisó?</label>
                                 <input type="text" placeholder="Nombre del informante"
                                     value={formFall.quienAviso}
-                                    onChange={e => setFormFall(p => ({ ...p, quienAviso: e.target.value }))} />
+                                    onChange={e => setFormFall(p => ({ ...p, quienAviso: toUpperNoAccent(e.target.value) }))} />
                             </div>
                             <div className="fall-field">
                                 <label>Parentesco</label>
                                 <input type="text" placeholder="Relación con el imputado"
                                     value={formFall.parentesco}
-                                    onChange={e => setFormFall(p => ({ ...p, parentesco: e.target.value }))} />
+                                    onChange={e => setFormFall(p => ({ ...p, parentesco: toUpperNoAccent(e.target.value) }))} />
                             </div>
                             <div className="fall-field">
                                 <label>¿Cómo se comprobó?</label>
                                 <input type="text" placeholder="Acta, certificado médico..."
                                     value={formFall.comoSeComprobo}
-                                    onChange={e => setFormFall(p => ({ ...p, comoSeComprobo: e.target.value }))} />
+                                    onChange={e => setFormFall(p => ({ ...p, comoSeComprobo: toUpperNoAccent(e.target.value) }))} />
                             </div>
                             <div className="fall-field">
                                 <label>No. Acta de defunción</label>
                                 <input type="text" placeholder="Número de acta"
                                     value={formFall.noActaDefuncion}
-                                    onChange={e => setFormFall(p => ({ ...p, noActaDefuncion: e.target.value }))} />
+                                    onChange={e => setFormFall(p => ({ ...p, noActaDefuncion: toUpperNoAccent(e.target.value) }))} />
                             </div>
                             <div className="fall-field fall-field-full">
                                 <label>Observaciones</label>
                                 <textarea rows={3} placeholder="Notas adicionales..."
                                     value={formFall.observacionesFallecimiento}
-                                    onChange={e => setFormFall(p => ({ ...p, observacionesFallecimiento: e.target.value }))} />
+                                    onChange={e => setFormFall(p => ({ ...p, observacionesFallecimiento: toUpperNoAccent(e.target.value) }))} />
                             </div>
 
                             {fallMsg && (
@@ -1887,17 +1915,17 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                         <div className="editar-field">
                                             <label>Nombre(s) <span className="req">*</span></label>
                                             <input type="text" placeholder="Nombre(s)" value={formEditar.nombre}
-                                                onChange={e => setFormEditar(p => ({ ...p, nombre: e.target.value }))} />
+                                                onChange={e => setFormEditar(p => ({ ...p, nombre: toUpperNoAccent(e.target.value) }))} />
                                         </div>
                                         <div className="editar-field">
                                             <label>Apellido Paterno <span className="req">*</span></label>
                                             <input type="text" placeholder="Apellido paterno" value={formEditar.apPaterno}
-                                                onChange={e => setFormEditar(p => ({ ...p, apPaterno: e.target.value }))} />
+                                                onChange={e => setFormEditar(p => ({ ...p, apPaterno: toUpperNoAccent(e.target.value) }))} />
                                         </div>
                                         <div className="editar-field">
                                             <label>Apellido Materno</label>
                                             <input type="text" placeholder="Apellido materno (opcional)" value={formEditar.apMaterno}
-                                                onChange={e => setFormEditar(p => ({ ...p, apMaterno: e.target.value }))} />
+                                                onChange={e => setFormEditar(p => ({ ...p, apMaterno: toUpperNoAccent(e.target.value) }))} />
                                         </div>
                                     </div>
                                     {editarMsg && (
