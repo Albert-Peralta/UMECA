@@ -7,6 +7,7 @@ import { agregarObservacionSCP, listarObservacionesSCP } from '../api/medidasApi
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import { puedeCrear as _puedeCrear, puedeEditar as _puedeEditar } from '../utils/permisos';
+import { toUpperNoAccent } from '../utils/text';
 import './SuspensionCondicional.css';
 
 const ITEMS = 50;
@@ -162,7 +163,11 @@ export default function SuspensionCondicional({ resetKey = 0 }) {
         setShowForm(true);
     };
 
-    const handleFormChange = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+    const handleFormChange = e => {
+        const { name, value, type } = e.target;
+        const val = type === 'text' || e.target.tagName === 'TEXTAREA' ? toUpperNoAccent(value) : value;
+        setForm(f => ({ ...f, [name]: val }));
+    };
 
     const handleGuardar = async (e) => {
         e.preventDefault();
@@ -404,7 +409,7 @@ export default function SuspensionCondicional({ resetKey = 0 }) {
                         <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb', flexShrink: 0 }}>
                             <textarea rows={3} style={{ width: '100%', resize: 'vertical', borderRadius: 8, padding: '10px 12px', border: '1.5px solid #e5e7eb', fontSize: '0.9rem', fontFamily: 'inherit', boxSizing: 'border-box', outline: 'none', color: '#1f2937', background: '#f8fafc', lineHeight: 1.6 }}
                                 placeholder="Escribe una nueva observación..."
-                                value={obsTexto} onChange={e => setObsTexto(e.target.value)} disabled={loadingObs}
+                                value={obsTexto} onChange={e => setObsTexto(toUpperNoAccent(e.target.value))} disabled={loadingObs}
                                 onFocus={e => e.target.style.borderColor = '#0369a1'} onBlur={e => e.target.style.borderColor = '#e5e7eb'} />
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, gap: 12, flexWrap: 'wrap' }}>
                                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.72rem', color: '#6b7280' }}>
