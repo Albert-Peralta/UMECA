@@ -74,7 +74,7 @@ const field = (label, children, full = false, err = false, id = undefined) => (
   </div>
 );
 const inp = (value, onChange, type = 'text', extra = {}) => (
-  <input type={type} value={value ?? ''} onChange={e => onChange(e.target.value)} {...extra} />
+  <input type={type} value={value ?? ''} onChange={e => onChange(type === 'text' ? toUpperNoAccent(e.target.value) : e.target.value)} {...extra} />
 );
 const sel = (value, onChange, opts) => (
   <select value={value ?? ''} onChange={e => onChange(e.target.value)}>
@@ -333,7 +333,7 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form, domAnteriores, empleosAnt]);
 
-  const s = (k, v) => setForm(prev => ({ ...prev, [k]: typeof v === 'string' ? toUpperNoAccent(v) : v }));
+  const s = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
 
   const hoy = new Date().toISOString().split('T')[0];
   const maxFechaNac = (() => {
@@ -1117,7 +1117,7 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
         {field('Colonia', inp(form.coloniaSecundaria, v => s('coloniaSecundaria', v)))}
         {field('Municipio', inp(form.municipioSecundario, v => s('municipioSecundario', v)))}
       </div>
-      {field('¿Por qué tiene ahí su domicilio?', <textarea value={form.razonDomicilio || ''} onChange={e => s('razonDomicilio', e.target.value)} />, true)}
+      {field('¿Por qué tiene ahí su domicilio?', <textarea value={form.razonDomicilio || ''} onChange={e => s('razonDomicilio', toUpperNoAccent(e.target.value))} />, true)}
       <BloqueVerificacion secId="s1" form={form} s={s} />
 
       {/* 2. Domicilios anteriores */}
@@ -1218,7 +1218,7 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
         {field('Horario', inp(form.horarioTrabajo, v => s('horarioTrabajo', v)))}
         {field('Salario Mensual', inp(form.salarioMensual, v => s('salarioMensual', v), 'number'))}
       </div>
-      {field('Último empleo (si no tiene empleo actual)', <textarea value={form.ultimoEmpleo||''} onChange={e => s('ultimoEmpleo', e.target.value)} />, true)}
+      {field('Último empleo (si no tiene empleo actual)', <textarea value={form.ultimoEmpleo||''} onChange={e => s('ultimoEmpleo', toUpperNoAccent(e.target.value))} />, true)}
       <div className="fev-seccion-sub">Empleos anteriores</div>
       <div className="fev-tabla-wrap">
         <table className="fev-tabla">
@@ -1267,11 +1267,11 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
       {/* 9. Entorno social */}
       {sec('8. ENTORNO SOCIAL')}
       <div className="fev-grid-2">
-        {field('Enfermedades (Hipertensión, Hepatitis, Alergias, Embarazo, etc.)', <textarea value={form.enfermedades||''} onChange={e => s('enfermedades', e.target.value)} />)}
-        {field('Enfermedad de familiar que depende económicamente', <textarea value={form.enfermedadFamiliar||''} onChange={e => s('enfermedadFamiliar', e.target.value)} />)}
-        {field('Hobbies / Asociaciones / Deporte', <textarea value={form.hobbies||''} onChange={e => s('hobbies', e.target.value)} />, true)}
-        {field('Organizaciones (cooperativas, sindicatos, etc.)', <textarea value={form.organizaciones||''} onChange={e => s('organizaciones', e.target.value)} />, true)}
-        {field('Observaciones generales de la evaluación', <textarea value={form.observacionesGenerales||''} onChange={e => s('observacionesGenerales', e.target.value)} />, true)}
+        {field('Enfermedades (Hipertensión, Hepatitis, Alergias, Embarazo, etc.)', <textarea value={form.enfermedades||''} onChange={e => s('enfermedades', toUpperNoAccent(e.target.value))} />)}
+        {field('Enfermedad de familiar que depende económicamente', <textarea value={form.enfermedadFamiliar||''} onChange={e => s('enfermedadFamiliar', toUpperNoAccent(e.target.value))} />)}
+        {field('Hobbies / Asociaciones / Deporte', <textarea value={form.hobbies||''} onChange={e => s('hobbies', toUpperNoAccent(e.target.value))} />, true)}
+        {field('Organizaciones (cooperativas, sindicatos, etc.)', <textarea value={form.organizaciones||''} onChange={e => s('organizaciones', toUpperNoAccent(e.target.value))} />, true)}
+        {field('Observaciones generales de la evaluación', <textarea value={form.observacionesGenerales||''} onChange={e => s('observacionesGenerales', toUpperNoAccent(e.target.value))} />, true)}
       </div>
 
       <BloqueVerificacion secId="s9" form={form} s={s} />
@@ -1294,7 +1294,7 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
         </div>
       </div>
       <div className="fev-grid-2">
-        {field('Bases para esta víctima', <textarea value={form.basesVictima||''} onChange={e => s('basesVictima', e.target.value)} />)}
+        {field('Bases para esta víctima', <textarea value={form.basesVictima||''} onChange={e => s('basesVictima', toUpperNoAccent(e.target.value))} />)}
         {field('Tipo de solicitud', inp(form.tipoSolicitud, v => s('tipoSolicitud', v)))}
       </div>
 
@@ -1311,12 +1311,12 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
         {field('Ubicación Física *', inp(form.ubicacionFisica, v => s('ubicacionFisica', v)), false, errores.ubicacionFisica, 'fev-ubicacionFisica')}
       </div>
       {field('Relación con la víctima', inp(form.relacionVictima, v => s('relacionVictima', v)), true)}
-      {field('Descripción del compromiso', <textarea value={form.descripcionCompromiso||''} onChange={e => s('descripcionCompromiso', e.target.value)} />, true)}
+      {field('Descripción del compromiso', <textarea value={form.descripcionCompromiso||''} onChange={e => s('descripcionCompromiso', toUpperNoAccent(e.target.value))} />, true)}
       <BloqueVerificacion secId="s11" form={form} s={s} />
 
       {/* 12. Procesos pendientes / anteriores */}
       {sec('11. PROCESOS PENDIENTES / ANTERIORES')}
-      {field('Expediente', <textarea value={form.procesosAnteriores||''} onChange={e => s('procesosAnteriores', e.target.value)} />, true)}
+      {field('Expediente', <textarea value={form.procesosAnteriores||''} onChange={e => s('procesosAnteriores', toUpperNoAccent(e.target.value))} />, true)}
 
       {/* 13. Conclusión */}
       {sec('12. CONCLUSIÓN / CRITERIO DE RIESGO *')}
@@ -1329,12 +1329,12 @@ const FormularioEvaluacion = ({ evaluacion, onVolver, onGuardado }) => {
         ))}
       </div>
       {errores.resultado && <p className="fev-error-msg">Este campo es obligatorio</p>}
-      {field('Justificación', <textarea value={form.justificacionResultado||''} onChange={e => s('justificacionResultado', e.target.value)} />, true)}
+      {field('Justificación', <textarea value={form.justificacionResultado||''} onChange={e => s('justificacionResultado', toUpperNoAccent(e.target.value))} />, true)}
 
       {/* Conclusión General */}
       {sec('CONCLUSIÓN GENERAL')}
       {field('Texto de la conclusión general',
-        <textarea rows={5} value={form.conclusionGeneral||''} onChange={e => s('conclusionGeneral', e.target.value)}
+        <textarea rows={5} value={form.conclusionGeneral||''} onChange={e => s('conclusionGeneral', toUpperNoAccent(e.target.value))}
           placeholder="Basado en los análisis en la evaluación de los datos socio ambiental proporcionados por el entrevistado y verificados por las fuentes y métodos citados; los riesgos procesales y los factores de estabilidad son los siguientes:" />, true)}
 
       <div className="fev-riesgos-tabla">

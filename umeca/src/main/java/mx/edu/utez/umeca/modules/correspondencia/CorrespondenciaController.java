@@ -40,7 +40,7 @@ public class CorrespondenciaController {
 
     /** Personal (SUPERVISION/EVALUADOR): ver solo los asignados a ellos */
     @GetMapping("/mis-asignados")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO','ROLE_CORRESPONDENCIA')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPERVISION','ROLE_EVALUADOR_RIESGO','ROLE_CORRESPONDENCIA','ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
     public ResponseEntity<ApiResponse> misAsignados() {
         return ResponseEntity.ok(service.findMisAsignados());
     }
@@ -76,7 +76,7 @@ public class CorrespondenciaController {
 
     /** Admin/Superadmin: editar registro */
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN') or @moduloChecker.puedeEditar(authentication,'CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> editar(
             @PathVariable Long id,
             @RequestPart("datos") String datosJson,
@@ -108,7 +108,7 @@ public class CorrespondenciaController {
 
     /** Admin/Superadmin: cancelar registro (cambia estado a CANCELADO con motivo) */
     @PatchMapping("/{id}/cancelar")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN') or @moduloChecker.puedeEliminar(authentication,'CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> cancelar(
             @PathVariable Long id,
             @RequestBody java.util.Map<String, String> body) {
@@ -118,21 +118,21 @@ public class CorrespondenciaController {
 
     /** Admin: usuarios que han registrado correspondencia (para filtro) */
     @GetMapping("/registradores")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN') or hasAuthority('ROLE_CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> registradores() {
         return ResponseEntity.ok(service.getRegistradores());
     }
 
     /** Admin: obtener lista de personal asignable */
     @GetMapping("/personal-asignable")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN') or @moduloChecker.puedeCrear(authentication,'CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> personalAsignable() {
         return ResponseEntity.ok(service.getPersonalAsignable());
     }
 
     /** Admin: asignar a un usuario */
     @PatchMapping("/{id}/asignar")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN') or @moduloChecker.puedeCrear(authentication,'CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> asignar(@PathVariable Long id, @RequestParam Long usuarioId) {
         ApiResponse res = service.asignar(id, usuarioId);
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
@@ -140,7 +140,7 @@ public class CorrespondenciaController {
 
     /** Admin: quitar asignación */
     @PatchMapping("/{id}/quitar-asignacion")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN') or @moduloChecker.puedeCrear(authentication,'CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> quitarAsignacion(@PathVariable Long id) {
         ApiResponse res = service.quitarAsignacion(id);
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);

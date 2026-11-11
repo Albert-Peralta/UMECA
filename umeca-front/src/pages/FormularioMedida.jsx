@@ -283,7 +283,7 @@ const FormularioMedida = ({ medidaInicial, onVolver, onGuardado }) => {
             .catch(err => console.warn("Error al cargar datos:", err));
     }, []);
 
-    const set = (key, val) => setForm(f => ({ ...f, [key]: typeof val === 'string' ? toUpperNoAccent(val) : val }));
+    const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
     const toggleFraccion = (key) => {
         setFracciones(prev => {
@@ -293,10 +293,11 @@ const FormularioMedida = ({ medidaInicial, onVolver, onGuardado }) => {
         });
     };
 
-    const setDetalle = (fracKey, fieldKey, val) => {
+    const setDetalle = (fracKey, fieldKey, val, inputType = 'text') => {
+        const upper = typeof val === 'string' && inputType !== 'select' && inputType !== 'date' && inputType !== 'number';
         setDetalles(prev => ({
             ...prev,
-            [fracKey]: { ...(prev[fracKey] || {}), [fieldKey]: typeof val === 'string' ? toUpperNoAccent(val) : val },
+            [fracKey]: { ...(prev[fracKey] || {}), [fieldKey]: upper ? toUpperNoAccent(val) : val },
         }));
     };
 
@@ -446,10 +447,10 @@ const FormularioMedida = ({ medidaInicial, onVolver, onGuardado }) => {
                     <input type="date" value={form.fechaRecepcion} onChange={e => set('fechaRecepcion', e.target.value)} />
                 </Field>
                 <Field label="Sede">
-                    <input type="text" value={form.sede} onChange={e => set('sede', e.target.value)} placeholder="Ej: Cuernavaca" />
+                    <input type="text" value={form.sede} onChange={e => set('sede', toUpperNoAccent(e.target.value))} placeholder="Ej: Cuernavaca" />
                 </Field>
                 <Field label="Nombre del Juez" full>
-                    <input type="text" value={form.nombreJuez} onChange={e => set('nombreJuez', e.target.value)} placeholder="Apellido Paterno, Apellido Materno, Nombre(s)" />
+                    <input type="text" value={form.nombreJuez} onChange={e => set('nombreJuez', toUpperNoAccent(e.target.value))} placeholder="Apellido Paterno, Apellido Materno, Nombre(s)" />
                 </Field>
                 <Field label="Fecha de formulación">
                     <input type="date" value={form.fechaFormulacion} onChange={e => set('fechaFormulacion', e.target.value)} />
@@ -525,10 +526,10 @@ const FormularioMedida = ({ medidaInicial, onVolver, onGuardado }) => {
                             <input type="date" value={form.fechaCanalizacion} onChange={e => set('fechaCanalizacion', e.target.value)} />
                         </Field>
                         <Field label="Presentación periódica">
-                            <input type="text" value={form.presentacionPeriodica} onChange={e => set('presentacionPeriodica', e.target.value)} />
+                            <input type="text" value={form.presentacionPeriodica} onChange={e => set('presentacionPeriodica', toUpperNoAccent(e.target.value))} />
                         </Field>
                         <Field label="Distrito judicial (declinación)" full>
-                            <input type="text" value={form.distritoJudicial} onChange={e => set('distritoJudicial', e.target.value)} placeholder="Ej: Distrito Judicial Norte" />
+                            <input type="text" value={form.distritoJudicial} onChange={e => set('distritoJudicial', toUpperNoAccent(e.target.value))} placeholder="Ej: Distrito Judicial Norte" />
                         </Field>
                     </div>
                     <div className="fm-grid-1">
@@ -551,7 +552,7 @@ const FormularioMedida = ({ medidaInicial, onVolver, onGuardado }) => {
                                 <input type="date" value={form.fechaCumplimientoAcuerdo} onChange={e => set('fechaCumplimientoAcuerdo', e.target.value)} />
                             </Field>
                             <Field label="Descripción del acuerdo" full>
-                                <textarea rows={2} value={form.descripcionAcuerdo} onChange={e => set('descripcionAcuerdo', e.target.value)} placeholder="Descripción del acuerdo reparatorio..." />
+                                <textarea rows={2} value={form.descripcionAcuerdo} onChange={e => set('descripcionAcuerdo', toUpperNoAccent(e.target.value))} placeholder="Descripción del acuerdo reparatorio..." />
                             </Field>
                             <Field label="Estatus del acuerdo">
                                 <select value={form.estatusFinal} onChange={e => set('estatusFinal', e.target.value)}>
@@ -574,21 +575,21 @@ const FormularioMedida = ({ medidaInicial, onVolver, onGuardado }) => {
                             <input type="date" value={form.plazoScp} onChange={e => set('plazoScp', e.target.value)} />
                         </Field>
                         <Field label="Canalización">
-                            <input type="text" value={form.canalizacion} onChange={e => set('canalizacion', e.target.value)} />
+                            <input type="text" value={form.canalizacion} onChange={e => set('canalizacion', toUpperNoAccent(e.target.value))} />
                         </Field>
                         <Field label="Tipo de servicio">
-                            <input type="text" value={form.tipoServicio} onChange={e => set('tipoServicio', e.target.value)} />
+                            <input type="text" value={form.tipoServicio} onChange={e => set('tipoServicio', toUpperNoAccent(e.target.value))} />
                         </Field>
                         <Field label="Fecha de canalización">
                             <input type="date" value={form.fechaCanalizacion} onChange={e => set('fechaCanalizacion', e.target.value)} />
                         </Field>
                         <Field label="Presentación periódica">
-                            <input type="text" value={form.presentacionPeriodica} onChange={e => set('presentacionPeriodica', e.target.value)} />
+                            <input type="text" value={form.presentacionPeriodica} onChange={e => set('presentacionPeriodica', toUpperNoAccent(e.target.value))} />
                         </Field>
                     </div>
                     <div className="fm-grid-1">
                         <Field label="Último informe S.C.P." full>
-                            <textarea rows={3} value={form.descripcionInforme} onChange={e => set('descripcionInforme', e.target.value)} placeholder="Descripción del último informe de suspensión condicional..." />
+                            <textarea rows={3} value={form.descripcionInforme} onChange={e => set('descripcionInforme', toUpperNoAccent(e.target.value))} placeholder="Descripción del último informe de suspensión condicional..." />
                         </Field>
                     </div>
                     <div className="fm-grid-4">
@@ -618,11 +619,11 @@ const FormularioMedida = ({ medidaInicial, onVolver, onGuardado }) => {
                         </Field>
                         {form.tieneSobreseimiento && (
                             <Field label="Oficio de sobreseimiento">
-                                <input type="text" value={form.oficioSobreseimiento} onChange={e => set('oficioSobreseimiento', e.target.value)} placeholder="Especificar..." />
+                                <input type="text" value={form.oficioSobreseimiento} onChange={e => set('oficioSobreseimiento', toUpperNoAccent(e.target.value))} placeholder="Especificar..." />
                             </Field>
                         )}
                         <Field label="Responsable de cierre de carpeta">
-                            <input type="text" value={form.responsableCierre} onChange={e => set('responsableCierre', e.target.value)} />
+                            <input type="text" value={form.responsableCierre} onChange={e => set('responsableCierre', toUpperNoAccent(e.target.value))} />
                         </Field>
                         <Field label="Estatus final">
                             <select value={form.estatusFinal} onChange={e => set('estatusFinal', e.target.value)}>
@@ -688,7 +689,7 @@ const FormularioMedida = ({ medidaInicial, onVolver, onGuardado }) => {
                             <Field key={campo.key} label={campo.label} full={campo.full}>
                                 {campo.type === 'select' ? (
                                     <select value={detalles[fracKey]?.[campo.key] || ''}
-                                        onChange={e => setDetalle(fracKey, campo.key, e.target.value)}>
+                                        onChange={e => setDetalle(fracKey, campo.key, e.target.value, 'select')}>
                                         <option value="">Seleccionar...</option>
                                         {campo.options?.map(o => <option key={o} value={o}>{o}</option>)}
                                     </select>
@@ -732,10 +733,10 @@ const FormularioMedida = ({ medidaInicial, onVolver, onGuardado }) => {
                     <input type="text" value={form.responsableSeguimiento} readOnly disabled style={{ background: '#f5f5f5', cursor: 'not-allowed' }} />
                 </Field>
                 <Field label="Observaciones" full>
-                    <textarea rows={3} value={form.observaciones} onChange={e => set('observaciones', e.target.value)} placeholder="Detalles adicionales y notas importantes..." />
+                    <textarea rows={3} value={form.observaciones} onChange={e => set('observaciones', toUpperNoAccent(e.target.value))} placeholder="Detalles adicionales y notas importantes..." />
                 </Field>
                 <Field label="Observaciones generales" full>
-                    <textarea rows={3} value={form.observacionesGenerales} onChange={e => set('observacionesGenerales', e.target.value)} placeholder="Notas adicionales, instrucciones especiales del juez, acuerdos, etc." />
+                    <textarea rows={3} value={form.observacionesGenerales} onChange={e => set('observacionesGenerales', toUpperNoAccent(e.target.value))} placeholder="Notas adicionales, instrucciones especiales del juez, acuerdos, etc." />
                 </Field>
             </div>
 
@@ -750,7 +751,7 @@ const FormularioMedida = ({ medidaInicial, onVolver, onGuardado }) => {
                             : 'El incumplimiento de cualquiera de las condiciones impuestas para la suspensión condicional del proceso puede resultar en la revocación de la misma y la reanudación del proceso penal.'}
                     </p>
                     <textarea rows={2} className="fm-advertencia-input" value={form.advertencia}
-                        onChange={e => set('advertencia', e.target.value)}
+                        onChange={e => set('advertencia', toUpperNoAccent(e.target.value))}
                         placeholder="Observaciones adicionales de advertencia..." />
                 </div>
             </div>

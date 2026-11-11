@@ -218,7 +218,7 @@ const FormularioSCP = ({ medidaInicial, onVolver, onGuardado }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const set = (key, val) => setForm(f => ({ ...f, [key]: typeof val === 'string' ? toUpperNoAccent(val) : val }));
+    const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
     const toggleFraccion = (key) => {
         setFracciones(prev => {
@@ -228,10 +228,11 @@ const FormularioSCP = ({ medidaInicial, onVolver, onGuardado }) => {
         });
     };
 
-    const setDetalle = (fracKey, fieldKey, val) => {
+    const setDetalle = (fracKey, fieldKey, val, inputType = 'text') => {
+        const upper = typeof val === 'string' && inputType !== 'select' && inputType !== 'date' && inputType !== 'number';
         setDetalles(prev => ({
             ...prev,
-            [fracKey]: { ...(prev[fracKey] || {}), [fieldKey]: typeof val === 'string' ? toUpperNoAccent(val) : val },
+            [fracKey]: { ...(prev[fracKey] || {}), [fieldKey]: upper ? toUpperNoAccent(val) : val },
         }));
     };
 
@@ -379,10 +380,10 @@ const FormularioSCP = ({ medidaInicial, onVolver, onGuardado }) => {
                     <input type="date" value={form.fechaRecepcion} onChange={e => set('fechaRecepcion', e.target.value)} />
                 </Field>
                 <Field label="Sede">
-                    <input type="text" value={form.sede} onChange={e => set('sede', e.target.value)} placeholder="Ej: Cuernavaca" />
+                    <input type="text" value={form.sede} onChange={e => set('sede', toUpperNoAccent(e.target.value))} placeholder="Ej: Cuernavaca" />
                 </Field>
                 <Field label="Nombre del Juez" full>
-                    <input type="text" value={form.nombreJuez} onChange={e => set('nombreJuez', e.target.value)} placeholder="Apellido Paterno, Apellido Materno, Nombre(s)" />
+                    <input type="text" value={form.nombreJuez} onChange={e => set('nombreJuez', toUpperNoAccent(e.target.value))} placeholder="Apellido Paterno, Apellido Materno, Nombre(s)" />
                 </Field>
                 <Field label="Fecha de formulación">
                     <input type="date" value={form.fechaFormulacion} onChange={e => set('fechaFormulacion', e.target.value)} />
@@ -454,7 +455,7 @@ const FormularioSCP = ({ medidaInicial, onVolver, onGuardado }) => {
                     <input type="number" min="1" max="120" value={form.plazoScp} onChange={e => set('plazoScp', e.target.value)} placeholder="Ej: 12" />
                 </Field>
                 <Field label="Presentación periódica">
-                    <input type="text" value={form.presentacionPeriodica} onChange={e => set('presentacionPeriodica', e.target.value)} />
+                    <input type="text" value={form.presentacionPeriodica} onChange={e => set('presentacionPeriodica', toUpperNoAccent(e.target.value))} />
                 </Field>
             </div>
 
@@ -463,13 +464,13 @@ const FormularioSCP = ({ medidaInicial, onVolver, onGuardado }) => {
                     <input type="date" value={form.vencimientoPlazo} onChange={e => set('vencimientoPlazo', e.target.value)} />
                 </Field>
                 <Field label="Responsable de cierre de carpeta">
-                    <input type="text" value={form.responsableCierre} onChange={e => set('responsableCierre', e.target.value)} />
+                    <input type="text" value={form.responsableCierre} onChange={e => set('responsableCierre', toUpperNoAccent(e.target.value))} />
                 </Field>
             </div>
 
             <div className="fm-grid-1">
                 <Field label="Último informe S.C.P." full>
-                    <textarea rows={3} value={form.descripcionInforme} onChange={e => set('descripcionInforme', e.target.value)} placeholder="Descripción del último informe de suspensión condicional..." />
+                    <textarea rows={3} value={form.descripcionInforme} onChange={e => set('descripcionInforme', toUpperNoAccent(e.target.value))} placeholder="Descripción del último informe de suspensión condicional..." />
                 </Field>
             </div>
 
@@ -518,10 +519,10 @@ const FormularioSCP = ({ medidaInicial, onVolver, onGuardado }) => {
                     <div style={{ padding: '16px 20px 20px' }}>
                         <div className="fm-grid-4" style={{ margin: 0 }}>
                             <Field label="Canalización">
-                                <input type="text" value={form.canalizacion} onChange={e => set('canalizacion', e.target.value)} />
+                                <input type="text" value={form.canalizacion} onChange={e => set('canalizacion', toUpperNoAccent(e.target.value))} />
                             </Field>
                             <Field label="Tipo de servicio">
-                                <input type="text" value={form.tipoServicio} onChange={e => set('tipoServicio', e.target.value)} />
+                                <input type="text" value={form.tipoServicio} onChange={e => set('tipoServicio', toUpperNoAccent(e.target.value))} />
                             </Field>
                             <Field label="Fecha de canalización">
                                 <input type="date" value={form.fechaCanalizacion} onChange={e => set('fechaCanalizacion', e.target.value)} />
@@ -542,7 +543,7 @@ const FormularioSCP = ({ medidaInicial, onVolver, onGuardado }) => {
                                         <textarea
                                             rows={3}
                                             value={form.canalizacionObservaciones || ''}
-                                            onChange={e => set('canalizacionObservaciones', e.target.value)}
+                                            onChange={e => set('canalizacionObservaciones', toUpperNoAccent(e.target.value))}
                                             placeholder="Observaciones sobre la canalización..."
                                             style={{
                                                 width: '100%', resize: 'vertical', borderRadius: 6, padding: '8px 10px', fontSize: 13,
@@ -630,7 +631,7 @@ const FormularioSCP = ({ medidaInicial, onVolver, onGuardado }) => {
                                 <Field key={campo.key} label={campo.label} full={campo.full}>
                                     {campo.type === 'select' ? (
                                         <select value={detalles[fracKey]?.[campo.key] || ''}
-                                            onChange={e => setDetalle(fracKey, campo.key, e.target.value)}>
+                                            onChange={e => setDetalle(fracKey, campo.key, e.target.value, 'select')}>
                                             <option value="">Seleccionar...</option>
                                             {campo.options?.map(o => <option key={o} value={o}>{o}</option>)}
                                         </select>
@@ -680,10 +681,10 @@ const FormularioSCP = ({ medidaInicial, onVolver, onGuardado }) => {
                     <input type="text" value={form.responsableSeguimiento} readOnly disabled style={{ background: '#f5f5f5', cursor: 'not-allowed' }} />
                 </Field>
                 <Field label="Observaciones" full>
-                    <textarea rows={3} value={form.observaciones} onChange={e => set('observaciones', e.target.value)} placeholder="Detalles adicionales y notas importantes..." />
+                    <textarea rows={3} value={form.observaciones} onChange={e => set('observaciones', toUpperNoAccent(e.target.value))} placeholder="Detalles adicionales y notas importantes..." />
                 </Field>
                 <Field label="Observaciones generales" full>
-                    <textarea rows={3} value={form.observacionesGenerales} onChange={e => set('observacionesGenerales', e.target.value)} placeholder="Notas adicionales, instrucciones especiales del juez, acuerdos, etc." />
+                    <textarea rows={3} value={form.observacionesGenerales} onChange={e => set('observacionesGenerales', toUpperNoAccent(e.target.value))} placeholder="Notas adicionales, instrucciones especiales del juez, acuerdos, etc." />
                 </Field>
             </div>
 
@@ -694,7 +695,7 @@ const FormularioSCP = ({ medidaInicial, onVolver, onGuardado }) => {
                     <strong>ADVERTENCIA AL IMPUTADO:</strong>
                     <p>El incumplimiento de cualquiera de las condiciones impuestas para la suspensión condicional del proceso puede resultar en la revocación de la misma y la reanudación del proceso penal.</p>
                     <textarea rows={2} className="fm-advertencia-input" value={form.advertencia}
-                        onChange={e => set('advertencia', e.target.value)}
+                        onChange={e => set('advertencia', toUpperNoAccent(e.target.value))}
                         placeholder="Observaciones adicionales de advertencia..." />
                 </div>
             </div>

@@ -662,11 +662,23 @@
 }
 
 /* ── Lista de personal en modal de asignación ───────────────────────────── */
+.corr-personal-grupo { display: flex; flex-direction: column; gap: 4px; }
+.corr-personal-grupo-titulo {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #376842;
+    padding: 6px 2px 2px;
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 2px;
+}
+
 .corr-personal-lista {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    max-height: 220px;
+    max-height: 320px;
     overflow-y: auto;
     margin: 8px 0 14px;
     padding: 2px 0;

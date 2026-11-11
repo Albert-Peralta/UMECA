@@ -9,6 +9,7 @@ public class UsuarioModuloExtraDTO {
     private boolean puedeVer   = true;
     private boolean puedeCrear = false;
     private boolean puedeEditar = false;
+    private boolean puedeEliminar = false;
 
     public static UsuarioModuloExtraDTO from(UsuarioModuloExtra e) {
         UsuarioModuloExtraDTO dto = new UsuarioModuloExtraDTO();
@@ -16,6 +17,7 @@ public class UsuarioModuloExtraDTO {
         dto.setPuedeVer(e.isPuedeVer());
         dto.setPuedeCrear(e.isPuedeCrear());
         dto.setPuedeEditar(e.isPuedeEditar());
+        dto.setPuedeEliminar(e.isPuedeEliminar());
         return dto;
     }
 }

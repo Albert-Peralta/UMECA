@@ -31,7 +31,7 @@ const ACCESO_BASE_ROL = {
         CORRESPONDENCIA: 'completo', CONTROL_OFICIOS: 'completo', EXPEDIENTES: 'completo',
     },
     CORRESPONDENCIA: {
-        ENTREVISTA: 'completo', CORRESPONDENCIA: 'completo',
+        IMPUTADOS: 'completo', ENTREVISTA: 'completo', CORRESPONDENCIA: 'completo',
         CONTROL_OFICIOS: 'completo', ESTADISTICAS: 'lectura',
     },
 };

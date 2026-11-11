@@ -343,7 +343,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
         const d = new Date(); d.setFullYear(d.getFullYear() - 18); return d.toISOString().split('T')[0];
     })();
 
-    const set = (key, val) => setForm(prev => ({ ...prev, [key]: typeof val === 'string' && key !== 'email' ? toUpperNoAccent(val) : val }));
+    const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
 
     const handleFechaNacimiento = (fecha) => {
         set('fechaNacimiento', fecha);
@@ -505,7 +505,8 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
 
     const setDomicilio = (i, key, val) => {
         const nuevos = [...domicilios];
-        nuevos[i][key] = typeof val === 'string' ? toUpperNoAccent(val) : val;
+        const SELECT_KEYS = ['tipoDomicilio'];
+        nuevos[i][key] = typeof val === 'string' && !SELECT_KEYS.includes(key) ? toUpperNoAccent(val) : val;
         setDomicilios(nuevos);
     };
 
@@ -702,7 +703,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
             {seccionTitulo('DATOS GENERALES')}
             <div className="fe-grid-2">
                 {campo('Fecha de Registro', <input type="date" value={form.fechaRegistro} max={hoy} onChange={e => set('fechaRegistro', e.target.value)} />)}
-                {campo('Causa Penal *', <input id="fe-causaPenal" maxLength={100} value={form.causaPenal} onChange={e => { set('causaPenal', e.target.value); setErrores(p => ({...p, causaPenal: false})); }} placeholder="Causa penal" />, errores.causaPenal)}
+                {campo('Causa Penal *', <input id="fe-causaPenal" maxLength={100} value={form.causaPenal} onChange={e => { set('causaPenal', toUpperNoAccent(e.target.value)); setErrores(p => ({...p, causaPenal: false})); }} placeholder="Causa penal" />, errores.causaPenal)}
             </div>
 
             {/* Foto del imputado */}
@@ -740,14 +741,14 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
             )}
 
             <div className="fe-grid-3">
-                {campo('Nombre(s) *', <input id="fe-nombre" maxLength={100} value={form.nombre} onChange={e => { set('nombre', e.target.value); setErrores(p => ({...p, nombre: false})); }} />, errores.nombre)}
-                {campo('Apellido Paterno *', <input id="fe-apPaterno" maxLength={100} value={form.apPaterno} onChange={e => { set('apPaterno', e.target.value); setErrores(p => ({...p, apPaterno: false})); }} />, errores.apPaterno)}
-                {campo('Apellido Materno *', <input id="fe-apMaterno" maxLength={100} value={form.apMaterno} onChange={e => { set('apMaterno', e.target.value); setErrores(p => ({...p, apMaterno: false})); }} />, errores.apMaterno)}
+                {campo('Nombre(s) *', <input id="fe-nombre" maxLength={100} value={form.nombre} onChange={e => { set('nombre', toUpperNoAccent(e.target.value)); setErrores(p => ({...p, nombre: false})); }} />, errores.nombre)}
+                {campo('Apellido Paterno *', <input id="fe-apPaterno" maxLength={100} value={form.apPaterno} onChange={e => { set('apPaterno', toUpperNoAccent(e.target.value)); setErrores(p => ({...p, apPaterno: false})); }} />, errores.apPaterno)}
+                {campo('Apellido Materno *', <input id="fe-apMaterno" maxLength={100} value={form.apMaterno} onChange={e => { set('apMaterno', toUpperNoAccent(e.target.value)); setErrores(p => ({...p, apMaterno: false})); }} />, errores.apMaterno)}
             </div>
             <div className="fe-grid-4" style={{marginTop: '14px'}}>
                 {campo('Fecha de Nacimiento', <input id="fe-fechaNacimiento" type="date" value={form.fechaNacimiento} max={maxFechaNac} onChange={e => { handleFechaNacimiento(e.target.value); setErrores(p => ({...p, fechaNacimiento: false})); }} />, errores.fechaNacimiento, 'El imputado debe ser mayor de 18 años.')}
                 {campo('Edad', <input type="number" value={form.edad} readOnly style={{background:'#f5f5f5', cursor:'not-allowed'}} title="Se calcula automáticamente" />)}
-                {campo('Municipio', <input maxLength={100} value={form.municipio} onChange={e => set('municipio', e.target.value)} />)}
+                {campo('Municipio', <input maxLength={100} value={form.municipio} onChange={e => set('municipio', toUpperNoAccent(e.target.value))} />)}
                 {campo('Estado', (
                     <select value={form.estadoNacimiento} onChange={e => { set('estadoNacimiento', e.target.value); setCurpManual(false); }}>
                         <option value="">Seleccionar...</option>
@@ -757,8 +758,8 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
             </div>
             {form.estadoNacimiento === 'Extranjero' && (
                 <div className="fe-grid-2">
-                    {campo('País de origen', <input value={form.pais === 'México' ? '' : form.pais} onChange={e => set('pais', e.target.value)} placeholder="Especificar país" />)}
-                    {campo('Lugar de procedencia', <input value={form.estadoExtranjero} onChange={e => set('estadoExtranjero', e.target.value)} placeholder="Ciudad / Estado / Región" />)}
+                    {campo('País de origen', <input value={form.pais === 'México' ? '' : form.pais} onChange={e => set('pais', toUpperNoAccent(e.target.value))} placeholder="Especificar país" />)}
+                    {campo('Lugar de procedencia', <input value={form.estadoExtranjero} onChange={e => set('estadoExtranjero', toUpperNoAccent(e.target.value))} placeholder="Ciudad / Estado / Región" />)}
                 </div>
             )}
             <div style={{marginTop: '14px'}}>
@@ -791,7 +792,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                 {campo('E-mail', <input id="fe-email" type="email" maxLength={150} value={form.email} onChange={e => { set('email', e.target.value); setErrores(p => ({...p, email: false})); }} className="fe-input-full" />, errores.email, 'El formato del correo no es válido (ej. nombre@dominio.com).')}
             </div>
             <div className="fe-grid-3" style={{marginTop: '14px'}}>
-                {campo('País', <input maxLength={100} value={form.pais} onChange={e => set('pais', e.target.value)} />)}
+                {campo('País', <input maxLength={100} value={form.pais} onChange={e => set('pais', toUpperNoAccent(e.target.value))} />)}
                 {campo('Enfermedad', <input maxLength={200} value={form.enfermedad} onChange={e => set('enfermedad', e.target.value)} />)}
                 {campo('Grado de Estudios', (
                     <select value={form.gradoEstudios} onChange={e => set('gradoEstudios', e.target.value)}>
@@ -831,7 +832,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
             </div>
             <div className="fe-grid-2">
                 {campo('Estatura (cm)', <input id="fe-estatura" type="number" step="1" min="50" max="250" value={form.estatura} onChange={e => { set('estatura', e.target.value); setErrores(p => ({...p, estatura: false})); }} placeholder="ej. 170" />, errores.estatura, 'Sin punto decimal, en centímetros (ej. 170, no 1.70). Rango válido: 50–250.')}
-                {campo('Tamaño y Color de Ojos', <input maxLength={50} value={form.colorOjos} onChange={e => set('colorOjos', e.target.value)} />)}
+                {campo('Tamaño y Color de Ojos', <input maxLength={50} value={form.colorOjos} onChange={e => set('colorOjos', toUpperNoAccent(e.target.value))} />)}
             </div>
             <div className="fe-grid-3">
                 {campo('Cejas', (
@@ -854,7 +855,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                         <option>Negra</option>
                     </select>
                 ))}
-                {campo('Color y Tamaño de Cabello', <input maxLength={50} value={form.colorCabello} onChange={e => set('colorCabello', e.target.value)} />)}
+                {campo('Color y Tamaño de Cabello', <input maxLength={50} value={form.colorCabello} onChange={e => set('colorCabello', toUpperNoAccent(e.target.value))} />)}
             </div>
             <div className="fe-grid-2">
                 {campo('Tamaño de Labios', (
@@ -865,7 +866,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                         <option>Gruesos</option>
                     </select>
                 ))}
-                {campo('Señas en la Cara', <input maxLength={200} value={form.senasCara} onChange={e => set('senasCara', e.target.value)} />)}
+                {campo('Señas en la Cara', <input maxLength={200} value={form.senasCara} onChange={e => set('senasCara', toUpperNoAccent(e.target.value))} />)}
             </div>
 
             <div className="fe-radio-grupo">
@@ -907,7 +908,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
             )}
 
             <div className="fe-grid-2">
-                {campo('Alias', <input maxLength={100} value={form.alias} onChange={e => set('alias', e.target.value)} />)}
+                {campo('Alias', <input maxLength={100} value={form.alias} onChange={e => set('alias', toUpperNoAccent(e.target.value))} />)}
                 {campo('Documentos Migratorios', (
                     <div className="fe-checkbox-grupo">
                         {['Visa', 'Pasaporte', 'Residencia'].map(doc => (
@@ -942,7 +943,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                         className="fe-input-full fe-esp-input"
                         placeholder="Especificar estado civil..."
                         value={form.estadoCivilOtro}
-                        onChange={e => set('estadoCivilOtro', e.target.value)}
+                        onChange={e => set('estadoCivilOtro', toUpperNoAccent(e.target.value))}
                         style={{ marginTop: 8 }}
                     />
                 )}
@@ -970,7 +971,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                         className="fe-input-full fe-esp-input"
                         placeholder="Especificar grupo vulnerable..."
                         value={form.grupoVulnerableOtro}
-                        onChange={e => set('grupoVulnerableOtro', e.target.value)}
+                        onChange={e => set('grupoVulnerableOtro', toUpperNoAccent(e.target.value))}
                         style={{ marginTop: 8 }}
                     />
                 )}
@@ -987,10 +988,10 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
             {form.conoceVictima && (
                 <>
                     <div className="fe-grid-2">
-                        {campo('Nombre de la víctima', <input maxLength={200} value={form.nombreVictima} onChange={e => set('nombreVictima', e.target.value)} />)}
+                        {campo('Nombre de la víctima', <input maxLength={200} value={form.nombreVictima} onChange={e => set('nombreVictima', toUpperNoAccent(e.target.value))} />)}
                         {campo('Tel', <input id="fe-telVictima" maxLength={20} value={form.telVictima} onChange={e => { set('telVictima', e.target.value); setErrores(p => ({...p, telVictima: false})); }} />, errores.telVictima, 'Solo dígitos, espacios o guiones.')}
                     </div>
-                    {campo('Domicilio y Referencias', <textarea value={form.domicilioVictima} onChange={e => set('domicilioVictima', e.target.value)} className="fe-textarea" />)}
+                    {campo('Domicilio y Referencias', <textarea value={form.domicilioVictima} onChange={e => set('domicilioVictima', toUpperNoAccent(e.target.value))} className="fe-textarea" />)}
                     <div style={{ marginTop: '14px' }}>
                     {campo('Relación con la víctima', (
                         <div className="fe-relacion-row">
@@ -1003,7 +1004,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                             {form.relacionVictima === 'Otro' && (
                                 <input
                                     value={form.relacionVictimaOtro}
-                                    onChange={e => set('relacionVictimaOtro', e.target.value)}
+                                    onChange={e => set('relacionVictimaOtro', toUpperNoAccent(e.target.value))}
                                     placeholder="Especificar relación..."
                                     style={{ marginTop: 6 }}
                                 />
@@ -1147,17 +1148,17 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
 
             {seccionTitulo('INFORMACIÓN LABORAL')}
             <div className="fe-grid-3">
-                {campo('Actividad laboral / Empresa', <input maxLength={200} value={form.empresa} onChange={e => set('empresa', e.target.value)} />)}
+                {campo('Actividad laboral / Empresa', <input maxLength={200} value={form.empresa} onChange={e => set('empresa', toUpperNoAccent(e.target.value))} />)}
                 {campo('Teléfono', <input id="fe-telEmpresa" maxLength={20} value={form.telEmpresa} onChange={e => { set('telEmpresa', e.target.value); setErrores(p => ({...p, telEmpresa: false})); }} />, errores.telEmpresa, 'Solo dígitos, espacios o guiones.')}
                 {campo('Salario Mensual', <input id="fe-salarioMensual" type="number" min="0" value={form.salarioMensual} onChange={e => { set('salarioMensual', e.target.value); setErrores(p => ({...p, salarioMensual: false})); }} />, errores.salarioMensual, 'El salario no puede ser negativo.')}
             </div>
             <div className="fe-grid-3">
-                {campo('Puesto', <input maxLength={100} value={form.puesto} onChange={e => set('puesto', e.target.value)} />)}
-                {campo('Nombre del Jefe', <input maxLength={200} value={form.nombreJefe} onChange={e => set('nombreJefe', e.target.value)} />)}
-                {campo('Horario', <input maxLength={50} value={form.horarioTrabajo} onChange={e => set('horarioTrabajo', e.target.value)} />)}
+                {campo('Puesto', <input maxLength={100} value={form.puesto} onChange={e => set('puesto', toUpperNoAccent(e.target.value))} />)}
+                {campo('Nombre del Jefe', <input maxLength={200} value={form.nombreJefe} onChange={e => set('nombreJefe', toUpperNoAccent(e.target.value))} />)}
+                {campo('Horario', <input maxLength={50} value={form.horarioTrabajo} onChange={e => set('horarioTrabajo', toUpperNoAccent(e.target.value))} />)}
             </div>
-            {campo('Domicilio', <input maxLength={300} value={form.domicilioTrabajo} onChange={e => set('domicilioTrabajo', e.target.value)} className="fe-input-full" />)}
-            {campo('En caso de no contar con empleo, mencionar el último empleo', <textarea value={form.ultimoEmpleo} onChange={e => set('ultimoEmpleo', e.target.value)} className="fe-textarea" />)}
+            {campo('Domicilio', <input maxLength={300} value={form.domicilioTrabajo} onChange={e => set('domicilioTrabajo', toUpperNoAccent(e.target.value))} className="fe-input-full" />)}
+            {campo('En caso de no contar con empleo, mencionar el último empleo', <textarea value={form.ultimoEmpleo} onChange={e => set('ultimoEmpleo', toUpperNoAccent(e.target.value))} className="fe-textarea" />)}
 
             {seccionTitulo('CONSUMO DE SUSTANCIAS')}
             <div className="fe-tabla-wrap">
@@ -1230,7 +1231,7 @@ const FormularioEntrevista = ({ onCancelar, onGuardado }) => {
                 {form.cuentaConDefensor && (
                     <>
                         <div className="fe-grid-2" style={{ marginTop: 10 }}>
-                            {campo('Nombre del abogado', <input maxLength={200} value={form.defensorNombre} onChange={e => set('defensorNombre', e.target.value)} />)}
+                            {campo('Nombre del abogado', <input maxLength={200} value={form.defensorNombre} onChange={e => set('defensorNombre', toUpperNoAccent(e.target.value))} />)}
                             {campo('Teléfono', <input maxLength={30} value={form.defensorTelefono} onChange={e => set('defensorTelefono', e.target.value)} />)}
                         </div>
                         {campo('Correo electrónico', <input type="email" maxLength={200} value={form.defensorCorreo} onChange={e => set('defensorCorreo', e.target.value)} />)}

@@ -31,4 +31,7 @@ public class UsuarioModuloExtra {
 
     @Column(name = "puede_editar", nullable = false)
     private boolean puedeEditar = false;
+
+    @Column(name = "puede_eliminar", nullable = false)
+    private boolean puedeEliminar = false;
 }

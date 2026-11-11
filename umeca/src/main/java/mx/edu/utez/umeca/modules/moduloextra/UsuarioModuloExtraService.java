@@ -49,6 +49,7 @@ public class UsuarioModuloExtraService {
                     e.setPuedeVer(d.isPuedeVer());
                     e.setPuedeCrear(d.isPuedeCrear());
                     e.setPuedeEditar(d.isPuedeEditar());
+                    e.setPuedeEliminar(d.isPuedeEliminar());
                     return e;
                 }).toList();
 
@@ -62,9 +63,10 @@ public class UsuarioModuloExtraService {
             String lista = nuevos.stream().map(m -> {
                 String label = nombreModulo(m.getModulo());
                 java.util.List<String> permisos = new java.util.ArrayList<>();
-                if (m.isPuedeVer())    permisos.add("Ver");
-                if (m.isPuedeCrear())  permisos.add("Crear");
-                if (m.isPuedeEditar()) permisos.add("Editar");
+                if (m.isPuedeVer())      permisos.add("Ver");
+                if (m.isPuedeCrear())    permisos.add("Crear");
+                if (m.isPuedeEditar())   permisos.add("Editar");
+                if (m.isPuedeEliminar()) permisos.add("Cancelar");
                 return label + " (" + String.join(", ", permisos) + ")";
             }).collect(java.util.stream.Collectors.joining("; "));
             descripcion = "Módulos extra asignados a " + nombreUsuario + ": " + lista + ".";

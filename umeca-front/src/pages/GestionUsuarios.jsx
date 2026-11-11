@@ -80,7 +80,7 @@ const ACCESO_BASE_ROL = {
         CORRESPONDENCIA:'completo', CONTROL_OFICIOS:'completo', EXPEDIENTES:'lectura',
     },
     CORRESPONDENCIA: {
-        IMPUTADOS:'lectura', ESTADISTICAS:'lectura', REPORTE_DIARIO:'lectura',
+        IMPUTADOS:'completo', ESTADISTICAS:'lectura', REPORTE_DIARIO:'lectura',
         ENTREVISTA:'completo', CORRESPONDENCIA:'completo', CONTROL_OFICIOS:'completo',
     },
 };
@@ -131,7 +131,7 @@ const GestionUsuarios = () => {
         setModulosActivos(prev => {
             const existe = prev.find(m => m.modulo === modulo);
             if (existe) return prev.filter(m => m.modulo !== modulo);
-            return [...prev, { modulo, puedeVer: true, puedeCrear: false, puedeEditar: false }];
+            return [...prev, { modulo, puedeVer: true, puedeCrear: false, puedeEditar: false, puedeEliminar: false }];
         });
     };
 
@@ -141,14 +141,14 @@ const GestionUsuarios = () => {
             const existe = prev.find(m => m.modulo === modulo);
             if (existe) {
                 const actualizado = { ...existe, [campo]: !existe[campo] };
-                // Si ambos quedan en false, quitar el registro
-                if (!actualizado.puedeCrear && !actualizado.puedeEditar) {
+                // Si los tres quedan en false, quitar el registro
+                if (!actualizado.puedeCrear && !actualizado.puedeEditar && !actualizado.puedeEliminar) {
                     return prev.filter(m => m.modulo !== modulo);
                 }
                 return prev.map(m => m.modulo === modulo ? actualizado : m);
             }
             // No existía: agregar con el permiso activado
-            return [...prev, { modulo, puedeVer: true, puedeCrear: campo === 'puedeCrear', puedeEditar: campo === 'puedeEditar' }];
+            return [...prev, { modulo, puedeVer: true, puedeCrear: campo === 'puedeCrear', puedeEditar: campo === 'puedeEditar', puedeEliminar: campo === 'puedeEliminar' }];
         });
     };
 
@@ -593,6 +593,27 @@ const GestionUsuarios = () => {
                                                     <span className="gu-modulo-nivel nivel-lectura">
                                                         <i className="bi bi-eye"></i> Solo lectura
                                                     </span>
+                                                ) : modulo === 'CORRESPONDENCIA' && usuarioModulos.rol === 'CORRESPONDENCIA' ? (
+                                                    <div className="gu-modulo-permisos">
+                                                        <label className="gu-permiso-chip">
+                                                            <input type="checkbox"
+                                                                checked={!!(override?.puedeCrear)}
+                                                                onChange={() => togglePermisoBase(modulo, 'puedeCrear')} />
+                                                            <i className="bi bi-person-check"></i> Asignar
+                                                        </label>
+                                                        <label className="gu-permiso-chip">
+                                                            <input type="checkbox"
+                                                                checked={!!(override?.puedeEditar)}
+                                                                onChange={() => togglePermisoBase(modulo, 'puedeEditar')} />
+                                                            <i className="bi bi-pencil"></i> Editar
+                                                        </label>
+                                                        <label className="gu-permiso-chip">
+                                                            <input type="checkbox"
+                                                                checked={!!(override?.puedeEliminar)}
+                                                                onChange={() => togglePermisoBase(modulo, 'puedeEliminar')} />
+                                                            <i className="bi bi-x-circle"></i> Cancelar
+                                                        </label>
+                                                    </div>
                                                 ) : (
                                                     <span className="gu-modulo-nivel nivel-completo">
                                                         <i className="bi bi-pencil-square"></i> Acceso completo
@@ -633,13 +654,20 @@ const GestionUsuarios = () => {
                                                         <label className="gu-permiso-chip">
                                                             <input type="checkbox" checked={activo.puedeCrear}
                                                                 onChange={() => togglePermiso(modulo, 'puedeCrear')} />
-                                                            <i className="bi bi-plus-lg"></i> Crear
+                                                            <i className="bi bi-plus-lg"></i> {modulo === 'CORRESPONDENCIA' ? 'Asignar' : 'Crear'}
                                                         </label>
                                                         <label className="gu-permiso-chip">
                                                             <input type="checkbox" checked={activo.puedeEditar}
                                                                 onChange={() => togglePermiso(modulo, 'puedeEditar')} />
                                                             <i className="bi bi-pencil"></i> Editar
                                                         </label>
+                                                        {modulo === 'CORRESPONDENCIA' && (
+                                                            <label className="gu-permiso-chip">
+                                                                <input type="checkbox" checked={!!(activo.puedeEliminar)}
+                                                                    onChange={() => togglePermiso(modulo, 'puedeEliminar')} />
+                                                                <i className="bi bi-x-circle"></i> Cancelar
+                                                            </label>
+                                                        )}
                                                     </div>
                                                 )}
                                                 {activo && soloVista && (

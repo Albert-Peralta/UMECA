@@ -49,4 +49,12 @@ public class ModuloChecker {
                    .map(UsuarioModuloExtra::isPuedeEditar)
                    .orElse(false);
     }
+
+    public boolean puedeEliminar(Authentication auth, String modulo) {
+        Long uid = userId(auth);
+        if (uid == null) return false;
+        return repo.findByUsuarioIdAndModulo(uid, modulo)
+                   .map(UsuarioModuloExtra::isPuedeEliminar)
+                   .orElse(false);
+    }
 }

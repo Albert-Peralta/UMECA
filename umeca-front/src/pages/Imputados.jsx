@@ -63,7 +63,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
     const { showToast } = useToast();
     const puedeEditarFoto    = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION';
     const puedeFallecimiento = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION';
-    const puedeCierreCarpeta = user?.rol === 'ADMINISTRADOR' || user?.rol === 'SUPERADMIN' || user?.rol === 'SUPERVISION';
+    const puedeCierreCarpeta = _puedeCrear(user, 'IMPUTADOS');
 
     const [datos, setDatos] = useState([]);
     const [busqueda, setBusqueda] = useState('');
