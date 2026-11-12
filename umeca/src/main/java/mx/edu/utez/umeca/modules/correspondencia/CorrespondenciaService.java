@@ -225,6 +225,7 @@ public class CorrespondenciaService {
 
             String anteriorNombre = c.getAsignadoA() != null ? c.getAsignadoA().getNombre() + " " + c.getAsignadoA().getApPaterno() : "nadie";
             c.setAsignadoA(personal);
+            c.setAsignadoPor(admin);
             c.setEstado(Correspondencia.Estado.ASIGNADO);
             c.setFechaAsignacion(LocalDateTime.now());
             Correspondencia saved = repository.save(c);

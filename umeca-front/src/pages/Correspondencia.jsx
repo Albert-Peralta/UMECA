@@ -737,6 +737,12 @@ export default function Correspondencia({ resetKey = 0 }) {
                             <span className="corr-detalle-label"><i className="bi bi-person-check" /> Asignado a</span>
                             <span className="corr-detalle-valor">{registro.asignadoANombre || '—'}</span>
                         </div>
+                        {registro.asignadoPorNombre && (
+                        <div className="corr-detalle-campo">
+                            <span className="corr-detalle-label"><i className="bi bi-person-up" /> Asignado por</span>
+                            <span className="corr-detalle-valor">{registro.asignadoPorNombre}</span>
+                        </div>
+                        )}
                         <div className="corr-detalle-campo">
                             <span className="corr-detalle-label"><i className="bi bi-circle-fill" style={{ fontSize: '8px', verticalAlign: 'middle' }} /> Estado</span>
                             <span className="corr-detalle-valor">

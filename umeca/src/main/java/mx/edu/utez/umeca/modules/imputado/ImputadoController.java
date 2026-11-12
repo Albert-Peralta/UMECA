@@ -58,7 +58,7 @@ public class ImputadoController {
     }
 
     @PatchMapping("/{id}/fallecimiento")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN', 'ROLE_SUPERVISION')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> registrarFallecimiento(
             @PathVariable Long id,
             @RequestBody(required = false) Map<String, String> body) {
@@ -77,7 +77,7 @@ public class ImputadoController {
     }
 
     @PatchMapping("/{id}/cierre-carpeta")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN', 'ROLE_SUPERVISION')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> registrarCierreCarpeta(
             @PathVariable Long id,
             @RequestBody(required = false) Map<String, String> body) {

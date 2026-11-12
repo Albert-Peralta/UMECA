@@ -25,6 +25,7 @@ public class CorrespondenciaResponseDTO {
     private Long asignadoAId;
     private String asignadoANombre;
     private String asignadoARol;
+    private String asignadoPorNombre;
     private LocalDateTime fechaAsignacion;
     private LocalDateTime createdAt;
     private String motivoCancelacion;
@@ -55,6 +56,8 @@ public class CorrespondenciaResponseDTO {
             dto.setAsignadoANombre(c.getAsignadoA().getNombre() + " " + c.getAsignadoA().getApPaterno());
             dto.setAsignadoARol(c.getAsignadoA().getRol() != null ? c.getAsignadoA().getRol().name() : null);
         }
+        if (c.getAsignadoPor() != null)
+            dto.setAsignadoPorNombre(c.getAsignadoPor().getNombre() + " " + c.getAsignadoPor().getApPaterno());
         return dto;
     }
 }

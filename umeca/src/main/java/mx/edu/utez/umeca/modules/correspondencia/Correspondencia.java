@@ -70,6 +70,10 @@ public class Correspondencia {
     @JoinColumn(name = "asignado_a_id")
     private User asignadoA;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "asignado_por_id")
+    private User asignadoPor;
+
     @Column(name = "fecha_asignacion")
     private LocalDateTime fechaAsignacion;
 
