@@ -12,6 +12,7 @@ import mx.edu.utez.umeca.modules.imputado.Imputado;
 import mx.edu.utez.umeca.modules.imputado.ImputadoRepository;
 import mx.edu.utez.umeca.modules.medidacautelar.MedidaCautelar;
 import mx.edu.utez.umeca.modules.medidacautelar.MedidaCautelarRepository;
+import mx.edu.utez.umeca.modules.medidacautelar.SeguimientoMedida;
 import mx.edu.utez.umeca.modules.suspension.SuspensionCondicional;
 import mx.edu.utez.umeca.modules.suspension.SuspensionCondicionalRepository;
 import org.apache.poi.ss.usermodel.*;
@@ -48,6 +49,7 @@ public class BackupService {
             agregarEntrada(zos, "Evaluaciones_Riesgo.xlsx",           generarEvaluaciones());
             agregarEntrada(zos, "Medidas_Cautelares.xlsx",            generarMedidas());
             agregarEntrada(zos, "SCP_MedidasSuspensiones.xlsx",       generarSCPdesdeMedidas());
+            agregarEntrada(zos, "Seguimientos_Medidas.xlsx",          generarSeguimientos());
             agregarEntrada(zos, "Suspension_Condicional_Modulo.xlsx", generarSuspensionCondicionalModulo());
             agregarEntrada(zos, "Correspondencia.xlsx",               generarCorrespondencia());
             agregarEntrada(zos, "Consultas_Registros.xlsx",           generarConsultas());
@@ -103,6 +105,13 @@ public class BackupService {
     private CellStyle st(int idx, CellStyle da, CellStyle al) { return idx % 2 == 0 ? al : da; }
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    private String nomCompleto(String nombre, String apPat, String apMat) {
+        String n = nombre != null ? nombre.trim() : "";
+        String p = apPat  != null ? apPat.trim()  : "";
+        String m = apMat  != null ? apMat.trim()  : "";
+        return (p + " " + m + " " + n).trim().replaceAll("  +", " ");
+    }
 
     /** Parsea un JSON array de strings y devuelve array de 7 elementos (vacíos si faltan). */
     private String[] parseStringArray7(String json) {
@@ -173,14 +182,17 @@ public class BackupService {
     // ── 1. Imputados ──────────────────────────────────────────────────────────
 
     private byte[] generarImputados() throws IOException {
-        List<Imputado> lista = imputadoRepo.findAllByOrderByCreatedAtDesc();
+        List<Imputado> lista = imputadoRepo.findAllByOrderByCreatedAtDesc()
+                .stream().sorted(java.util.Comparator.comparing(i -> i.getApPaterno() != null ? i.getApPaterno() : ""))
+                .toList();
         try (XSSFWorkbook wb = new XSSFWorkbook()) {
             Sheet sh = wb.createSheet("Imputados");
             CellStyle he = estHead(wb), da = estData(wb), al = estAlt(wb, da);
             heads(sh, he, new String[]{
                 "Nombre(s)", "Ap. Paterno", "Ap. Materno", "Causa Penal", "Delito", "Ubicación Física",
+                "Expediente Confirmado",
                 "Fallecido", "Fecha Fallecimiento", "Quien Avisó", "Parentesco Informante",
-                "Cómo se Comprobó", "No. Acta Defunción", "Obs. Fallecimiento",
+                "Cómo se Comprobó", "No. Acta Defunción", "Obs. Fallecimiento", "Responsable Fallecimiento",
                 "Carpeta Cerrada", "No. Cierre Carpeta", "Fecha Cierre Carpeta",
                 "Responsable Cierre", "Motivo Cierre", "Estatus Cumplimiento Cierre",
                 "Fecha Ingreso Cierre", "Notas Cierre", "Fecha Registro"
@@ -190,15 +202,16 @@ public class BackupService {
                 Row row = sh.createRow(idx); CellStyle st = st(idx, da, al);
                 v(row,0,i.getNombre(),st); v(row,1,i.getApPaterno(),st); v(row,2,i.getApMaterno(),st);
                 v(row,3,i.getCausaPenal(),st); v(row,4,i.getDelito(),st); v(row,5,i.getUbicacionFisica(),st);
-                v(row,6,i.isFallecido()?"Sí":"No",st); v(row,7,d(i.getFechaFallecimiento()),st);
-                v(row,8,i.getQuienAviso(),st); v(row,9,i.getParentescoInformante(),st);
-                v(row,10,i.getComoSeComprobo(),st); v(row,11,i.getNoActaDefuncion(),st);
-                v(row,12,i.getObservacionesFallecimiento(),st);
-                v(row,13,i.isCarpetaCerrada()?"Sí":"No",st); v(row,14,i.getNumeroCierreCarpeta(),st);
-                v(row,15,d(i.getFechaCierreCarpeta()),st); v(row,16,i.getResponsableCierreCarpeta(),st);
-                v(row,17,i.getMotivoCierreCarpeta(),st); v(row,18,i.getEstatusCumplimientoCierre(),st);
-                v(row,19,d(i.getFechaIngresoCierre()),st); v(row,20,i.getNotasCierre(),st);
-                v(row,21,i.getCreatedAt()!=null?i.getCreatedAt().toLocalDate().toString():"",st);
+                v(row,6,i.isExpedienteConfirmado()?"Sí":"No",st);
+                v(row,7,i.isFallecido()?"Sí":"No",st); v(row,8,d(i.getFechaFallecimiento()),st);
+                v(row,9,i.getQuienAviso(),st); v(row,10,i.getParentescoInformante(),st);
+                v(row,11,i.getComoSeComprobo(),st); v(row,12,i.getNoActaDefuncion(),st);
+                v(row,13,i.getObservacionesFallecimiento(),st); v(row,14,i.getRegistradoPorFallecimiento(),st);
+                v(row,15,i.isCarpetaCerrada()?"Sí":"No",st); v(row,16,i.getNumeroCierreCarpeta(),st);
+                v(row,17,d(i.getFechaCierreCarpeta()),st); v(row,18,i.getResponsableCierreCarpeta(),st);
+                v(row,19,i.getMotivoCierreCarpeta(),st); v(row,20,i.getEstatusCumplimientoCierre(),st);
+                v(row,21,d(i.getFechaIngresoCierre()),st); v(row,22,i.getNotasCierre(),st);
+                v(row,23,i.getCreatedAt()!=null?i.getCreatedAt().toLocalDate().toString():"",st);
                 idx++;
             }
             return bytes(wb);
@@ -208,7 +221,9 @@ public class BackupService {
     // ── 2. Entrevistas de Encuadre ────────────────────────────────────────────
 
     private byte[] generarEntrevistas() throws IOException {
-        List<EntrevistaEncuadre> lista = entrevistaRepo.findAll();
+        List<EntrevistaEncuadre> lista = entrevistaRepo.findAll()
+                .stream().sorted(java.util.Comparator.comparing(e -> e.getApPaterno() != null ? e.getApPaterno() : ""))
+                .toList();
         try (XSSFWorkbook wb = new XSSFWorkbook()) {
             Sheet sh = wb.createSheet("Entrevistas");
             CellStyle he = estHead(wb), da = estData(wb), al = estAlt(wb, da);
@@ -269,7 +284,7 @@ public class BackupService {
                 v(row,56,Boolean.TRUE.equals(e.getFamiliaresExterior())?"Sí":"No",st);
                 v(row,57,e.getFamiliaresExteriorEsp(),st);
                 v(row,58,s(e.getTipoSeguimiento()),st);
-                v(row,59,e.getRegistradoPor()!=null?e.getRegistradoPor().getNombre()+" "+s(e.getRegistradoPor().getApPaterno()):"",st);
+                v(row,59,e.getRegistradoPor()!=null?nomCompleto(e.getRegistradoPor().getNombre(),e.getRegistradoPor().getApPaterno(),e.getRegistradoPor().getApMaterno()):"",st);
                 v(row,60,e.getFechaCompletado()!=null?e.getFechaCompletado().toLocalDate().toString():"",st);
                 idx++;
             }
@@ -280,7 +295,9 @@ public class BackupService {
     // ── 3. Evaluaciones de Riesgo ─────────────────────────────────────────────
 
     private byte[] generarEvaluaciones() throws IOException {
-        List<EvaluacionRiesgo> lista = evaluacionRepo.findAll();
+        List<EvaluacionRiesgo> lista = evaluacionRepo.findAll()
+                .stream().sorted(java.util.Comparator.comparing(e -> e.getImputado() != null && e.getImputado().getApPaterno() != null ? e.getImputado().getApPaterno() : ""))
+                .toList();
         try (XSSFWorkbook wb = new XSSFWorkbook()) {
             Sheet sh = wb.createSheet("Evaluaciones");
             CellStyle he = estHead(wb), da = estData(wb), al = estAlt(wb, da);
@@ -326,8 +343,8 @@ public class BackupService {
             int idx = 1;
             for (EvaluacionRiesgo e : lista) {
                 Row row = sh.createRow(idx); CellStyle st = st(idx, da, al);
-                String imp = e.getImputado()!=null ? e.getImputado().getNombre()+" "+s(e.getImputado().getApPaterno()) : "";
-                String eval = e.getEvaluador()!=null ? e.getEvaluador().getNombre()+" "+s(e.getEvaluador().getApPaterno()) : "";
+                String imp = e.getImputado()!=null ? nomCompleto(e.getImputado().getNombre(),e.getImputado().getApPaterno(),e.getImputado().getApMaterno()) : "";
+                String eval = e.getEvaluador()!=null ? nomCompleto(e.getEvaluador().getNombre(),e.getEvaluador().getApPaterno(),e.getEvaluador().getApMaterno()) : "";
                 v(row,0,d(e.getFechaSolicitud()),st); v(row,1,e.getNumOficio(),st);
                 v(row,2,e.getFolioEscrito(),st); v(row,3,e.getFiscalia(),st);
                 v(row,4,e.getTipoSolicitud(),st); v(row,5,s(e.getTipoDocumento()),st);
@@ -401,7 +418,9 @@ public class BackupService {
 
     private byte[] generarMedidasPorTipo(MedidaCautelar.TipoMedida tipo, String sheetName) throws IOException {
         List<MedidaCautelar> lista = medidaRepo.findAllByOrderByCreatedAtDesc()
-                .stream().filter(m -> m.getTipo() == tipo).toList();
+                .stream().filter(m -> m.getTipo() == tipo)
+                .sorted(java.util.Comparator.comparing(m -> m.getImputado() != null && m.getImputado().getApPaterno() != null ? m.getImputado().getApPaterno() : ""))
+                .toList();
         try (XSSFWorkbook wb = new XSSFWorkbook()) {
             Sheet sh = wb.createSheet(sheetName);
             CellStyle he = estHead(wb), da = estData(wb), al = estAlt(wb, da);
@@ -412,13 +431,14 @@ public class BackupService {
                 "A Disposición","Descripción Domicilio",
                 "Presentación Periódica","No. Biométrico","No. Libro","No. Página",
                 "Cumpliendo/Incumpliendo","Descripción Informe",
-                "Fracciones","Detalles Fracciones","Advertencia","Observaciones",
+                "Fracciones","Detalles Fracciones","Delitos JSON","Advertencia","Observaciones",
                 "Responsable Seguimiento","Obs. Generales","Fecha Próxima Revisión",
                 "Vigencia Inicio","Vigencia Fin","Estado",
                 "Acuerdo Reparatorio","Descripción Acuerdo","Fecha Celebración Acuerdo",
                 "Fecha Cumplimiento Acuerdo","Estatus Final","Fecha Término",
-                "Fecha Imposición SCP","Plazo SCP (meses)","Canalizacion","Tipo Servicio",
-                "Fecha Informe Final","Vencimiento Plazo","Oficio Sobreseimiento","Responsable Cierre",
+                "Fecha Imposición SCP","Plazo SCP (meses)","Tiene Canalización","Canalizacion","Tipo Servicio",
+                "Obs. Canalización","Fecha Informe Final","Vencimiento Plazo",
+                "Tiene Sobreseimiento","Oficio Sobreseimiento","Responsable Cierre",
                 "Fecha Revocación","Oficio Revocación","Motivo Revocación",
                 "Fecha Ampliación","Nuevo Plazo SCP","Motivo Ampliación",
                 "Cambiado a SCP","Fecha Cambio SCP","Viene de MC",
@@ -430,8 +450,8 @@ public class BackupService {
             int idx = 1;
             for (MedidaCautelar m : lista) {
                 Row row = sh.createRow(idx); CellStyle st = st(idx, da, al);
-                String imp = m.getImputado()!=null ? m.getImputado().getNombre()+" "+s(m.getImputado().getApPaterno()) : "";
-                String reg = m.getRegistradoPor()!=null ? m.getRegistradoPor().getNombre()+" "+s(m.getRegistradoPor().getApPaterno()) : "";
+                String imp = m.getImputado()!=null ? nomCompleto(m.getImputado().getNombre(),m.getImputado().getApPaterno(),m.getImputado().getApMaterno()) : "";
+                String reg = m.getRegistradoPor()!=null ? nomCompleto(m.getRegistradoPor().getNombre(),m.getRegistradoPor().getApPaterno(),m.getRegistradoPor().getApMaterno()) : "";
                 v(row,0,imp,st); v(row,1,m.getCausaPenal(),st); v(row,2,m.getDelito(),st);
                 v(row,3,m.getModalidad(),st); v(row,4,m.getSede(),st); v(row,5,m.getNombreJuez(),st);
                 v(row,6,m.getDistritoJudicial(),st);
@@ -444,33 +464,41 @@ public class BackupService {
                 v(row,16,m.getNoLibro(),st); v(row,17,m.getNoPagina(),st);
                 v(row,18,m.getCumpliendoIncumpliendo(),st); v(row,19,m.getDescripcionInforme(),st);
                 v(row,20,m.getFracciones()!=null?String.join(", ",m.getFracciones()):"",st);
-                v(row,21,m.getDetallesFracciones(),st); v(row,22,m.getAdvertencia(),st);
-                v(row,23,m.getObservaciones(),st); v(row,24,m.getResponsableSeguimiento(),st);
-                v(row,25,m.getObservacionesGenerales(),st); v(row,26,d(m.getFechaProximaRevision()),st);
-                v(row,27,d(m.getVigenciaInicio()),st); v(row,28,d(m.getVigenciaFin()),st);
-                v(row,29,s(m.getEstado()),st);
-                v(row,30,Boolean.TRUE.equals(m.getAcuerdoReparatorio())?"Sí":"No",st);
-                v(row,31,m.getDescripcionAcuerdo(),st); v(row,32,d(m.getFechaCelebracionAcuerdo()),st);
-                v(row,33,d(m.getFechaCumplimientoAcuerdo()),st); v(row,34,m.getEstatusFinal(),st);
-                v(row,35,d(m.getFechaTermino()),st); v(row,36,d(m.getFechaImposicionScp()),st);
-                v(row,37,s(m.getPlazoScp()),st); v(row,38,m.getCanalizacion(),st);
-                v(row,39,m.getTipoServicio(),st); v(row,40,d(m.getFechaInformeFinal()),st);
-                v(row,41,d(m.getVencimientoPlazo()),st); v(row,42,m.getOficioSobreseimiento(),st);
-                v(row,43,m.getResponsableCierre(),st); v(row,44,d(m.getFechaRevocacion()),st);
-                v(row,45,m.getOficioRevocacion(),st); v(row,46,m.getMotivoRevocacion(),st);
-                v(row,47,d(m.getFechaAmpliacion()),st); v(row,48,s(m.getNuevoPlazoScp()),st);
-                v(row,49,m.getMotivoAmpliacion(),st);
-                v(row,50,Boolean.TRUE.equals(m.getCambiadoAScp())?"Sí":"No",st);
-                v(row,51,d(m.getFechaCambioScp()),st);
-                v(row,52,Boolean.TRUE.equals(m.getVieneDeMC())?"Sí":"No",st);
-                v(row,53,Boolean.TRUE.equals(m.getCambiadoAMc())?"Sí":"No",st);
-                v(row,54,d(m.getFechaCambioMc()),st);
-                v(row,55,Boolean.TRUE.equals(m.getVieneDeScp())?"Sí":"No",st);
-                v(row,56,d(m.getFechaLevantamiento()),st); v(row,57,m.getOficioLevantamiento(),st);
-                v(row,58,m.getFirmaLevantamiento(),st); v(row,59,m.getMotivoLevantamiento(),st);
-                v(row,60,m.getCumplioLevantamiento()!=null?m.getCumplioLevantamiento()?"Sí":"No":"",st);
-                v(row,61,reg,st);
-                v(row,62,m.getCreatedAt()!=null?m.getCreatedAt().toLocalDate().toString():"",st);
+                v(row,21,m.getDetallesFracciones(),st);
+                v(row,22,m.getDelitosJson(),st);
+                v(row,23,m.getAdvertencia(),st);
+                v(row,24,m.getObservaciones(),st); v(row,25,m.getResponsableSeguimiento(),st);
+                v(row,26,m.getObservacionesGenerales(),st); v(row,27,d(m.getFechaProximaRevision()),st);
+                v(row,28,d(m.getVigenciaInicio()),st); v(row,29,d(m.getVigenciaFin()),st);
+                v(row,30,s(m.getEstado()),st);
+                v(row,31,Boolean.TRUE.equals(m.getAcuerdoReparatorio())?"Sí":"No",st);
+                v(row,32,m.getDescripcionAcuerdo(),st); v(row,33,d(m.getFechaCelebracionAcuerdo()),st);
+                v(row,34,d(m.getFechaCumplimientoAcuerdo()),st); v(row,35,m.getEstatusFinal(),st);
+                v(row,36,d(m.getFechaTermino()),st); v(row,37,d(m.getFechaImposicionScp()),st);
+                v(row,38,s(m.getPlazoScp()),st);
+                v(row,39,Boolean.TRUE.equals(m.getTieneCanalizacion())?"Sí":"No",st);
+                v(row,40,m.getCanalizacion(),st);
+                v(row,41,m.getTipoServicio(),st);
+                v(row,42,m.getCanalizacionObservaciones(),st);
+                v(row,43,d(m.getFechaInformeFinal()),st);
+                v(row,44,d(m.getVencimientoPlazo()),st);
+                v(row,45,Boolean.TRUE.equals(m.getTieneSobreseimiento())?"Sí":"No",st);
+                v(row,46,m.getOficioSobreseimiento(),st);
+                v(row,47,m.getResponsableCierre(),st); v(row,48,d(m.getFechaRevocacion()),st);
+                v(row,49,m.getOficioRevocacion(),st); v(row,50,m.getMotivoRevocacion(),st);
+                v(row,51,d(m.getFechaAmpliacion()),st); v(row,52,s(m.getNuevoPlazoScp()),st);
+                v(row,53,m.getMotivoAmpliacion(),st);
+                v(row,54,Boolean.TRUE.equals(m.getCambiadoAScp())?"Sí":"No",st);
+                v(row,55,d(m.getFechaCambioScp()),st);
+                v(row,56,Boolean.TRUE.equals(m.getVieneDeMC())?"Sí":"No",st);
+                v(row,57,Boolean.TRUE.equals(m.getCambiadoAMc())?"Sí":"No",st);
+                v(row,58,d(m.getFechaCambioMc()),st);
+                v(row,59,Boolean.TRUE.equals(m.getVieneDeScp())?"Sí":"No",st);
+                v(row,60,d(m.getFechaLevantamiento()),st); v(row,61,m.getOficioLevantamiento(),st);
+                v(row,62,m.getFirmaLevantamiento(),st); v(row,63,m.getMotivoLevantamiento(),st);
+                v(row,64,m.getCumplioLevantamiento()!=null?m.getCumplioLevantamiento()?"Sí":"No":"",st);
+                v(row,65,reg,st);
+                v(row,66,m.getCreatedAt()!=null?m.getCreatedAt().toLocalDate().toString():"",st);
                 idx++;
             }
             return bytes(wb);
@@ -487,7 +515,9 @@ public class BackupService {
     // ── 6. Suspensión Condicional (módulo independiente) ──────────────────────
 
     private byte[] generarSuspensionCondicionalModulo() throws IOException {
-        List<SuspensionCondicional> lista = suspensionRepo.findAll(Pageable.unpaged()).getContent();
+        List<SuspensionCondicional> lista = suspensionRepo.findAll(Pageable.unpaged()).getContent()
+                .stream().sorted(java.util.Comparator.comparing(sc -> sc.getImputado() != null ? sc.getImputado() : ""))
+                .toList();
         try (XSSFWorkbook wb = new XSSFWorkbook()) {
             Sheet sh = wb.createSheet("Suspension Condicional");
             CellStyle he = estHead(wb), da = estData(wb), al = estAlt(wb, da);
@@ -509,10 +539,46 @@ public class BackupService {
         }
     }
 
+    // ── 6b. Seguimientos de Medidas (MC y SCP) ────────────────────────────────
+
+    private byte[] generarSeguimientos() throws IOException {
+        List<MedidaCautelar> medidas = medidaRepo.findAllByOrderByCreatedAtDesc();
+        List<SeguimientoMedida> todos = medidas.stream()
+                .flatMap(m -> m.getSeguimientos().stream())
+                .sorted(java.util.Comparator.comparing(sg ->
+                        sg.getMedida() != null && sg.getMedida().getImputado() != null &&
+                        sg.getMedida().getImputado().getApPaterno() != null
+                        ? sg.getMedida().getImputado().getApPaterno() : ""))
+                .toList();
+        try (XSSFWorkbook wb = new XSSFWorkbook()) {
+            Sheet sh = wb.createSheet("Seguimientos");
+            CellStyle he = estHead(wb), da = estData(wb), al = estAlt(wb, da);
+            heads(sh, he, new String[]{
+                "Tipo","Imputado","Causa Penal","Fecha Seguimiento","Detalles","Registrado Por"
+            });
+            int idx = 1;
+            for (SeguimientoMedida sg : todos) {
+                Row row = sh.createRow(idx); CellStyle st = st(idx, da, al);
+                MedidaCautelar m = sg.getMedida();
+                String tipo = m != null && m.getTipo() != null ? m.getTipo().name().equals("MEDIDA_CAUTELAR") ? "MC" : "SCP" : "";
+                String imp  = m != null && m.getImputado() != null ? nomCompleto(m.getImputado().getNombre(), m.getImputado().getApPaterno(), m.getImputado().getApMaterno()) : "";
+                String causa = m != null ? (m.getCausaPenal() != null ? m.getCausaPenal() : "") : "";
+                String reg = sg.getRegistradoPor() != null ? nomCompleto(sg.getRegistradoPor().getNombre(), sg.getRegistradoPor().getApPaterno(), sg.getRegistradoPor().getApMaterno()) : "";
+                v(row,0,tipo,st); v(row,1,imp,st); v(row,2,causa,st);
+                v(row,3,d(sg.getFechaSeguimiento()),st); v(row,4,sg.getDetalles(),st);
+                v(row,5,reg,st);
+                idx++;
+            }
+            return bytes(wb);
+        }
+    }
+
     // ── 7. Correspondencia ────────────────────────────────────────────────────
 
     private byte[] generarCorrespondencia() throws IOException {
-        List<Correspondencia> lista = correspondenciaRepo.findAllByOrderByCreatedAtDesc();
+        List<Correspondencia> lista = correspondenciaRepo.findAllByOrderByCreatedAtDesc()
+                .stream().sorted(java.util.Comparator.comparing(c -> c.getAsunto() != null ? c.getAsunto() : ""))
+                .toList();
         try (XSSFWorkbook wb = new XSSFWorkbook()) {
             Sheet sh = wb.createSheet("Correspondencia");
             CellStyle he = estHead(wb), da = estData(wb), al = estAlt(wb, da);
@@ -520,7 +586,8 @@ public class BackupService {
                 "No. Turno","Sede","No. Oficio","Fecha Oficio","Fecha Recibido",
                 "Tipo","Remitente","Asunto","Prioridad","Estado",
                 "Requiere Respuesta","Término Respuesta (hrs)",
-                "Asignado A","Registrado Por","Fecha Registro"
+                "Asignado A","Fecha Asignación","Motivo Cancelación",
+                "Registrado Por","Fecha Registro"
             });
             int idx = 1;
             for (Correspondencia c : lista) {
@@ -531,9 +598,11 @@ public class BackupService {
                 v(row,8,s(c.getPrioridad()),st); v(row,9,s(c.getEstado()),st);
                 v(row,10,Boolean.TRUE.equals(c.getRequiereRespuesta())?"Sí":"No",st);
                 v(row,11,s(c.getTerminoRespuestaHoras()),st);
-                v(row,12,c.getAsignadoA()!=null?c.getAsignadoA().getNombre()+" "+s(c.getAsignadoA().getApPaterno()):"",st);
-                v(row,13,c.getRegistradoPor()!=null?c.getRegistradoPor().getNombre()+" "+s(c.getRegistradoPor().getApPaterno()):"",st);
-                v(row,14,c.getCreatedAt()!=null?c.getCreatedAt().toLocalDate().toString():"",st);
+                v(row,12,c.getAsignadoA()!=null?nomCompleto(c.getAsignadoA().getNombre(),c.getAsignadoA().getApPaterno(),c.getAsignadoA().getApMaterno()):"",st);
+                v(row,13,c.getFechaAsignacion()!=null?c.getFechaAsignacion().toLocalDate().toString():"",st);
+                v(row,14,c.getMotivoCancelacion(),st);
+                v(row,15,c.getRegistradoPor()!=null?nomCompleto(c.getRegistradoPor().getNombre(),c.getRegistradoPor().getApPaterno(),c.getRegistradoPor().getApMaterno()):"",st);
+                v(row,16,c.getCreatedAt()!=null?c.getCreatedAt().toLocalDate().toString():"",st);
                 idx++;
             }
             return bytes(wb);
