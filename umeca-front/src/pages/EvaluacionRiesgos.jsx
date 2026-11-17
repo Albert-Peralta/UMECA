@@ -286,7 +286,7 @@ const EvaluacionRiesgos = ({ resetKey = 0 }) => {
         const zonaOk = zonaFiltro === 'TODAS' || d.zonaEvaluador === zonaFiltro;
         if (!zonaOk) return false;
         if (!filtroEstatus) return true;
-        // Filtrar por resultado si aplica
+        if (filtroEstatus === 'CARPETA_CERRADA') return !!d.imputadoCarpetaCerrada;
         if (['FLEXIBLE', 'ESTRICTO', 'DIFICIL_CUMPLIR'].includes(filtroEstatus))
             return d.resultado === filtroEstatus;
         return d.estatus === filtroEstatus;
@@ -426,7 +426,8 @@ const EvaluacionRiesgos = ({ resetKey = 0 }) => {
                     <option value="">Todos</option>
                     <option value="FLEXIBLE">Bajo Riesgo</option>
                     <option value="ESTRICTO">Medio Riesgo</option>
-<option value="DIFICIL_CUMPLIR">Alto Riesgo</option>
+                    <option value="DIFICIL_CUMPLIR">Alto Riesgo</option>
+                    <option value="CARPETA_CERRADA">Carpeta Cerrada</option>
                 </select>
                 {puedeRegistrar && (<>
                     <button className="btn-nueva-eval" onClick={() => { setEvalEdicion(null); setShowFormulario(true); }}>

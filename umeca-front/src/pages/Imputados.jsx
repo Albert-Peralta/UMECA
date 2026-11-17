@@ -766,7 +766,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                     && item.expedienteConfirmado;
                                 return (
                                 <tr key={item.id} className={esMiExpedientePendiente ? 'imp-fila-pendiente' : esMiExpedienteConfirmado ? 'imp-fila-confirmada' : ''}>
-                                    <td>{inicio + index + 1}</td>
+                                    <td>{filtrados.length - inicio - index}</td>
                                     <td className="td-nombre">
                                         <div style={{ display:'flex', alignItems:'center', gap:'7px', flexWrap:'wrap' }}>
                                             {item.nombreCompleto}
@@ -946,7 +946,7 @@ const Imputados = ({ onNavigarEntrevista }) => {
                                         <div className="exp-hero-info">
                                             {(() => {
                                                 const ultimaEval = perfil.evaluaciones?.find(e => e.resultado);
-                                                const medidasActivas = (perfil.medidas || []).filter(m => m.estado === 'ACTIVO');
+                                                const medidasActivas = (perfil.medidas || []).filter(m => ['ACTIVO','SUSTRAIDO','PRISION_PREVENTIVA'].includes(m.estado));
                                                 return (
                                                     <div className="exp-hero-badges">
                                                         <span className="exp-badge-causa">

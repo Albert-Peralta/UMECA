@@ -60,7 +60,9 @@ const EntrevistaEncuadre = ({ resetKey = 0 }) => {
         .filter(e => {
         const texto = `${e.folio} ${e.nombre} ${e.apPaterno} ${e.causaPenal}`.toLowerCase();
         const coincideBusqueda = texto.includes(busqueda.toLowerCase());
-        const coincideEstado = filtroEstado ? e.estado === filtroEstado : true;
+        const coincideEstado = filtroEstado === 'CARPETA_CERRADA'
+            ? !!e.imputado?.carpetaCerrada
+            : filtroEstado ? e.estado === filtroEstado : true;
         const coincideZona = zonaFiltro === 'TODAS' || e.zona === zonaFiltro;
         return coincideBusqueda && coincideEstado && coincideZona;
     });
@@ -161,6 +163,7 @@ const EntrevistaEncuadre = ({ resetKey = 0 }) => {
                     <option value="">Todos los estados</option>
                     <option value="PENDIENTE">Pendiente</option>
                     <option value="COMPLETADO">Completado</option>
+                    <option value="CARPETA_CERRADA">Carpeta Cerrada</option>
                 </select>
             </div>
 

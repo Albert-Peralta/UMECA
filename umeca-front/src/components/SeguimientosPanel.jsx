@@ -143,56 +143,58 @@ export default function SeguimientosPanel({
                     <span className="sp-count">{lista.length}</span>
                 </span>
                 {!readonly && (
-                    <button className="sp-btn-add" onClick={() => setMostrarForm(!mostrarForm)}>
-                        <i className={`bi bi-${mostrarForm ? 'x-lg' : 'plus-lg'}`} />
-                        {mostrarForm ? 'Cancelar' : 'Agregar'}
-                    </button>
+                    mostrarForm ? (
+                        <div style={{ display: 'flex', gap: 6 }}>
+                            <button className="sp-btn-save" onClick={handleGuardar} disabled={guardando}>
+                                <i className="bi bi-floppy" /> {guardando ? 'Guardando...' : 'Guardar'}
+                            </button>
+                            <button className="sp-btn-cancel" onClick={() => { setMostrarForm(false); setForm({ tipoActividad: '', otroTipo: '', detalles: '' }); }}>
+                                <i className="bi bi-x-lg" /> Cancelar
+                            </button>
+                        </div>
+                    ) : (
+                        <button className="sp-btn-add" onClick={() => setMostrarForm(true)}>
+                            <i className="bi bi-plus-lg" /> Agregar
+                        </button>
+                    )
                 )}
             </div>
 
             {mostrarForm && (
                 <div className="sp-form">
-                    <div className="sp-form-row">
-                        <label>Tipo de actividad *</label>
-                        <select
-                            value={form.tipoActividad}
-                            onChange={e => setForm({ ...form, tipoActividad: e.target.value, otroTipo: '' })}
-                        >
-                            <option value="">— Selecciona —</option>
-                            {grupos.map(g => (
-                                <optgroup key={g} label={g}>
-                                    {tiposFiltrados.filter(t => t.grupo === g).map(t => (
-                                        <option key={t.value} value={t.value}>{t.label}</option>
-                                    ))}
-                                </optgroup>
-                            ))}
-                        </select>
-                    </div>
-                    {(form.tipoActividad === 'OTRO' || form.tipoActividad === 'OTRO_SUPERVISION') && (
-                        <div className="sp-form-row">
-                            <label>Especifica cuál *</label>
-                            <input
-                                type="text"
-                                placeholder="Ej: Oficio de autorización, Acuerdo interno..."
-                                value={form.otroTipo}
-                                onChange={e => setForm({ ...form, otroTipo: toUpperNoAccent(e.target.value) })}
-                                className="sp-input-otro"
+                    <div className="sp-form-cols">
+                        <div className="sp-form-col-left">
+                            <select
+                                value={form.tipoActividad}
+                                onChange={e => setForm({ ...form, tipoActividad: e.target.value, otroTipo: '' })}
+                            >
+                                <option value="">— Tipo de actividad —</option>
+                                {grupos.map(g => (
+                                    <optgroup key={g} label={g}>
+                                        {tiposFiltrados.filter(t => t.grupo === g).map(t => (
+                                            <option key={t.value} value={t.value}>{t.label}</option>
+                                        ))}
+                                    </optgroup>
+                                ))}
+                            </select>
+                            {(form.tipoActividad === 'OTRO' || form.tipoActividad === 'OTRO_SUPERVISION') && (
+                                <input
+                                    type="text"
+                                    placeholder="Especifica cuál..."
+                                    value={form.otroTipo}
+                                    onChange={e => setForm({ ...form, otroTipo: toUpperNoAccent(e.target.value) })}
+                                    className="sp-input-otro"
+                                />
+                            )}
+                        </div>
+                        <div className="sp-form-col-right">
+                            <textarea
+                                rows={3}
+                                placeholder="Detalles del seguimiento..."
+                                value={form.detalles}
+                                onChange={e => setForm({ ...form, detalles: toUpperNoAccent(e.target.value) })}
                             />
                         </div>
-                    )}
-                    <div className="sp-form-row">
-                        <label>Detalles *</label>
-                        <textarea
-                            rows={3}
-                            placeholder="Describe el seguimiento realizado..."
-                            value={form.detalles}
-                            onChange={e => setForm({ ...form, detalles: toUpperNoAccent(e.target.value) })}
-                        />
-                    </div>
-                    <div className="sp-form-actions">
-                        <button className="sp-btn-save" onClick={handleGuardar} disabled={guardando}>
-                            <i className="bi bi-floppy" /> {guardando ? 'Guardando...' : 'Guardar'}
-                        </button>
                     </div>
                 </div>
             )}

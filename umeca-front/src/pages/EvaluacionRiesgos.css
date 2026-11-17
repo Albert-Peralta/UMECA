@@ -229,11 +229,18 @@
 .btn-cargar-small:hover { background: #376842; color: white; }
 
 .eval-filtro-estatus {
-    border: 1px solid #d0d0d0; border-radius: 8px;
-    padding: 8px 12px; font-size: 14px; outline: none;
-    background: white; color: #333; white-space: nowrap; flex-shrink: 0;
+    border: 1.5px solid #c8dfd0; border-radius: 8px;
+    padding: 8px 36px 8px 14px; font-size: 13.5px; font-weight: 500;
+    outline: none; background: #fff; color: #1a3a2a;
+    white-space: nowrap; flex-shrink: 0; cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'%3E%3Cpath fill='%232d6a4f' d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    min-width: 120px;
 }
-.eval-filtro-estatus:focus { border-color: #376842; }
+.eval-filtro-estatus:focus { border-color: #2d6a4f; box-shadow: 0 0 0 3px rgba(45,106,79,0.12); }
+.eval-filtro-estatus:hover { border-color: #2d6a4f; }
 
 /* Buscador de evaluaciones ocupa todo el espacio disponible */
 .eval-search-wrap {
