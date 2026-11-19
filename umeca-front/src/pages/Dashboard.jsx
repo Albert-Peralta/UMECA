@@ -24,7 +24,7 @@ import Perfil from './Perfil';
 import Correspondencia from './Correspondencia';
 import ControlOficios from './ControlOficios';
 import ExpedientesAnteriores from './ExpedientesAnteriores';
-import { getContadoresCorrespondencia } from '../api/correspondenciaApi';
+import { getContadoresCorrespondencia, getMisAsignados } from '../api/correspondenciaApi';
 import { getContadores as getContadoresOficios } from '../api/controlOficiosApi';
 import { getExpedientesPendientesCount } from '../api/imputadosApi';
 
@@ -151,6 +151,7 @@ const Dashboard = () => {
     const [expedientesPendientes, setExpedientesPendientes] = useState(0);
     const [guardConfirm, setGuardConfirm] = useState(null); // key pendiente de navegar
     const { isFormDirty, setFormDirty } = useFormGuard();
+    const [alertaCorrPend, setAlertaCorrPend] = useState(null); // número de pendientes para modal
 
     // Si el token desaparece (logout en otra pestaña o navegación por historial), cierra sesión
     useEffect(() => {
@@ -197,6 +198,30 @@ const Dashboard = () => {
             clearInterval(id);
             window.removeEventListener('corr-contadores-cambio', handler);
         };
+    }, [user?.rol]);
+
+    // ── Alerta de pendientes de correspondencia ────────────────────────────────
+    useEffect(() => {
+        const verificar = async () => {
+            try {
+                const res = await getMisAsignados();
+                const lista = res.data?.data || [];
+                const pendientes = lista.filter(r =>
+                    r.estado !== 'FINALIZADO' && r.estado !== 'CANCELADO' && r.estado !== 'ARCHIVADO'
+                ).length;
+                if (pendientes > 0) setAlertaCorrPend(pendientes);
+            } catch { /* silencioso */ }
+        };
+
+        // Solo para roles que reciben asignaciones
+        const rol = user?.rol;
+        const aplica = rol === 'SUPERVISION' || rol === 'EVALUADOR_RIESGO' ||
+                       rol === 'CORRESPONDENCIA' || rol === 'ADMINISTRADOR' || rol === 'SUPERADMIN';
+        if (!aplica) return;
+
+        verificar();
+        const intervalo = setInterval(verificar, 12 * 60 * 1000); // cada 12 min
+        return () => clearInterval(intervalo);
     }, [user?.rol]);
 
     // Carga y refresca el contador de oficios pendientes cada 30 s
@@ -389,6 +414,36 @@ const Dashboard = () => {
 
     return (
     <>
+        {/* ── Modal alerta: pendientes de correspondencia ── */}
+        {alertaCorrPend !== null && (
+            <div className="alerta-corr-overlay">
+                <div className="alerta-corr-modal" onClick={e => e.stopPropagation()}>
+                    <div className="alerta-corr-header">
+                        <div className="alerta-corr-icon">
+                            <i className="bi bi-envelope-exclamation-fill" />
+                        </div>
+                        <div>
+                            <h3 className="alerta-corr-titulo">Tienes oficios pendientes</h3>
+                            <p className="alerta-corr-subtitulo">Correspondencia asignada sin atender</p>
+                        </div>
+                    </div>
+                    <div className="alerta-corr-body">
+                        <span className="alerta-corr-num">{alertaCorrPend}</span>
+                        <p className="alerta-corr-msg">
+                            {alertaCorrPend === 1
+                                ? 'oficio asignado pendiente de atender.'
+                                : 'oficios asignados pendientes de atender.'}
+                        </p>
+                    </div>
+                    <div className="alerta-corr-footer">
+                        <button className="alerta-corr-btn-ir" onClick={() => { setAlertaCorrPend(null); setActiveMenu('correspondencia'); }}>
+                            <i className="bi bi-envelope-paper" /> Ir a Correspondencia
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
         {/* Modal confirmación cambio de módulo con formulario activo */}
         {guardConfirm && (
             <div className="guard-overlay">
