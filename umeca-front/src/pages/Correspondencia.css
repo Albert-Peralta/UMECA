@@ -674,6 +674,22 @@
     margin-bottom: 2px;
 }
 
+.corr-buscar-personal-wrap {
+    position: relative; margin-bottom: 10px;
+}
+.corr-buscar-personal-icon {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    color: #9ca3af; font-size: 13px; pointer-events: none;
+}
+.corr-buscar-personal-input {
+    width: 100%; box-sizing: border-box;
+    padding: 8px 12px 8px 32px;
+    border: 1.5px solid #d1d5db; border-radius: 8px;
+    font-size: 13.5px; outline: none; background: #f9fafb;
+    transition: border-color 0.15s;
+}
+.corr-buscar-personal-input:focus { border-color: #376842; background: #fff; }
+
 .corr-personal-lista {
     display: flex;
     flex-direction: column;

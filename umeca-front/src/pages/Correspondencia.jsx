@@ -86,6 +86,7 @@ export default function Correspondencia({ resetKey = 0 }) {
     const [loadingAsig,   setLoadingAsig]   = useState(false);
     const [showAsigModal,   setShowAsigModal]   = useState(false);
     const [registroAsig,    setRegistroAsig]    = useState(null);
+    const [buscarPersonal,  setBuscarPersonal]  = useState('');
     const [showQuitarModal, setShowQuitarModal] = useState(false);
     const [registroQuitar,  setRegistroQuitar]  = useState(null);
 
@@ -297,6 +298,7 @@ export default function Correspondencia({ resetKey = 0 }) {
     const abrirAsignar = async (reg) => {
         setRegistroAsig(reg);
         setAsignadoSel(reg.asignadoAId ? String(reg.asignadoAId) : '');
+        setBuscarPersonal('');
         if (!personal.length) {
             const res = await getPersonalAsignable();
             setPersonal(res.data?.data || []);
@@ -1030,7 +1032,7 @@ export default function Correspondencia({ resetKey = 0 }) {
                             const filaPendiente = r.estado === 'PENDIENTE';
                             const filaCancelada = r.estado === 'CANCELADO';
                             const filaFinalizada = r.estado === 'FINALIZADO';
-                            const filaSinAsignar = puedeAsignarCorr && !r.asignadoAId && !filaCancelada;
+                            const filaSinAsignar = puedeAsignarCorr && !r.asignadoAId && !filaCancelada && r.prioridad !== 'TURNO' && r.prioridad !== 'CIRCULAR';
                             const filaPorAtender = esPersonal && r.estado !== 'FINALIZADO' && r.estado !== 'PENDIENTE' && !filaCancelada;
                             return (
                                 <tr key={r.id} className={`${filaRoja ? 'corr-fila-alerta' : ''} ${filaPendiente ? 'corr-fila-pendiente' : ''} ${filaCancelada ? 'corr-fila-cancelada' : ''} ${filaFinalizada ? 'corr-fila-finalizada' : ''} ${filaSinAsignar ? 'corr-fila-sin-asignar' : ''} ${filaPorAtender ? 'corr-fila-por-atender' : ''}`}>
@@ -1146,6 +1148,16 @@ export default function Correspondencia({ resetKey = 0 }) {
                         </div>
 
                         <label className="corr-modal-select-label">Asignar a:</label>
+                        <div className="corr-buscar-personal-wrap">
+                            <i className="bi bi-search corr-buscar-personal-icon" />
+                            <input
+                                className="corr-buscar-personal-input"
+                                placeholder="Buscar por nombre..."
+                                value={buscarPersonal}
+                                onChange={e => setBuscarPersonal(e.target.value)}
+                                autoFocus
+                            />
+                        </div>
                         <div className="corr-personal-lista">
                             {(() => {
                                 const GRUPOS = [
@@ -1155,7 +1167,10 @@ export default function Correspondencia({ resetKey = 0 }) {
                                     { rol: 'EVALUADOR_RIESGO',label: 'Evaluación de Riesgos' },
                                 ];
                                 return GRUPOS.map(({ rol, label }) => {
-                                    const miembros = personal.filter(p => p.rol === rol);
+                                    const miembros = personal.filter(p =>
+                                        p.rol === rol &&
+                                        (!buscarPersonal || p.nombre.toLowerCase().includes(buscarPersonal.toLowerCase()))
+                                    );
                                     if (miembros.length === 0) return null;
                                     return (
                                         <div key={rol} className="corr-personal-grupo">
