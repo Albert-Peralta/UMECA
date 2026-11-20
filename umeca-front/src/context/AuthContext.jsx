@@ -44,6 +44,7 @@ export const AuthProvider = ({ children }) => {
             .forEach(k => { avatars[k] = localStorage.getItem(k); });
 
         localStorage.clear();
+        sessionStorage.removeItem('alertaCorrMostrada');
 
         // Restaurar avatares
         Object.entries(avatars).forEach(([k, v]) => localStorage.setItem(k, v));

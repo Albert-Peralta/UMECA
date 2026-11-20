@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useFormGuard } from '../context/FormGuardContext';
@@ -152,6 +152,7 @@ const Dashboard = () => {
     const [guardConfirm, setGuardConfirm] = useState(null); // key pendiente de navegar
     const { isFormDirty, setFormDirty } = useFormGuard();
     const [alertaCorrPend, setAlertaCorrPend] = useState(null); // número de pendientes para modal
+    const alertaEsInicial = useRef(!sessionStorage.getItem('alertaCorrMostrada')); // false si ya se vio antes en esta sesión
 
     // Si el token desaparece (logout en otra pestaña o navegación por historial), cierra sesión
     useEffect(() => {
@@ -202,6 +203,7 @@ const Dashboard = () => {
 
     // ── Alerta de pendientes de correspondencia ────────────────────────────────
     useEffect(() => {
+        let primeraVez = true;
         const verificar = async () => {
             try {
                 const res = await getMisAsignados();
@@ -209,7 +211,12 @@ const Dashboard = () => {
                 const pendientes = lista.filter(r =>
                     r.estado !== 'FINALIZADO' && r.estado !== 'CANCELADO' && r.estado !== 'ARCHIVADO'
                 ).length;
-                if (pendientes > 0) setAlertaCorrPend(pendientes);
+                if (pendientes > 0) {
+                    alertaEsInicial.current = primeraVez && !sessionStorage.getItem('alertaCorrMostrada');
+                    setAlertaCorrPend(pendientes);
+                    sessionStorage.setItem('alertaCorrMostrada', '1');
+                }
+                primeraVez = false;
             } catch { /* silencioso */ }
         };
 
@@ -220,7 +227,7 @@ const Dashboard = () => {
         if (!aplica) return;
 
         verificar();
-        const intervalo = setInterval(verificar, 12 * 60 * 1000); // cada 12 min
+        const intervalo = setInterval(verificar, 20 * 60 * 1000); // cada 20 min
         return () => clearInterval(intervalo);
     }, [user?.rol]);
 
@@ -427,6 +434,11 @@ const Dashboard = () => {
                             <p className="alerta-corr-subtitulo">Correspondencia asignada sin atender</p>
                         </div>
                     </div>
+                    {!alertaEsInicial.current && (
+                        <button className="alerta-corr-btn-x" onClick={() => setAlertaCorrPend(null)} title="Cerrar">
+                            <i className="bi bi-x-lg" />
+                        </button>
+                    )}
                     <div className="alerta-corr-body">
                         <span className="alerta-corr-num">{alertaCorrPend}</span>
                         <p className="alerta-corr-msg">
