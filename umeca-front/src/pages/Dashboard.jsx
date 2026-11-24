@@ -227,7 +227,7 @@ const Dashboard = () => {
         if (!aplica) return;
 
         verificar();
-        const intervalo = setInterval(verificar, 20 * 60 * 1000); // cada 20 min
+        const intervalo = setInterval(verificar, 120 * 60 * 1000); // cada 2 hrs.
         return () => clearInterval(intervalo);
     }, [user?.rol]);
 

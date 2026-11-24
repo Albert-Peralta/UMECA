@@ -270,21 +270,32 @@
     display: flex; align-items: center; justify-content: center; z-index: 1000;
 }
 .co-modal {
-    background: #fff; border-radius: 14px; padding: 28px; max-width: 420px; width: 90%;
-    box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    background: #fff; border-radius: 14px; overflow: hidden; max-width: 420px; width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25), 0 4px 16px rgba(45,106,79,.2);
 }
 .co-modal-titulo {
-    font-size: 1.05rem; font-weight: 800; color: #1f2937;
-    display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+    font-size: 1.05rem; font-weight: 800; color: #fff;
+    display: flex; align-items: center; gap: 8px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #1a4a35 0%, #2d6a4f 30%, #3d8a65 55%, #2d6a4f 75%, #1e5540 100%);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    margin-bottom: 0;
 }
-.co-modal-titulo-danger { color: #b91c1c; }
-.co-modal-texto { font-size: 0.9rem; color: #374151; line-height: 1.6; margin-bottom: 20px; }
+.co-modal-body {
+    padding: 22px 24px 20px;
+}
+.co-modal-titulo-danger {
+    background: linear-gradient(135deg, #7f1d1d 0%, #b91c1c 40%, #dc2626 65%, #b91c1c 85%, #991b1b 100%) !important;
+}
+.co-modal-texto { font-size: 0.9rem; color: #374151; line-height: 1.6; margin-bottom: 20px; padding: 20px 24px 0; }
+.co-modal-acciones { display: flex; gap: 10px; justify-content: flex-end; padding: 0 24px 20px; }
 .co-modal-aviso {
     display: block; margin-top: 10px;
     background: #fef3c7; color: #92400e;
     border-radius: 8px; padding: 8px 12px; font-size: 0.82rem;
 }
-.co-modal-acciones { display: flex; gap: 10px; justify-content: flex-end; }
+/* co-modal-acciones defined above with padding */
 .co-modal-btn-cancelar {
     background: #f3f4f6; border: none; border-radius: 8px;
     padding: 9px 18px; font-size: 0.88rem; cursor: pointer; color: #374151;

@@ -12,3 +12,6 @@ export const actualizarOficiosRegistro = (fecha, valor) =>
 
 export const actualizarCampoManual = (fecha, campo, valor) =>
     api.patch('/reportes-diarios/campo-manual', null, { params: { fecha, campo, valor } });
+
+export const actualizarObservaciones = (fecha, texto) =>
+    api.patch('/reportes-diarios/observaciones', null, { params: { fecha, texto } });

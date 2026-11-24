@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { getReporteAutomatico, getReporteConsolidado, getHistorialPorUsuario } from '../api/seguimientosApi';
-import { getMiReportePorFecha, actualizarOficiosRegistro, actualizarCampoManual, getConsolidado as getConsolidadoRD, getListaReportes } from '../api/reporteDiarioApi';
+import { getMiReportePorFecha, actualizarOficiosRegistro, actualizarCampoManual, actualizarObservaciones, getConsolidado as getConsolidadoRD, getListaReportes } from '../api/reporteDiarioApi';
 import './ReporteDiario.css';
 
 // ── Definición de campos por sección ─────────────────────────────────────────
@@ -18,7 +18,7 @@ const CAMPOS_SUPERVISION = [
     { key: 'informeFinal',            label: 'Informe final',                       tipo: 'INFORME_FINAL' },
     { key: 'canalizaciones',          label: 'Canalizaciones',                      tipo: 'CANALIZACION' },
     { key: 'visitasDomiciliarias',    label: 'Visitas domiciliarias',               tipo: 'VISITA_DOMICILIARIA' },
-    { key: 'audienciasTTA',           label: 'Audiencias TTA',                      tipo: 'AUDIENCIA_TTA' },
+    { key: 'audienciasTTA',           label: 'Audiencias TTA',                      tipo: null, manual: true },
     { key: 'llamadasTelefonicas',     label: 'Llamadas telefónicas',                tipo: 'LLAMADA_TELEFONICA' },
     { key: 'firmasRecabadasSuper',    label: 'Firmas recabadas',                    tipo: null, manual: true },
     { key: 'entrevistaEncuadreSuper', label: 'Entrevista de encuadre',              tipo: null, manual: true },
@@ -99,7 +99,7 @@ export default function ReporteDiario() {
     const CAMPOS_MANUALES_KEYS = [
         // Supervisión manuales
         'firmasRecabadasSuper', 'entrevistaEncuadreSuper', 'calendarioSuper',
-        'capturaCarpetas', 'capturaOficiosImposicion',
+        'capturaCarpetas', 'capturaOficiosImposicion', 'audienciasTTA',
         // Evaluación — todos manuales
         'oficiosRegistros',
         'opinionTecnicaFC', 'opinionTecnicaFF',
@@ -118,6 +118,10 @@ export default function ReporteDiario() {
     const [manualesEditando,  setManualesEditando]  = useState(initManuales);
     const [guardandoManual,   setGuardandoManual]   = useState({});
     const [manualesCargados,  setManualesCargados]  = useState(false);
+
+    // ── Observaciones ─────────────────────────────────────────────────────────
+    const [observaciones,         setObservaciones]         = useState('');
+    const [observacionesGuardadas, setObservacionesGuardadas] = useState('');
     // legacy alias para no romper referencias internas a oficiosGuardados
     const oficiosGuardados = manualesGuardados['oficiosRegistros'] ?? 0;
 
@@ -145,9 +149,13 @@ export default function ReporteDiario() {
                     CAMPOS_MANUALES_KEYS.forEach(k => { vals[k] = d[k] ?? 0; });
                     setManualesGuardados(vals);
                     setManualesEditando({ ...vals });
+                    setObservaciones(d.observaciones || '');
+                    setObservacionesGuardadas(d.observaciones || '');
                 } else {
                     setManualesGuardados(initManuales());
                     setManualesEditando(initManuales());
+                    setObservaciones('');
+                    setObservacionesGuardadas('');
                 }
             })
             .catch(() => { setManualesGuardados(initManuales()); setManualesEditando(initManuales()); })
@@ -311,8 +319,9 @@ export default function ReporteDiario() {
     }, [esAdmin, esCorr, pestanaAdmin, mesSel, cargarHistorial]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ── Detección de cambios sin guardar ────────────────────────────────────
-    const hayCambiosSinGuardar = manualesCargados && CAMPOS_MANUALES_KEYS.some(
-        k => (manualesEditando[k] ?? 0) !== (manualesGuardados[k] ?? 0)
+    const hayCambiosSinGuardar = manualesCargados && (
+        CAMPOS_MANUALES_KEYS.some(k => (manualesEditando[k] ?? 0) !== (manualesGuardados[k] ?? 0)) ||
+        observaciones !== observacionesGuardadas
     );
 
     // ── Guardar todos los campos manuales de una vez ─────────────────────────
@@ -329,6 +338,10 @@ export default function ReporteDiario() {
                 const valor = manualesEditando[k] ?? 0;
                 if (k === 'oficiosRegistros') await actualizarOficiosRegistro(fechaPropia, valor);
                 else await actualizarCampoManual(fechaPropia, k, valor);
+            }
+            if (observaciones !== observacionesGuardadas) {
+                await actualizarObservaciones(fechaPropia, observaciones);
+                setObservacionesGuardadas(observaciones);
             }
             setManualesGuardados({ ...manualesEditando });
             showToast('Reporte guardado correctamente');
@@ -400,9 +413,26 @@ export default function ReporteDiario() {
         );
     };
 
-    // ── Render banner + botón guardar general ─────────────────────────────────
+    // ── Render banner + observaciones + botón guardar general ────────────────
     const renderGuardarGeneral = () => (
         <div className="rd-guardar-general-wrap">
+            <div className="rd-observaciones-wrap">
+                <label className="rd-observaciones-label">
+                    <i className="bi bi-journal-text" /> Observaciones del día
+                </label>
+                <textarea
+                    className="rd-observaciones-input"
+                    placeholder="Escribe aquí cualquier observación, actividad adicional o nota del día..."
+                    value={observaciones}
+                    onChange={e => { if (e.target.value.length <= 500) setObservaciones(e.target.value); }}
+                    rows={4}
+                    disabled={!manualesCargados}
+                    maxLength={500}
+                />
+                <span className={`rd-observaciones-contador ${observaciones.length >= 450 ? (observaciones.length >= 500 ? 'rd-obs-limite' : 'rd-obs-advertencia') : ''}`}>
+                    {observaciones.length}/500
+                </span>
+            </div>
             {hayCambiosSinGuardar && (
                 <div className="rd-aviso-cambios">
                     <i className="bi bi-exclamation-triangle-fill" />
@@ -705,6 +735,19 @@ export default function ReporteDiario() {
                                                     )}
                                                 </div>
                                                 )}
+                                                {(() => {
+                                                    const reportesObs = reportesManuales.filter(r => r.usuarioNombre === nombreUsuario && r.observaciones?.trim());
+                                                    if (reportesObs.length === 0) return null;
+                                                    return reportesObs.map((r, i) => (
+                                                        <div key={i} className="rd-hist-obs-wrap">
+                                                            <div className="rd-hist-obs-titulo">
+                                                                <i className="bi bi-journal-text" /> Observaciones
+                                                                <span className="rd-hist-obs-fecha"><i className="bi bi-calendar3" /> {r.fecha}</span>
+                                                            </div>
+                                                            <p className="rd-hist-obs-texto">{r.observaciones}</p>
+                                                        </div>
+                                                    ));
+                                                })()}
                                                 {manuales.length > 0 && (() => {
                                                     const keyMan = `man-${zona}-${nombreUsuario}`;
                                                     const expandidoMan = expandidos[keyMan];

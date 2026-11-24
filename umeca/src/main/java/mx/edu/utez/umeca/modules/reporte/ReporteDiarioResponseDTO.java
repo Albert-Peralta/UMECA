@@ -75,6 +75,9 @@ public class ReporteDiarioResponseDTO {
     private int capturaCarpetasCorr;
     private int capturaOficiosImposicionCorr;
 
+    // Observaciones
+    private String observaciones;
+
     public static ReporteDiarioResponseDTO from(ReporteDiario r) {
         ReporteDiarioResponseDTO dto = new ReporteDiarioResponseDTO();
         dto.setId(r.getId());
@@ -133,6 +136,7 @@ public class ReporteDiarioResponseDTO {
         dto.setCalendarioCorr(r.getCalendarioCorr());
         dto.setCapturaCarpetasCorr(r.getCapturaCarpetasCorr());
         dto.setCapturaOficiosImposicionCorr(r.getCapturaOficiosImposicionCorr());
+        dto.setObservaciones(r.getObservaciones());
 
         return dto;
     }

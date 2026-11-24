@@ -9,6 +9,8 @@ import {
 import './ControlOficios.css';
 import './EntrevistaEncuadre.css';
 
+const fmtOficio = (n) => String(n).padStart(4, '0');
+
 const POR_PAGINA = 50;
 const fmtFecha = (iso) => {
     if (!iso) return '—';
@@ -80,7 +82,7 @@ export default function ControlOficios({ resetKey = 0 }) {
         const q = buscar.toLowerCase();
         const fechaCorta = fmtFecha(r.fecha);
         const fechaLarga = r.fecha ? new Date(r.fecha + 'T00:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }) : '';
-        return [r.noOficio, r.destinatario, r.asunto, r.supervisado, r.solicitanteNombre, fechaCorta, fechaLarga]
+        return [fmtOficio(r.noOficio), r.destinatario, r.asunto, r.supervisado, r.solicitanteNombre, fechaCorta, fechaLarga]
             .some(v => v?.toLowerCase().includes(q));
     });
     const totalPags = Math.max(1, Math.ceil(filtrada.length / POR_PAGINA));
@@ -214,7 +216,7 @@ export default function ControlOficios({ resetKey = 0 }) {
                     <div>
                         <div className="co-form-hero-titulo">{registro ? 'Editar Oficio' : 'Nuevo Oficio'}</div>
                         <div className="co-form-hero-sub">
-                            {registro ? `No. ${registro.noOficio}` : 'El número de oficio se asignará automáticamente'}
+                            {registro ? `No. ${fmtOficio(registro.noOficio)}` : 'El número de oficio se asignará automáticamente'}
                         </div>
                     </div>
                 </div>
@@ -297,7 +299,7 @@ export default function ControlOficios({ resetKey = 0 }) {
                 <div className="co-detalle-card">
                     <div className="co-detalle-hero">
                         <div>
-                            <div className="co-detalle-no">Oficio No. <strong>{registro.noOficio}</strong></div>
+                            <div className="co-detalle-no">Oficio No. <strong>{fmtOficio(registro.noOficio)}</strong></div>
                             <div className="co-detalle-fecha">{registro.fecha ? new Date(registro.fecha + 'T00:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }) : '—'}</div>
                         </div>
                         <span className={`co-badge ${cfg.clase}`}>{cfg.label || registro.estado}</span>
@@ -383,8 +385,8 @@ export default function ControlOficios({ resetKey = 0 }) {
                         </div>
                         <p className="co-modal-texto">
                             {modalTramitar._revertir
-                                ? <>¿Revertir el <strong>Oficio No. {modalTramitar.noOficio}</strong> a estado <strong>Pendiente</strong>?</>
-                                : <>¿Marcar el <strong>Oficio No. {modalTramitar.noOficio}</strong> como <strong>Tramitado</strong>?</>
+                                ? <>¿Revertir el <strong>Oficio No. {fmtOficio(modalTramitar.noOficio)}</strong> a estado <strong>Pendiente</strong>?</>
+                                : <>¿Marcar el <strong>Oficio No. {fmtOficio(modalTramitar.noOficio)}</strong> como <strong>Tramitado</strong>?</>
                             }
                             <span className="co-modal-aviso">
                                 {modalTramitar._revertir ? 'Solo los administradores pueden revertir esta acción.' : 'Esta acción cambiará el estado del oficio.'}
@@ -484,7 +486,7 @@ export default function ControlOficios({ resetKey = 0 }) {
                             const esCancelado  = r.estado === 'CANCELADO';
                             return (
                                 <tr key={r.id} className={esCancelado ? 'co-fila-cancelada' : esPendiente ? 'co-fila-pendiente' : ''}>
-                                    <td className="co-td-no"><strong>{r.noOficio}</strong></td>
+                                    <td className="co-td-no"><strong>{fmtOficio(r.noOficio)}</strong></td>
                                     <td>{fmtFecha(r.fecha)}</td>
                                     <td>{r.destinatario}</td>
                                     <td className="co-td-asunto" title={r.asunto}>{r.asunto}</td>
@@ -555,8 +557,8 @@ export default function ControlOficios({ resetKey = 0 }) {
                         </div>
                         <p className="co-modal-texto">
                             {modalTramitar._revertir
-                                ? <>¿Revertir el <strong>Oficio No. {modalTramitar.noOficio}</strong> a estado <strong>Pendiente</strong>?</>
-                                : <>¿Marcar el <strong>Oficio No. {modalTramitar.noOficio}</strong> como <strong>Tramitado</strong>?</>
+                                ? <>¿Revertir el <strong>Oficio No. {fmtOficio(modalTramitar.noOficio)}</strong> a estado <strong>Pendiente</strong>?</>
+                                : <>¿Marcar el <strong>Oficio No. {fmtOficio(modalTramitar.noOficio)}</strong> como <strong>Tramitado</strong>?</>
                             }
                             <span className="co-modal-aviso">
                                 {modalTramitar._revertir
@@ -581,7 +583,7 @@ export default function ControlOficios({ resetKey = 0 }) {
                     <div className="co-modal">
                         <div className="co-modal-titulo co-modal-titulo-danger"><i className="bi bi-trash" /> Eliminar oficio</div>
                         <p className="co-modal-texto">
-                            ¿Eliminar el oficio <strong>No. {modalEliminar.noOficio}</strong>? Esta acción no se puede deshacer.
+                            ¿Eliminar el oficio <strong>No. {fmtOficio(modalEliminar.noOficio)}</strong>? Esta acción no se puede deshacer.
                         </p>
                         <div className="co-modal-acciones">
                             <button className="co-modal-btn-cancelar" onClick={() => setModalEliminar(null)} disabled={eliminando}>Cancelar</button>
@@ -597,11 +599,8 @@ export default function ControlOficios({ resetKey = 0 }) {
             {showCancelarModal && registroCancelar && (
                 <div className="co-modal-overlay">
                     <div className="co-modal" style={{ maxWidth: 440 }}>
-                        <div className="co-modal-icon-cancelar">
-                            <i className="bi bi-x-circle-fill" />
-                        </div>
-                        <div className="co-modal-titulo">
-                            Cancelar oficio No. {registroCancelar.noOficio}
+                        <div className="co-modal-titulo co-modal-titulo-danger">
+                            <i className="bi bi-x-circle-fill" /> Cancelar oficio No. {fmtOficio(registroCancelar.noOficio)}
                         </div>
                         <p className="co-modal-texto" style={{ marginBottom: 10 }}>
                             Indica el motivo por el que se cancela este oficio. Este campo es <strong>obligatorio</strong> y quedará registrado en el sistema.
@@ -609,7 +608,8 @@ export default function ControlOficios({ resetKey = 0 }) {
                         <textarea
                             rows={3}
                             style={{
-                                width: '100%', resize: 'vertical', borderRadius: 8, padding: '10px 12px',
+                                width: 'calc(100% - 48px)', margin: '0 24px', display: 'block',
+                                resize: 'vertical', borderRadius: 8, padding: '10px 12px',
                                 border: motivoError ? '1.5px solid #ef4444' : '1.5px solid #d1d5db',
                                 fontSize: '0.92rem', fontFamily: 'inherit', boxSizing: 'border-box',
                                 outline: 'none', transition: 'border .2s',
@@ -620,7 +620,7 @@ export default function ControlOficios({ resetKey = 0 }) {
                             disabled={loadingCancelar}
                         />
                         {motivoError && (
-                            <p style={{ color: '#ef4444', fontSize: '0.82rem', margin: '4px 0 0', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <p style={{ color: '#ef4444', fontSize: '0.82rem', margin: '4px 24px 0', display: 'flex', alignItems: 'center', gap: 4 }}>
                                 <i className="bi bi-exclamation-circle" /> {motivoError}
                             </p>
                         )}

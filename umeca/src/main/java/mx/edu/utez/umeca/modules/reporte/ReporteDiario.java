@@ -86,4 +86,8 @@ public class ReporteDiario extends BaseEntity {
     @Column(name = "calendario_corr")                    private int calendarioCorr;
     @Column(name = "captura_carpetas_corr")              private int capturaCarpetasCorr;
     @Column(name = "captura_oficios_imposicion_corr")    private int capturaOficiosImposicionCorr;
+
+    // ── Observaciones del día ─────────────────────────────────────────────────
+    @Column(name = "observaciones", columnDefinition = "TEXT")
+    private String observaciones;
 }

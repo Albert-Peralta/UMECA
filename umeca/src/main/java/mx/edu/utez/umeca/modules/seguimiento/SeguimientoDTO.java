@@ -2,6 +2,7 @@ package mx.edu.utez.umeca.modules.seguimiento;
 
 import lombok.Getter;
 import lombok.Setter;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -13,4 +14,5 @@ public class SeguimientoDTO {
     private Long medidaId;
     private Long entrevistaId;
     private Long evaluacionId;
+    private LocalDateTime fechaRegistro; // opcional; si null se usa now()
 }

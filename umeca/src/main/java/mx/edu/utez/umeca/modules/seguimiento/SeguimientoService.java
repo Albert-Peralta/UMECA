@@ -65,7 +65,9 @@ public class SeguimientoService {
         seg.setTipoActividad(tipo);
         seg.setSeccion(seccion);
         seg.setDetalles(dto.getDetalles());
-        seg.setFechaRegistro(LocalDateTime.now());
+        LocalDateTime fechaSeg = dto.getFechaRegistro();
+        if (fechaSeg != null && fechaSeg.isAfter(LocalDateTime.now())) fechaSeg = LocalDateTime.now();
+        seg.setFechaRegistro(fechaSeg != null ? fechaSeg : LocalDateTime.now());
         seg.setRegistradoPor(usuario);
         seg.setMedidaId(dto.getMedidaId());
         seg.setEntrevistaId(dto.getEntrevistaId());

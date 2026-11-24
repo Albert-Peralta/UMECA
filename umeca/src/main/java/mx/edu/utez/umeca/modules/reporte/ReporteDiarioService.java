@@ -93,6 +93,7 @@ public class ReporteDiarioService {
             r.setUsuario(user);
         }
         switch (campo) {
+            case "audienciasTTA"             -> r.setAudienciasTTA(valor);
             case "firmasRecabadasSuper"       -> r.setFirmasRecabadasSuper(valor);
             case "entrevistaEncuadreSuper"   -> r.setEntrevistaEncuadreSuper(valor);
             case "calendarioSuper"           -> r.setCalendarioSuper(valor);
@@ -125,6 +126,21 @@ public class ReporteDiarioService {
         }
         repo.save(r);
         return new ApiResponse(true, "Campo actualizado", ReporteDiarioResponseDTO.from(r));
+    }
+
+    @Transactional
+    public ApiResponse actualizarObservaciones(LocalDate fecha, String texto) {
+        User user = usuarioActual();
+        Optional<ReporteDiario> existente = repo.findByFechaAndZonaAndUsuarioId(fecha, user.getZona(), user.getId());
+        ReporteDiario r = existente.orElse(new ReporteDiario());
+        if (existente.isEmpty()) {
+            r.setFecha(fecha);
+            r.setZona(user.getZona());
+            r.setUsuario(user);
+        }
+        r.setObservaciones(texto);
+        repo.save(r);
+        return new ApiResponse(true, "Observaciones guardadas", ReporteDiarioResponseDTO.from(r));
     }
 
     // ── Obtener reporte del día actual del usuario ────────────────────────────

@@ -58,7 +58,9 @@ export default function SeguimientosPanel({
     const [loading, setLoading]       = useState(true);
     const [mostrarForm, setMostrarForm] = useState(false);
     const [guardando, setGuardando]   = useState(false);
-    const [form, setForm] = useState({ tipoActividad: '', otroTipo: '', detalles: '' });
+    const hoy = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+    const [form, setForm] = useState({ tipoActividad: '', otroTipo: '', detalles: '', fecha: hoy });
+    const [fechaError, setFechaError] = useState('');
     const [verTodos, setVerTodos]     = useState(false);
     const [confirmEliminar, setConfirmEliminar] = useState(null); // id del seguimiento a eliminar
     const [eliminando, setEliminando] = useState(false);
@@ -103,6 +105,7 @@ export default function SeguimientosPanel({
             showToast('Especifica qué tipo de actividad es', 'error'); return;
         }
         if (!form.detalles?.trim()) { showToast('Agrega los detalles del seguimiento', 'error'); return; }
+        if (form.fecha && form.fecha > hoy) { setFechaError('La fecha no puede ser futura'); return; }
         setGuardando(true);
         // Si es OTRO, anteponer el tipo especificado a los detalles
         const detallesFinales = esOtro
@@ -117,10 +120,11 @@ export default function SeguimientosPanel({
                 medidaId:      seccion === 'MEDIDA'      ? referenciaId : null,
                 entrevistaId:  seccion === 'ENTREVISTA'  ? referenciaId : null,
                 evaluacionId:  seccion === 'EVALUACION'  ? referenciaId : null,
+                fechaRegistro: (form.fecha && form.fecha !== hoy) ? `${form.fecha}T00:00:00` : null,
             };
             await registrarSeguimiento(dto);
             showToast('Seguimiento registrado');
-            setForm({ tipoActividad: '', otroTipo: '', detalles: '' });
+            setForm({ tipoActividad: '', otroTipo: '', detalles: '', fecha: hoy });
             setMostrarForm(false);
             cargar();
             onAdded?.();
@@ -143,61 +147,11 @@ export default function SeguimientosPanel({
                     <span className="sp-count">{lista.length}</span>
                 </span>
                 {!readonly && (
-                    mostrarForm ? (
-                        <div style={{ display: 'flex', gap: 6 }}>
-                            <button className="sp-btn-save" onClick={handleGuardar} disabled={guardando}>
-                                <i className="bi bi-floppy" /> {guardando ? 'Guardando...' : 'Guardar'}
-                            </button>
-                            <button className="sp-btn-cancel" onClick={() => { setMostrarForm(false); setForm({ tipoActividad: '', otroTipo: '', detalles: '' }); }}>
-                                <i className="bi bi-x-lg" /> Cancelar
-                            </button>
-                        </div>
-                    ) : (
-                        <button className="sp-btn-add" onClick={() => setMostrarForm(true)}>
-                            <i className="bi bi-plus-lg" /> Agregar
-                        </button>
-                    )
+                    <button className="sp-btn-add" onClick={() => { setMostrarForm(true); setFechaError(''); }}>
+                        <i className="bi bi-plus-lg" /> Agregar
+                    </button>
                 )}
             </div>
-
-            {mostrarForm && (
-                <div className="sp-form">
-                    <div className="sp-form-cols">
-                        <div className="sp-form-col-left">
-                            <select
-                                value={form.tipoActividad}
-                                onChange={e => setForm({ ...form, tipoActividad: e.target.value, otroTipo: '' })}
-                            >
-                                <option value="">— Tipo de actividad —</option>
-                                {grupos.map(g => (
-                                    <optgroup key={g} label={g}>
-                                        {tiposFiltrados.filter(t => t.grupo === g).map(t => (
-                                            <option key={t.value} value={t.value}>{t.label}</option>
-                                        ))}
-                                    </optgroup>
-                                ))}
-                            </select>
-                            {(form.tipoActividad === 'OTRO' || form.tipoActividad === 'OTRO_SUPERVISION') && (
-                                <input
-                                    type="text"
-                                    placeholder="Especifica cuál..."
-                                    value={form.otroTipo}
-                                    onChange={e => setForm({ ...form, otroTipo: toUpperNoAccent(e.target.value) })}
-                                    className="sp-input-otro"
-                                />
-                            )}
-                        </div>
-                        <div className="sp-form-col-right">
-                            <textarea
-                                rows={3}
-                                placeholder="Detalles del seguimiento..."
-                                value={form.detalles}
-                                onChange={e => setForm({ ...form, detalles: toUpperNoAccent(e.target.value) })}
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
 
             <div className="sp-lista">
                 {loading ? (
@@ -217,12 +171,20 @@ export default function SeguimientosPanel({
                                     </span>
                                     <span className="sp-tipo">{s.tipoActividadLabel}</span>
                                     <span className="sp-fecha">
-                                        {s.fechaRegistro
-                                            ? new Date(s.fechaRegistro).toLocaleString('es-MX', {
-                                                day: '2-digit', month: '2-digit', year: 'numeric',
-                                                hour: '2-digit', minute: '2-digit'
-                                              })
-                                            : '—'}
+                                        {(() => {
+                                            if (!s.fechaRegistro) return '—';
+                                            const d = new Date(s.fechaRegistro);
+                                            const esHoy = d.toISOString().slice(0, 10) === hoy;
+                                            if (esHoy) {
+                                                return d.toLocaleString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                                            }
+                                            return (
+                                                <>
+                                                    {d.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                                    {' '}<span className="sp-registro-anterior">Días anteriores</span>
+                                                </>
+                                            );
+                                        })()}
                                     </span>
                                 </div>
                                 <p className="sp-detalles">
@@ -275,6 +237,79 @@ export default function SeguimientosPanel({
                 onCancelar={() => setConfirmEliminar(null)}
                 cargando={eliminando}
             />
+        )}
+
+        {mostrarForm && (
+            <div className="sp-modal-overlay">
+                <div className="sp-modal" onClick={e => e.stopPropagation()}>
+                    <div className="sp-modal-header">
+                        <span><i className="bi bi-clock-history" /> Nuevo seguimiento</span>
+                        <button className="sp-modal-x" onClick={() => { setMostrarForm(false); setForm({ tipoActividad: '', otroTipo: '', detalles: '', fecha: hoy }); }}>
+                            <i className="bi bi-x-lg" />
+                        </button>
+                    </div>
+                    <div className="sp-modal-body">
+                        <div className="sp-modal-field">
+                            <label className="sp-modal-label">Tipo de actividad</label>
+                            <select
+                                className="sp-modal-select"
+                                value={form.tipoActividad}
+                                onChange={e => setForm({ ...form, tipoActividad: e.target.value, otroTipo: '' })}
+                            >
+                                <option value="">— Selecciona —</option>
+                                {grupos.map(g => (
+                                    <optgroup key={g} label={g}>
+                                        {tiposFiltrados.filter(t => t.grupo === g).map(t => (
+                                            <option key={t.value} value={t.value}>{t.label}</option>
+                                        ))}
+                                    </optgroup>
+                                ))}
+                            </select>
+                        </div>
+                        {(form.tipoActividad === 'OTRO' || form.tipoActividad === 'OTRO_SUPERVISION') && (
+                            <div className="sp-modal-field">
+                                <label className="sp-modal-label">Especifica cuál</label>
+                                <input
+                                    type="text"
+                                    className="sp-modal-input"
+                                    placeholder="Tipo de actividad..."
+                                    value={form.otroTipo}
+                                    onChange={e => setForm({ ...form, otroTipo: toUpperNoAccent(e.target.value) })}
+                                />
+                            </div>
+                        )}
+                        <div className="sp-modal-field">
+                            <label className="sp-modal-label"><i className="bi bi-calendar3" /> Fecha</label>
+                            <input
+                                type="date"
+                                className={`sp-modal-input${fechaError ? ' sp-modal-input-error' : ''}`}
+                                value={form.fecha}
+                                max={hoy}
+                                onChange={e => { setFechaError(''); setForm({ ...form, fecha: e.target.value }); }}
+                            />
+                            {fechaError && <span className="sp-modal-error"><i className="bi bi-exclamation-circle-fill" /> {fechaError}</span>}
+                        </div>
+                        <div className="sp-modal-field">
+                            <label className="sp-modal-label">Detalles</label>
+                            <textarea
+                                className="sp-modal-textarea"
+                                rows={4}
+                                placeholder="Detalles del seguimiento..."
+                                value={form.detalles}
+                                onChange={e => setForm({ ...form, detalles: toUpperNoAccent(e.target.value) })}
+                            />
+                        </div>
+                    </div>
+                    <div className="sp-modal-footer">
+                        <button className="sp-btn-cancel" onClick={() => { setMostrarForm(false); setForm({ tipoActividad: '', otroTipo: '', detalles: '', fecha: hoy }); }}>
+                            Cancelar
+                        </button>
+                        <button className="sp-btn-save" onClick={handleGuardar} disabled={guardando}>
+                            <i className="bi bi-floppy" /> {guardando ? 'Guardando...' : 'Guardar'}
+                        </button>
+                    </div>
+                </div>
+            </div>
         )}
         </>
     );

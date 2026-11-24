@@ -94,6 +94,15 @@ public class ReporteDiarioController {
         return ResponseEntity.ok(service.actualizarCampoManual(fecha, campo, valor));
     }
 
+    /** Actualiza las observaciones del reporte diario */
+    @PatchMapping("/observaciones")
+    @PreAuthorize("hasAnyRole('SUPERADMIN','SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR','CORRESPONDENCIA')")
+    public ResponseEntity<ApiResponse> actualizarObservaciones(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+            @RequestParam(required = false, defaultValue = "") String texto) {
+        return ResponseEntity.ok(service.actualizarObservaciones(fecha, texto));
+    }
+
     /** Semana actual: lunes a hoy */
     @GetMapping("/semana-actual")
     @PreAuthorize("hasAnyRole('SUPERADMIN','SUPERVISION','EVALUADOR_RIESGO','ADMINISTRADOR')")
