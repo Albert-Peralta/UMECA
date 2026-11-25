@@ -27,6 +27,9 @@ import ExpedientesAnteriores from './ExpedientesAnteriores';
 import { getContadoresCorrespondencia, getMisAsignados } from '../api/correspondenciaApi';
 import { getContadores as getContadoresOficios } from '../api/controlOficiosApi';
 import { getExpedientesPendientesCount } from '../api/imputadosApi';
+import MensajesAdmin from './MensajesAdmin';
+import MensajesPersonal from './MensajesPersonal';
+import MensajeAdminModal from '../components/MensajeAdminModal';
 
 // ── Menú por rol ──────────────────────────────────────────────────────────────
 // Cada entrada puede ser un ítem de navegación (con key e icon) o un separador visual.
@@ -52,6 +55,8 @@ const menuPorRol = {
         { key: 'control-oficios',  label: 'Control de Oficios', icon: 'bi bi-file-earmark-text' },
         { separator: true,   label: 'Histórico' },
         { key: 'expedientes', label: 'Expedientes Anteriores', icon: 'bi bi-archive' },
+        { separator: true,   label: 'Comunicados' },
+        { key: 'mensajes',    label: 'Mensajes al personal',   icon: 'bi bi-megaphone' },
     ],
     ADMINISTRADOR: [
         { separator: true,   label: 'General' },
@@ -71,6 +76,8 @@ const menuPorRol = {
         { key: 'control-oficios',  label: 'Control de Oficios', icon: 'bi bi-file-earmark-text' },
         { separator: true,   label: 'Histórico' },
         { key: 'expedientes', label: 'Expedientes Anteriores', icon: 'bi bi-archive' },
+        { separator: true,   label: 'Comunicados' },
+        { key: 'mensajes',    label: 'Mensajes al personal',   icon: 'bi bi-megaphone' },
     ],
     SUPERVISION: [
         { separator: true,   label: 'General' },
@@ -87,6 +94,8 @@ const menuPorRol = {
         { key: 'control-oficios',  label: 'Control de Oficios',     icon: 'bi bi-file-earmark-text' },
         { separator: true,   label: 'Histórico' },
         { key: 'expedientes',     label: 'Expedientes Anteriores', icon: 'bi bi-archive' },
+        { separator: true,   label: 'Comunicados' },
+        { key: 'comunicados', label: 'Comunicados',               icon: 'bi bi-megaphone' },
     ],
     EVALUADOR_RIESGO: [
         { separator: true,   label: 'General' },
@@ -104,6 +113,8 @@ const menuPorRol = {
         { key: 'control-oficios',  label: 'Control de Oficios',     icon: 'bi bi-file-earmark-text' },
         { separator: true,   label: 'Histórico' },
         { key: 'expedientes',     label: 'Expedientes Anteriores', icon: 'bi bi-archive' },
+        { separator: true,   label: 'Comunicados' },
+        { key: 'comunicados', label: 'Comunicados',               icon: 'bi bi-megaphone' },
     ],
     CORRESPONDENCIA: [
         { separator: true,        label: 'General' },
@@ -115,6 +126,8 @@ const menuPorRol = {
         { separator: true,        label: 'Oficios' },
         { key: 'correspondencia',  label: 'Correspondencia',     icon: 'bi bi-envelope-paper' },
         { key: 'control-oficios',  label: 'Control de Oficios',  icon: 'bi bi-file-earmark-text' },
+        { separator: true,        label: 'Comunicados' },
+        { key: 'comunicados',     label: 'Comunicados',          icon: 'bi bi-megaphone' },
     ],
 };
 
@@ -212,9 +225,12 @@ const Dashboard = () => {
                     r.estado !== 'FINALIZADO' && r.estado !== 'CANCELADO' && r.estado !== 'ARCHIVADO'
                 ).length;
                 if (pendientes > 0) {
-                    alertaEsInicial.current = primeraVez && !sessionStorage.getItem('alertaCorrMostrada');
-                    setAlertaCorrPend(pendientes);
-                    sessionStorage.setItem('alertaCorrMostrada', '1');
+                    const yaVio = sessionStorage.getItem('alertaCorrMostrada');
+                    if (!yaVio || !primeraVez) {
+                        alertaEsInicial.current = primeraVez;
+                        setAlertaCorrPend(pendientes);
+                        sessionStorage.setItem('alertaCorrMostrada', '1');
+                    }
                 }
                 primeraVez = false;
             } catch { /* silencioso */ }
@@ -409,6 +425,8 @@ const Dashboard = () => {
         case 'correspondencia':  return <Correspondencia resetKey={moduloResetKey['correspondencia'] || 0} />;
         case 'control-oficios':  return <ControlOficios resetKey={moduloResetKey['control-oficios'] || 0} />;
         case 'expedientes':      return <ExpedientesAnteriores />;
+        case 'mensajes':         return <MensajesAdmin />;
+        case 'comunicados':      return <MensajesPersonal />;
         case 'perfil':           return <Perfil />;
         default: {
             // Redirigir a la primera sección disponible fuera del render
@@ -421,6 +439,9 @@ const Dashboard = () => {
 
     return (
     <>
+        {/* ── Modal mensajes del admin al personal ── */}
+        <MensajeAdminModal bloqueado={alertaCorrPend !== null} />
+
         {/* ── Modal alerta: pendientes de correspondencia ── */}
         {alertaCorrPend !== null && (
             <div className="alerta-corr-overlay">

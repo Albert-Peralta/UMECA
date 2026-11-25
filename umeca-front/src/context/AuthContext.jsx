@@ -45,6 +45,7 @@ export const AuthProvider = ({ children }) => {
 
         localStorage.clear();
         sessionStorage.removeItem('alertaCorrMostrada');
+        sessionStorage.removeItem('mensajes_admin_vistos');
 
         // Restaurar avatares
         Object.entries(avatars).forEach(([k, v]) => localStorage.setItem(k, v));

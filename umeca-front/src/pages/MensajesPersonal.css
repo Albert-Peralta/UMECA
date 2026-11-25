@@ -1,0 +1,175 @@
+.mp-page {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 130px);
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 16px 16px 0;
+}
+
+/* ── Header tipo WhatsApp ── */
+.mp-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: linear-gradient(135deg, #1a4a8a 0%, #2772c8 100%);
+    border-radius: 12px 12px 0 0;
+    padding: 14px 18px;
+    color: #fff;
+}
+
+.mp-header-avatar {
+    width: 44px;
+    height: 44px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+
+.mp-header-nombre {
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.mp-header-sub {
+    font-size: 0.78rem;
+    opacity: 0.8;
+    margin-top: 2px;
+}
+
+/* ── Área de chat ── */
+.mp-chat {
+    flex: 1;
+    overflow-y: auto;
+    background: #f0f4f8;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c8d8e8' fill-opacity='0.3'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    padding: 16px 12px;
+    border-left: 1px solid #d0dde8;
+    border-right: 1px solid #d0dde8;
+    border-bottom: 1px solid #d0dde8;
+    border-radius: 0 0 12px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.mp-cargando,
+.mp-vacio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: #888;
+    font-size: 0.95rem;
+    flex: 1;
+    padding: 40px;
+}
+
+.mp-vacio .bi { font-size: 2.5rem; opacity: 0.4; }
+.mp-vacio p { margin: 0; }
+
+/* ── Separador de fecha ── */
+.mp-separador-fecha {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 0 8px;
+}
+
+.mp-separador-fecha::before,
+.mp-separador-fecha::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #c0d0de;
+}
+
+.mp-separador-fecha span {
+    background: #d8e6f0;
+    color: #4a6a8a;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 3px 12px;
+    border-radius: 10px;
+    white-space: nowrap;
+}
+
+/* ── Burbujas ── */
+.mp-burbuja-wrap {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 6px;
+}
+
+.mp-burbuja {
+    background: #fff;
+    border-radius: 0 12px 12px 12px;
+    padding: 10px 14px 8px;
+    max-width: 80%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    position: relative;
+}
+
+.mp-burbuja--inactiva {
+    opacity: 0.6;
+}
+
+.mp-burbuja-remitente {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #1a4a8a;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.mp-zona-chip {
+    background: #e3f0ff;
+    color: #1a4a8a;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 8px;
+}
+
+.mp-zona-chip--general {
+    background: #e8f5e9;
+    color: #1a6a3a;
+}
+
+.mp-burbuja-texto {
+    font-size: 0.92rem;
+    color: #1a2a3a;
+    margin: 0 0 6px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.mp-burbuja-meta {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.mp-hora {
+    font-size: 0.72rem;
+    color: #888;
+}
+
+.mp-retirado {
+    font-size: 0.72rem;
+    color: #aaa;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-style: italic;
+}
