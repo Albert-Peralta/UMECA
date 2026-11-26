@@ -7,6 +7,8 @@ import mx.edu.utez.umeca.kernel.BaseEntity;
 import mx.edu.utez.umeca.modules.security.user.User;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -30,6 +32,14 @@ public class MensajeAdmin extends BaseEntity {
 
     @Column(nullable = false)
     private boolean activo = true;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "mensajes_admin_lectores",
+        joinColumns = @JoinColumn(name = "mensaje_id"),
+        inverseJoinColumns = @JoinColumn(name = "usuario_id")
+    )
+    private Set<User> lectores = new HashSet<>();
 
     public enum ZonaDestino {
         XOCHITEPEC, CUAUTLA, JOJUTLA

@@ -27,6 +27,7 @@ import ExpedientesAnteriores from './ExpedientesAnteriores';
 import { getContadoresCorrespondencia, getMisAsignados } from '../api/correspondenciaApi';
 import { getContadores as getContadoresOficios } from '../api/controlOficiosApi';
 import { getExpedientesPendientesCount } from '../api/imputadosApi';
+import { getNoLeidosChat } from '../api/chatApi';
 import MensajesAdmin from './MensajesAdmin';
 import MensajesPersonal from './MensajesPersonal';
 import MensajeAdminModal from '../components/MensajeAdminModal';
@@ -162,6 +163,7 @@ const Dashboard = () => {
     const [corrPendientes,        setCorrPendientes]        = useState(0);
     const [oficiosPendientes,     setOficiosPendientes]     = useState(0);
     const [expedientesPendientes, setExpedientesPendientes] = useState(0);
+    const [chatNoLeidos,          setChatNoLeidos]          = useState(0);
     const [guardConfirm, setGuardConfirm] = useState(null); // key pendiente de navegar
     const { isFormDirty, setFormDirty } = useFormGuard();
     const [alertaCorrPend, setAlertaCorrPend] = useState(null); // número de pendientes para modal
@@ -282,6 +284,26 @@ const Dashboard = () => {
             window.removeEventListener('expediente-confirmado', handler);
         };
     }, [user?.rol]);
+
+    // Contador de mensajes no leídos del Chat General
+    useEffect(() => {
+        const cargar = async () => {
+            try {
+                const res = await getNoLeidosChat();
+                if (res.data?.ok) setChatNoLeidos(res.data.data ?? 0);
+            } catch { /* silencioso */ }
+        };
+        cargar();
+        const id = setInterval(cargar, 30_000);
+        return () => clearInterval(id);
+    }, [user?.rol]);
+
+    // Al abrir el tab de chat, resetear el contador local
+    useEffect(() => {
+        if (activeMenu === 'mensajes' || activeMenu === 'comunicados') {
+            setChatNoLeidos(0);
+        }
+    }, [activeMenu]);
 
     // Sincroniza activeMenu con el hash cuando el usuario usa las flechas del navegador
     useEffect(() => {
@@ -425,8 +447,8 @@ const Dashboard = () => {
         case 'correspondencia':  return <Correspondencia resetKey={moduloResetKey['correspondencia'] || 0} />;
         case 'control-oficios':  return <ControlOficios resetKey={moduloResetKey['control-oficios'] || 0} />;
         case 'expedientes':      return <ExpedientesAnteriores />;
-        case 'mensajes':         return <MensajesAdmin />;
-        case 'comunicados':      return <MensajesPersonal />;
+        case 'mensajes':         return <MensajesAdmin defaultTab={chatNoLeidos > 0 ? 'chat' : 'mensajes'} />;
+        case 'comunicados':      return <MensajesPersonal defaultTab={chatNoLeidos > 0 ? 'chat' : 'comunicados'} />;
         case 'perfil':           return <Perfil />;
         default: {
             // Redirigir a la primera sección disponible fuera del render
@@ -531,6 +553,9 @@ const Dashboard = () => {
                             >
                                 <i className={item.icon}></i>
                                 <span style={{ flex: 1 }}>{item.label}</span>
+                                {(item.key === 'mensajes' || item.key === 'comunicados') && chatNoLeidos > 0 && (
+                                    <span className="sidebar-badge">{chatNoLeidos > 99 ? '99+' : chatNoLeidos}</span>
+                                )}
                                 {item.key === 'correspondencia' && corrPendientes > 0 && (
                                     <span className="sidebar-badge">{corrPendientes > 99 ? '99+' : corrPendientes}</span>
                                 )}

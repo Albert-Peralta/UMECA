@@ -37,18 +37,17 @@ export const AuthProvider = ({ children }) => {
         // Registrar cierre de sesión en bitácora (best-effort, no bloquea el logout)
         try { await api.post('/auth/logout'); } catch (_) { /* ignorar errores de red */ }
 
-        // Conservar avatares antes de limpiar para que no desaparezcan al volver a entrar
-        const avatars = {};
+        // Conservar avatares antes de limpiar
+        const preserve = {};
         Object.keys(localStorage)
             .filter(k => k.startsWith('avatar_'))
-            .forEach(k => { avatars[k] = localStorage.getItem(k); });
+            .forEach(k => { preserve[k] = localStorage.getItem(k); });
 
         localStorage.clear();
         sessionStorage.removeItem('alertaCorrMostrada');
-        sessionStorage.removeItem('mensajes_admin_vistos');
 
-        // Restaurar avatares
-        Object.entries(avatars).forEach(([k, v]) => localStorage.setItem(k, v));
+        // Restaurar
+        Object.entries(preserve).forEach(([k, v]) => localStorage.setItem(k, v));
 
         setUser(null);
         loggingOut.current = false;

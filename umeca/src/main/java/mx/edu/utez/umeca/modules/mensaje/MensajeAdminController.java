@@ -23,10 +23,16 @@ public class MensajeAdminController {
         return ResponseEntity.ok(service.enviar(contenido, zona));
     }
 
-    @GetMapping("/activo")
+    @GetMapping("/no-leidos")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse> getActivo() {
-        return ResponseEntity.ok(service.getMensajeActivo());
+    public ResponseEntity<ApiResponse> getNoLeidos() {
+        return ResponseEntity.ok(service.getMensajesNoLeidos());
+    }
+
+    @PostMapping("/{id}/leido")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> marcarLeido(@PathVariable Long id) {
+        return ResponseEntity.ok(service.marcarLeido(id));
     }
 
     @GetMapping("/historial")

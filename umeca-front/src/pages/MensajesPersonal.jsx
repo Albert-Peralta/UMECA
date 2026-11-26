@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { getMisMensajes } from '../api/mensajeAdminApi';
+import ChatGeneral from './ChatGeneral';
 import './MensajesPersonal.css';
 
-export default function MensajesPersonal() {
+export default function MensajesPersonal({ defaultTab }) {
+    const [tab, setTab] = useState(defaultTab || 'comunicados');
     const [mensajes, setMensajes] = useState([]);
     const [cargando, setCargando] = useState(true);
     const bottomRef = useRef(null);
@@ -11,7 +13,7 @@ export default function MensajesPersonal() {
         const cargar = async () => {
             try {
                 const res = await getMisMensajes();
-                const lista = [...(res.data?.data || [])].reverse();
+                const lista = [...(res.data?.data || [])].filter(m => m.activo).reverse();
                 setMensajes(lista);
             } catch { /* silencioso */ }
             finally { setCargando(false); }
@@ -21,10 +23,12 @@ export default function MensajesPersonal() {
         return () => clearInterval(intervalo);
     }, []);
 
-    // Scroll automático al último mensaje
+    // Scroll automático al último mensaje cuando cargan los datos o se cambia al tab comunicados
     useEffect(() => {
-        if (!cargando) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [cargando]);
+        if (!cargando && tab === 'comunicados') {
+            setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+        }
+    }, [cargando, tab]);
 
     const fmtFecha = (dt) => {
         if (!dt) return '';
@@ -52,6 +56,16 @@ export default function MensajesPersonal() {
 
     return (
         <div className="mp-page">
+            <div className="mp-tabs">
+                <button className={`mp-tab${tab === 'comunicados' ? ' mp-tab--active' : ''}`} onClick={() => setTab('comunicados')}>
+                    <i className="bi bi-megaphone" /> Comunicados
+                </button>
+                <button className={`mp-tab${tab === 'chat' ? ' mp-tab--active' : ''}`} onClick={() => setTab('chat')}>
+                    <i className="bi bi-people" /> Chat General
+                </button>
+            </div>
+
+            {tab === 'chat' ? <ChatGeneral /> : (<>
             <div className="mp-header">
                 <div className="mp-header-avatar">
                     <i className="bi bi-megaphone-fill" />
@@ -81,12 +95,6 @@ export default function MensajesPersonal() {
                                     <div className={`mp-burbuja${!m.activo ? ' mp-burbuja--inactiva' : ''}`}>
                                         <div className="mp-burbuja-remitente">
                                             <i className="bi bi-shield-fill-check" /> {m.enviadoPorNombre}
-                                            {m.zonaDestino && m.zonaDestino !== 'GENERAL' &&
-                                                <span className="mp-zona-chip">{m.zonaDestino}</span>
-                                            }
-                                            {m.zonaDestino === 'GENERAL' &&
-                                                <span className="mp-zona-chip mp-zona-chip--general">GENERAL</span>
-                                            }
                                         </div>
                                         <p className="mp-burbuja-texto">{m.contenido}</p>
                                         <div className="mp-burbuja-meta">
@@ -101,6 +109,7 @@ export default function MensajesPersonal() {
                 )}
                 <div ref={bottomRef} />
             </div>
+            </>)}
         </div>
     );
 }

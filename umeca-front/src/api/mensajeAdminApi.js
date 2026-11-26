@@ -3,8 +3,11 @@ import api from './axios';
 export const enviarMensaje = (contenido, zona) =>
     api.post('/mensajes-admin', null, { params: { contenido, zona } });
 
-export const getMensajeActivo = () =>
-    api.get('/mensajes-admin/activo');
+export const getMensajesNoLeidos = () =>
+    api.get('/mensajes-admin/no-leidos');
+
+export const marcarMensajeLeido = (id) =>
+    api.post(`/mensajes-admin/${id}/leido`);
 
 export const getHistorialMensajes = () =>
     api.get('/mensajes-admin/historial');

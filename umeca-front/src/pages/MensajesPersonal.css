@@ -173,3 +173,30 @@
     gap: 3px;
     font-style: italic;
 }
+
+.mp-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 8px 16px 0;
+    background: #fff;
+    border-bottom: 2px solid #e0e7ee;
+}
+
+.mp-tab {
+    padding: 8px 18px;
+    border: none;
+    background: none;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #5a7a9a;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.15s;
+    border-radius: 6px 6px 0 0;
+}
+.mp-tab:hover { color: #1a4a8a; background: #f0f6ff; }
+.mp-tab--active { color: #1a4a8a; border-bottom-color: #2772c8; }

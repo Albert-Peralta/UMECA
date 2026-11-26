@@ -1,23 +1,9 @@
 import { useEffect, useState } from 'react';
-import { getMisMensajes } from '../api/mensajeAdminApi';
+import { getMensajesNoLeidos, marcarMensajeLeido } from '../api/mensajeAdminApi';
 import { useAuth } from '../context/AuthContext';
 import './MensajeAdminModal.css';
 
 const ROLES_ADMIN = ['ADMINISTRADOR', 'SUPERADMIN'];
-const STORAGE_KEY = 'mensajes_admin_vistos';
-
-function getVistos() {
-    try { return JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '[]'); }
-    catch { return []; }
-}
-
-function marcarTodosVistos(ids) {
-    const vistos = getVistos();
-    const nuevos = ids.filter(id => !vistos.includes(id));
-    if (nuevos.length > 0) {
-        sessionStorage.setItem(STORAGE_KEY, JSON.stringify([...vistos, ...nuevos]));
-    }
-}
 
 export default function MensajeAdminModal({ bloqueado = false }) {
     const { user } = useAuth();
@@ -28,24 +14,23 @@ export default function MensajeAdminModal({ bloqueado = false }) {
 
         const checkMensajes = async () => {
             try {
-                const res = await getMisMensajes();
+                const res = await getMensajesNoLeidos();
                 const lista = res.data?.data || [];
-                const vistos = getVistos();
-                // Más antiguos primero (el backend devuelve DESC, invertimos)
-                const nuevos = lista.filter(m => m.activo && !vistos.includes(m.id)).reverse();
-                if (nuevos.length > 0) setMensajes(nuevos);
+                // Más antiguos primero
+                if (lista.length > 0) setMensajes([...lista].reverse());
             } catch { /* silencioso */ }
         };
 
         checkMensajes();
-        const interval = setInterval(checkMensajes, 2 * 60 * 1000);
+        const interval = setInterval(checkMensajes, 30_000);
         return () => clearInterval(interval);
     }, [user]);
 
     if (mensajes.length === 0 || bloqueado) return null;
 
-    const cerrar = () => {
-        marcarTodosVistos(mensajes.map(m => m.id));
+    const cerrar = async () => {
+        // Marcar todos como leídos en el backend
+        await Promise.allSettled(mensajes.map(m => marcarMensajeLeido(m.id)));
         setMensajes([]);
     };
 
@@ -66,9 +51,6 @@ export default function MensajeAdminModal({ bloqueado = false }) {
                                 : `${mensajes.length} mensajes del Administrador`}
                         </span>
                     </div>
-                    <button className="ma-cerrar" onClick={cerrar} title="Cerrar">
-                        <i className="bi bi-x-lg" />
-                    </button>
                 </div>
                 <div className="ma-body ma-body--lista">
                     {mensajes.map((m, i) => (
@@ -77,14 +59,9 @@ export default function MensajeAdminModal({ bloqueado = false }) {
                                 <span className="ma-item-num">{i + 1}</span>
                             )}
                             <div className="ma-item-contenido">
+                                <span className="ma-item-remitente"><i className="bi bi-person-fill" /> {m.enviadoPorNombre}</span>
                                 <p className="ma-contenido">{m.contenido}</p>
-                                <span className="ma-meta">
-                                    <i className="bi bi-person-fill" /> {m.enviadoPorNombre}
-                                    &nbsp;&nbsp;<i className="bi bi-clock" /> {fmtHora(m.fechaEnvio)}
-                                                    <span className="ma-zona-badge">
-                                        {m.zonaDestino === 'GENERAL' || !m.zonaDestino ? 'GENERAL' : m.zonaDestino}
-                                    </span>
-                                </span>
+                                <span className="ma-item-fecha"><i className="bi bi-clock" /> {fmtHora(m.fechaEnvio)}</span>
                             </div>
                         </div>
                     ))}

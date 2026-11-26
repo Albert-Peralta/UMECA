@@ -1,213 +1,247 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { enviarMensaje, getHistorialMensajes, desactivarMensaje, activarMensaje, editarMensaje } from '../api/mensajeAdminApi';
+import { useAuth } from '../context/AuthContext';
+import ChatGeneral from './ChatGeneral';
 import './MensajesAdmin.css';
 
 const ZONA_LABELS = {
     XOCHITEPEC: 'Xochitepec',
     CUAUTLA: 'Cuautla',
     JOJUTLA: 'Jojutla',
-    GENERAL: 'General (todas)',
+    GENERAL: 'General',
 };
 
-export default function MensajesAdmin() {
-    const [contenido, setContenido] = useState('');
+const normalizar = (txt) =>
+    txt.toUpperCase()
+        .replace(/[ÁÀÂÄ]/g, 'A').replace(/[ÉÈÊË]/g, 'E')
+        .replace(/[ÍÌÎÏ]/g, 'I').replace(/[ÓÒÔÖ]/g, 'O')
+        .replace(/[ÚÙÛÜ]/g, 'U');
 
-    const normalizar = (txt) =>
-        txt
-            .toUpperCase()
-            .replace(/[ÁÀÂÄ]/g, 'A')
-            .replace(/[ÉÈÊË]/g, 'E')
-            .replace(/[ÍÌÎÏ]/g, 'I')
-            .replace(/[ÓÒÔÖ]/g, 'O')
-            .replace(/[ÚÙÛÜ]/g, 'U');
+export default function MensajesAdmin({ defaultTab }) {
+    const { user } = useAuth();
+    const miNombre = user ? `${user.nombre || ''} ${user.apPaterno || ''}`.trim() : '';
+    const esMio = (m) => m.enviadoPorNombre === miNombre;
+
+    const [tab, setTab] = useState(defaultTab || 'mensajes');
+    const [contenido, setContenido] = useState('');
     const [zona, setZona] = useState('GENERAL');
     const [enviando, setEnviando] = useState(false);
-    const [exito, setExito] = useState('');
-    const [error, setError] = useState('');
     const [historial, setHistorial] = useState([]);
     const [cargando, setCargando] = useState(true);
-    const [modalEditar, setModalEditar] = useState(null); // { id, contenido }
+    const [modalEditar, setModalEditar] = useState(null);
     const [editando, setEditando] = useState(false);
     const [editExito, setEditExito] = useState(false);
+    const bottomRef = useRef(null);
+    const inputRef = useRef(null);
+    const cursorRef = useRef(null);
 
     const cargarHistorial = async () => {
         try {
             const res = await getHistorialMensajes();
-            setHistorial(res.data?.data || []);
-        } catch { /* silencioso */ }
+            const lista = [...(res.data?.data || [])].reverse();
+            setHistorial(lista);
+        } catch { }
         finally { setCargando(false); }
     };
 
     useEffect(() => { cargarHistorial(); }, []);
 
+    // Autofocus al montar y al cambiar al tab de mensajes
+    useEffect(() => {
+        if (tab === 'mensajes') inputRef.current?.focus();
+    }, [tab]);
+
+    useEffect(() => {
+        if (cursorRef.current !== null && inputRef.current) {
+            inputRef.current.setSelectionRange(cursorRef.current, cursorRef.current);
+            cursorRef.current = null;
+        }
+    }, [contenido]);
+
+    useEffect(() => {
+        if (!cargando && tab === 'mensajes') {
+            setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+        }
+    }, [cargando, historial.length, tab]);
+
     const handleEnviar = async () => {
-        if (!contenido.trim()) { setError('Escribe un mensaje antes de enviar.'); return; }
+        if (!contenido.trim()) return;
         setEnviando(true);
-        setError('');
-        setExito('');
         try {
             await enviarMensaje(contenido.trim(), zona);
-            setExito('Mensaje enviado correctamente.');
             setContenido('');
             cargarHistorial();
-        } catch {
-            setError('No se pudo enviar el mensaje. Intenta de nuevo.');
-        } finally { setEnviando(false); }
+        } catch { }
+        finally { setEnviando(false); }
+    };
+
+    const onKey = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleEnviar(); }
     };
 
     const handleDesactivar = async (id) => {
         try {
             await desactivarMensaje(id);
             setHistorial(h => h.map(m => m.id === id ? { ...m, activo: false } : m));
-        } catch { /* silencioso */ }
-    };
-
-    const handleGuardarEdicion = async () => {
-        if (!modalEditar?.contenido?.trim()) return;
-        setEditando(true);
-        setEditExito(false);
-        try {
-            await editarMensaje(modalEditar.id, modalEditar.contenido.trim());
-            setHistorial(h => h.map(m => m.id === modalEditar.id ? { ...m, contenido: modalEditar.contenido.trim() } : m));
-            setEditExito(true);
-            setTimeout(() => { setModalEditar(null); setEditExito(false); }, 1200);
-        } catch { /* silencioso */ }
-        finally { setEditando(false); }
+        } catch { }
     };
 
     const handleActivar = async (id) => {
         try {
             await activarMensaje(id);
             setHistorial(h => h.map(m => m.id === id ? { ...m, activo: true } : m));
-        } catch { /* silencioso */ }
+        } catch { }
+    };
+
+    const handleGuardarEdicion = async () => {
+        if (!modalEditar?.contenido?.trim()) return;
+        setEditando(true); setEditExito(false);
+        try {
+            await editarMensaje(modalEditar.id, modalEditar.contenido.trim());
+            setHistorial(h => h.map(m => m.id === modalEditar.id ? { ...m, contenido: modalEditar.contenido.trim() } : m));
+            setEditExito(true);
+            setTimeout(() => { setModalEditar(null); setEditExito(false); }, 1200);
+        } catch { }
+        finally { setEditando(false); }
+    };
+
+    const fmtHora = (dt) => {
+        if (!dt) return '';
+        return new Date(dt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
     };
 
     const fmtFecha = (dt) => {
         if (!dt) return '';
-        return new Date(dt).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' });
+        const d = new Date(dt);
+        const hoy = new Date();
+        const ayer = new Date(); ayer.setDate(hoy.getDate() - 1);
+        if (d.toDateString() === hoy.toDateString()) return 'Hoy';
+        if (d.toDateString() === ayer.toDateString()) return 'Ayer';
+        return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
     };
+
+    const grupos = historial.reduce((acc, m) => {
+        const key = fmtFecha(m.fechaEnvio);
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(m);
+        return acc;
+    }, {});
+
+    const Tabs = () => (
+        <div className="ma-tabs">
+            <button className={`mp-tab${tab === 'mensajes' ? ' mp-tab--active' : ''}`} onClick={() => setTab('mensajes')}>
+                <i className="bi bi-megaphone" /> Mensajes al personal
+            </button>
+            <button className={`mp-tab${tab === 'chat' ? ' mp-tab--active' : ''}`} onClick={() => setTab('chat')}>
+                <i className="bi bi-people" /> Chat General
+            </button>
+        </div>
+    );
+
+    if (tab === 'chat') {
+        return (
+            <div className="ma-page-chat">
+                <Tabs />
+                <ChatGeneral />
+            </div>
+        );
+    }
 
     return (
         <>
-        <div className="ma-page">
-            <div className="ma-page-header">
-                <i className="bi bi-megaphone-fill" />
-                <div>
-                    <h2 className="ma-page-titulo">Mensajes al personal</h2>
-                    <p className="ma-page-subtitulo">Envía comunicados por zona. Solo aparecen una vez por sesión a cada usuario.</p>
+        <div className="ma-page-chat">
+            <Tabs />
+            <div className="ma-chat-wrap">
+                <div className="ma-chat-header">
+                    <i className="bi bi-megaphone-fill" />
+                    <div>
+                        <span className="ma-chat-titulo">Mensajes al personal</span>
+                        <span className="ma-chat-sub">Solo los administradores pueden enviar comunicados</span>
+                    </div>
                 </div>
-            </div>
 
-            <div className="ma-card">
-                <div className="ma-card-titulo"><i className="bi bi-send-fill" /> Nuevo mensaje</div>
-                <div className="ma-form">
-                    <label className="ma-label">Zona de destino</label>
-                    <div className="ma-zona-btns">
+                <div className="ma-chat-mensajes">
+                    {cargando ? (
+                        <div className="ma-chat-vacio"><i className="bi bi-hourglass-split" /> Cargando...</div>
+                    ) : historial.length === 0 ? (
+                        <div className="ma-chat-vacio">
+                            <i className="bi bi-megaphone" />
+                            <p>No hay mensajes enviados aún.</p>
+                        </div>
+                    ) : (
+                        Object.entries(grupos).map(([fecha, lista]) => (
+                            <div key={fecha}>
+                                <div className="ma-separador-fecha"><span>{fecha}</span></div>
+                                {lista.map(m => (
+                                    <div key={m.id} className={`ma-burbuja-wrap${!m.activo ? ' ma-burbuja-wrap--inactiva' : ''}${esMio(m) ? ' ma-burbuja-wrap--mio' : ''}`}>
+                                        <div className="ma-burbuja">
+                                            <div className="ma-burbuja-top">
+                                                <span className="ma-burbuja-remitente">
+                                                    <i className="bi bi-shield-fill-check" /> {m.enviadoPorNombre}
+                                                </span>
+                                                <span className={`ma-badge-zona ma-badge-zona--${m.zonaDestino?.toLowerCase()}`}>
+                                                    {ZONA_LABELS[m.zonaDestino] || m.zonaDestino}
+                                                </span>
+                                            </div>
+                                            <p className="ma-burbuja-texto">{m.contenido}</p>
+                                            <div className="ma-burbuja-footer">
+                                                <span className="ma-burbuja-hora">{fmtHora(m.fechaEnvio)}</span>
+                                                {!m.activo && <span className="ma-retirado"><i className="bi bi-eye-slash" /> Retirado</span>}
+                                                <div className="ma-burbuja-acciones">
+                                                    <button className="ma-btn-ic ma-btn-ic--edit" onClick={() => setModalEditar({ id: m.id, contenido: m.contenido })} title="Editar">
+                                                        <i className="bi bi-pencil" />
+                                                    </button>
+                                                    {m.activo ? (
+                                                        <button className="ma-btn-ic ma-btn-ic--hide" onClick={() => handleDesactivar(m.id)} title="Ocultar">
+                                                            <i className="bi bi-eye-slash" />
+                                                        </button>
+                                                    ) : (
+                                                        <button className="ma-btn-ic ma-btn-ic--show" onClick={() => handleActivar(m.id)} title="Mostrar">
+                                                            <i className="bi bi-eye" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ))
+                    )}
+                    <div ref={bottomRef} />
+                </div>
+
+                <div className="ma-chat-input-wrap">
+                    <div className="ma-zona-pills">
                         {Object.entries(ZONA_LABELS).map(([val, label]) => (
                             <button
                                 key={val}
-                                className={`ma-zona-btn${zona === val ? ' ma-zona-btn--active' : ''}`}
+                                className={`ma-zona-pill${zona === val ? ' ma-zona-pill--active' : ''}`}
                                 onClick={() => setZona(val)}
                             >
-                                {val === 'GENERAL' && <i className="bi bi-globe2" />}
                                 {label}
                             </button>
                         ))}
                     </div>
-
-                    <label className="ma-label">Mensaje <span className="ma-contador">{contenido.length}/400</span></label>
-                    <textarea
-                        className="ma-textarea"
-                        placeholder="Escribe el comunicado para el personal..."
-                        value={contenido}
-                        onChange={e => { const v = normalizar(e.target.value); if (v.length <= 400) setContenido(v); }}
-                        rows={4}
-                        maxLength={400}
-                    />
-
-                    {exito && <div className="ma-alert ma-alert--ok"><i className="bi bi-check-circle-fill" /> {exito}</div>}
-                    {error && <div className="ma-alert ma-alert--err"><i className="bi bi-exclamation-triangle-fill" /> {error}</div>}
-
-                    <div className="ma-form-acciones">
-                        <span className="ma-zona-preview">
-                            Enviando a: <strong>{ZONA_LABELS[zona]}</strong>
-                        </span>
-                        <button className="ma-btn-enviar" onClick={handleEnviar} disabled={enviando || !contenido.trim()}>
-                            {enviando
-                                ? <><i className="bi bi-hourglass-split" /> Enviando...</>
-                                : <><i className="bi bi-send-fill" /> Enviar mensaje</>
-                            }
+                    <div className="ma-chat-input-row">
+                        <textarea
+                            ref={inputRef}
+                            className="ma-chat-input"
+                            placeholder="Escribe un comunicado..."
+                            value={contenido}
+                            onChange={e => { cursorRef.current = e.target.selectionStart; const v = normalizar(e.target.value); if (v.length <= 400) setContenido(v); }}
+                            onKeyDown={onKey}
+                            rows={1}
+                            maxLength={400}
+                        />
+                        <button className="ma-chat-btn-enviar" onClick={handleEnviar} disabled={enviando || !contenido.trim()}>
+                            <i className="bi bi-send-fill" />
                         </button>
                     </div>
                 </div>
             </div>
-
-            <div className="ma-card">
-                <div className="ma-card-titulo"><i className="bi bi-clock-history" /> Historial de mensajes</div>
-                {cargando ? (
-                    <div className="ma-cargando"><i className="bi bi-hourglass-split" /> Cargando...</div>
-                ) : historial.length === 0 ? (
-                    <div className="ma-vacio"><i className="bi bi-inbox" /> No hay mensajes enviados aún.</div>
-                ) : (
-                    <div className="ma-tabla-wrap">
-                        <table className="ma-tabla">
-                            <thead>
-                                <tr>
-                                    <th>Mensaje</th>
-                                    <th>Zona</th>
-                                    <th>Enviado por</th>
-                                    <th>Fecha y hora</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {historial.map(m => (
-                                    <tr key={m.id} className={!m.activo ? 'ma-fila-inactiva' : ''}>
-                                        <td className="ma-celda-mensaje">{m.contenido}</td>
-                                        <td>
-                                            <span className={`ma-badge-zona ma-badge-zona--${m.zonaDestino?.toLowerCase()}`}>
-                                                {ZONA_LABELS[m.zonaDestino] || m.zonaDestino}
-                                            </span>
-                                        </td>
-                                        <td>{m.enviadoPorNombre}</td>
-                                        <td className="ma-celda-fecha">{fmtFecha(m.fechaEnvio)}</td>
-                                        <td>
-                                            {m.activo
-                                                ? <span className="ma-estado-activo"><i className="bi bi-broadcast" /> Activo</span>
-                                                : <span className="ma-estado-inactivo"><i className="bi bi-eye-slash" /> Inactivo</span>
-                                            }
-                                        </td>
-                                        <td>
-                                            <div className="ma-acciones-grupo">
-                                                <button
-                                                    className="ma-btn-editar"
-                                                    onClick={() => setModalEditar({ id: m.id, contenido: m.contenido })}
-                                                    title="Editar"
-                                                >
-                                                    <i className="bi bi-pencil" />
-                                                </button>
-                                                {m.activo ? (
-                                                    <button className="ma-btn-desactivar" onClick={() => handleDesactivar(m.id)} title="Desactivar">
-                                                        <i className="bi bi-eye-slash" />
-                                                    </button>
-                                                ) : (
-                                                    <button className="ma-btn-activar" onClick={() => handleActivar(m.id)} title="Reactivar">
-                                                        <i className="bi bi-eye" />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
         </div>
 
-        {/* ── Modal editar mensaje ── */}
         {modalEditar && (
             <div className="ma-edit-overlay" onClick={() => setModalEditar(null)}>
                 <div className="ma-edit-modal" onClick={e => e.stopPropagation()}>
@@ -244,14 +278,8 @@ export default function MensajesAdmin() {
                         )}
                     </div>
                     <div className="ma-edit-footer">
-                        <button className="ma-edit-btn-cancelar" onClick={() => setModalEditar(null)}>
-                            Cancelar
-                        </button>
-                        <button
-                            className="ma-btn-enviar"
-                            onClick={handleGuardarEdicion}
-                            disabled={editando || !modalEditar.contenido.trim()}
-                        >
+                        <button className="ma-edit-btn-cancelar" onClick={() => setModalEditar(null)}>Cancelar</button>
+                        <button className="ma-btn-enviar" onClick={handleGuardarEdicion} disabled={editando || !modalEditar.contenido.trim()}>
                             {editando ? <><i className="bi bi-hourglass-split" /> Guardando...</> : <><i className="bi bi-check-lg" /> Guardar</>}
                         </button>
                     </div>

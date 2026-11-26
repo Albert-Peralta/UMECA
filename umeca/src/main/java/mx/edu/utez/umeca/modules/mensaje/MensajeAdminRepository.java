@@ -1,21 +1,21 @@
 package mx.edu.utez.umeca.modules.mensaje;
 
+import mx.edu.utez.umeca.modules.security.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface MensajeAdminRepository extends JpaRepository<MensajeAdmin, Long> {
 
-    // Mensaje activo para una zona específica o general (zona null)
-    @Query("SELECT m FROM MensajeAdmin m WHERE m.activo = true AND (m.zonaDestino = :zona OR m.zonaDestino IS NULL) ORDER BY m.fechaEnvio DESC")
-    List<MensajeAdmin> findActivoParaZona(@Param("zona") MensajeAdmin.ZonaDestino zona);
+    // Mensajes activos NO leídos por el usuario, para una zona específica o general
+    @Query("SELECT m FROM MensajeAdmin m WHERE m.activo = true AND (m.zonaDestino = :zona OR m.zonaDestino IS NULL) AND :usuario NOT MEMBER OF m.lectores ORDER BY m.fechaEnvio DESC")
+    List<MensajeAdmin> findNoLeidosParaZona(@Param("zona") MensajeAdmin.ZonaDestino zona, @Param("usuario") User usuario);
 
-    // Solo mensajes generales (zonaDestino IS NULL) activos
-    @Query("SELECT m FROM MensajeAdmin m WHERE m.activo = true AND m.zonaDestino IS NULL ORDER BY m.fechaEnvio DESC")
-    List<MensajeAdmin> findGeneralesActivos();
+    // Mensajes activos generales NO leídos por el usuario
+    @Query("SELECT m FROM MensajeAdmin m WHERE m.activo = true AND m.zonaDestino IS NULL AND :usuario NOT MEMBER OF m.lectores ORDER BY m.fechaEnvio DESC")
+    List<MensajeAdmin> findGeneralesNoLeidos(@Param("usuario") User usuario);
 
     // Historial para personal: mensajes de su zona o generales, ordenados DESC
     @Query("SELECT m FROM MensajeAdmin m WHERE m.zonaDestino = :zona OR m.zonaDestino IS NULL ORDER BY m.fechaEnvio DESC")

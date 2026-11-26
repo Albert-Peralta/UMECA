@@ -41,24 +41,30 @@ public class MensajeAdminService {
     }
 
     @Transactional(readOnly = true)
-    public ApiResponse getMensajeActivo() {
+    public ApiResponse getMensajesNoLeidos() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepo.findByUsername(username).orElseThrow();
-
         User.Zona zona = user.getZona();
 
-        List<MensajeAdmin> activos;
+        List<MensajeAdmin> noLeidos;
         if (zona == null) {
-            // Sin zona: solo mensajes generales
-            activos = repo.findGeneralesActivos();
+            noLeidos = repo.findGeneralesNoLeidos(user);
         } else {
-            MensajeAdmin.ZonaDestino zd = MensajeAdmin.ZonaDestino.valueOf(zona.name());
-            activos = repo.findActivoParaZona(zd);
+            noLeidos = repo.findNoLeidosParaZona(MensajeAdmin.ZonaDestino.valueOf(zona.name()), user);
         }
 
-        if (activos.isEmpty()) return new ApiResponse(true, "Sin mensajes", null);
+        List<MensajeAdminResponseDTO> lista = noLeidos.stream().map(MensajeAdminResponseDTO::from).toList();
+        return new ApiResponse(true, "OK", lista);
+    }
 
-        return new ApiResponse(true, "OK", MensajeAdminResponseDTO.from(activos.get(0)));
+    public ApiResponse marcarLeido(Long id) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepo.findByUsername(username).orElseThrow();
+        MensajeAdmin m = repo.findById(id).orElse(null);
+        if (m == null) return new ApiResponse(false, "No encontrado");
+        m.getLectores().add(user);
+        repo.save(m);
+        return new ApiResponse(true, "Marcado como leído");
     }
 
     @Transactional(readOnly = true)

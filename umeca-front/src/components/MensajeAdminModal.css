@@ -112,9 +112,16 @@
 .ma-item-contenido {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
     flex: 1;
     min-width: 0;
+}
+
+.ma-item-remitente {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #1a4a8a;
+    align-self: flex-start;
 }
 
 .ma-contenido {
@@ -123,6 +130,12 @@
     line-height: 1.6;
     margin: 0;
     white-space: pre-wrap;
+}
+
+.ma-item-fecha {
+    font-size: 0.68rem;
+    color: #aaa;
+    align-self: flex-end;
 }
 
 .ma-footer {
