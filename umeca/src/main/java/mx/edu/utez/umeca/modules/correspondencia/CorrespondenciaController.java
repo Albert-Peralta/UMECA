@@ -100,7 +100,7 @@ public class CorrespondenciaController {
 
     /** Admin/Superadmin: revertir cancelación (vuelve a PENDIENTE) */
     @PatchMapping("/{id}/revertir-cancelacion")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN') or @moduloChecker.puedeEliminar(authentication,'CORRESPONDENCIA')")
     public ResponseEntity<ApiResponse> revertirCancelacion(@PathVariable Long id) {
         ApiResponse res = service.revertirCancelacion(id);
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
@@ -113,6 +113,22 @@ public class CorrespondenciaController {
             @PathVariable Long id,
             @RequestBody java.util.Map<String, String> body) {
         ApiResponse res = service.cancelar(id, body != null ? body.get("motivo") : null);
+        return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
+    }
+
+    /** Admin/Superadmin: archivar registro (cambia estado a ARCHIVADO) */
+    @PatchMapping("/{id}/archivar")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN') or @moduloChecker.puedeEliminar(authentication,'CORRESPONDENCIA')")
+    public ResponseEntity<ApiResponse> archivar(@PathVariable Long id) {
+        ApiResponse res = service.archivar(id);
+        return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
+    }
+
+    /** Admin/Superadmin: revertir archivo (vuelve a PENDIENTE) */
+    @PatchMapping("/{id}/revertir-archivo")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMINISTRADOR','ROLE_SUPERADMIN') or @moduloChecker.puedeEliminar(authentication,'CORRESPONDENCIA')")
+    public ResponseEntity<ApiResponse> revertirArchivo(@PathVariable Long id) {
+        ApiResponse res = service.revertirArchivo(id);
         return res.isOk() ? ResponseEntity.ok(res) : ResponseEntity.badRequest().body(res);
     }
 

@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { toUpperNoAccent } from '../utils/text';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useFormGuard } from '../context/FormGuardContext';
 import {
     getCorrespondencia, getMisAsignados, getMisRegistros, crearCorrespondencia,
-    editarCorrespondencia, eliminarCorrespondencia, cancelarCorrespondencia, revertirCancelacionCorrespondencia,
+    editarCorrespondencia, eliminarCorrespondencia, cancelarCorrespondencia, revertirCancelacionCorrespondencia, archivarCorrespondencia, revertirArchivoCorrespondencia,
     getPersonalAsignable, asignarCorrespondencia, quitarAsignacion,
     cambiarEstadoCorrespondencia, getContadoresCorrespondencia, exportarCorrespondenciaExcel,
     SEDES, TIPOS, PRIORIDADES, ESTADOS_PERSONAL, ESTADO_CONFIG, PRIORIDAD_CONFIG,
@@ -67,8 +67,25 @@ export default function Correspondencia({ resetKey = 0 }) {
 
     // Vista activa: 'lista' | 'form' | 'detalle'
     const [vista,    setVista]    = useState('lista');
+    const pendienteDetalleId = useRef(null);
 
     useEffect(() => { if (resetKey > 0) { setVista('lista'); setTabCorr('mis'); } }, [resetKey]);
+
+    // Cuando la lista se recarga y hay un registro pendiente de mostrar en detalle
+    useEffect(() => {
+        if (pendienteDetalleId.current === null) return;
+        const id = pendienteDetalleId.current;
+        const reg = lista.find(r => r.id === id);
+        pendienteDetalleId.current = null;
+        if (reg) {
+            setRegistro(reg); setVista('detalle');
+            setTimeout(() => {
+                const contenedor = document.querySelector('.dashboard-content');
+                if (contenedor) contenedor.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 50);
+        }
+        else setVista('lista');
+    }, [lista]);
     useEffect(() => { setFormDirty(vista === 'form'); return () => setFormDirty(false); }, [vista]);
     const [registro, setRegistro] = useState(null);
 
@@ -98,6 +115,9 @@ export default function Correspondencia({ resetKey = 0 }) {
     const [loadingEliminar,  setLoadingEliminar]  = useState(false);
     const [showCancelarModal,setShowCancelarModal] = useState(false);
     const [registroCancelar, setRegistroCancelar] = useState(null);
+    const [showArchivarModal, setShowArchivarModal] = useState(false);
+    const [registroArchivar, setRegistroArchivar] = useState(null);
+    const [loadingArchivar, setLoadingArchivar] = useState(false);
     const [motivoCancelar,   setMotivoCancelar]   = useState('');
     const [motivoError,      setMotivoError]      = useState('');
     const [loadingCancelar,  setLoadingCancelar]  = useState(false);
@@ -234,10 +254,10 @@ export default function Correspondencia({ resetKey = 0 }) {
             if (res.data.ok) {
                 showToast('Registro actualizado correctamente');
                 setFormDirty(false);
-                setVista('lista');
                 setForm(FORM_VACIO);
                 setArchivo(null);
                 setModoEditar(false);
+                pendienteDetalleId.current = registroEditar.id;
                 setRegistroEditar(null);
                 cargar();
             } else showToast(res.data.message || 'Error al editar', 'error');
@@ -268,6 +288,27 @@ export default function Correspondencia({ resetKey = 0 }) {
             } else showToast(res.data.message || 'Error al eliminar', 'error');
         } catch { showToast('Error de conexión', 'error'); }
         finally { setLoadingEliminar(false); }
+    };
+
+    // ── Archivar (admin) ────────────────────────────────────────────────────
+    const abrirArchivar = (reg) => {
+        setRegistroArchivar(reg);
+        setShowArchivarModal(true);
+    };
+
+    const handleArchivar = async () => {
+        setLoadingArchivar(true);
+        try {
+            const res = await archivarCorrespondencia(registroArchivar.id);
+            if (res.data.ok) {
+                showToast('Registro archivado correctamente');
+                setShowArchivarModal(false);
+                setRegistroArchivar(null);
+                cargar();
+                window.dispatchEvent(new CustomEvent('corr-contadores-cambio'));
+            } else showToast(res.data.message || 'Error al archivar', 'error');
+        } catch { showToast('Error de conexión', 'error'); }
+        finally { setLoadingArchivar(false); }
     };
 
     // ── Cancelar (admin) ────────────────────────────────────────────────────
@@ -427,10 +468,24 @@ export default function Correspondencia({ resetKey = 0 }) {
     if (vista === 'form') {
         return (
             <div className="corr-container">
-                <div className="corr-form-header">
-                    <button className="corr-btn-volver" onClick={() => { setFormDirty(false); setVista('lista'); setForm(FORM_VACIO); setArchivo(null); setModoEditar(false); setRegistroEditar(null); setErroresCampo({}); }}>
-                        <i className="bi bi-arrow-left" /> Cancelar
+                <div className="corr-form-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <button className="corr-btn-volver" onClick={() => {
+                        setFormDirty(false); setForm(FORM_VACIO); setArchivo(null); setModoEditar(false); setRegistroEditar(null); setErroresCampo({});
+                        setVista('lista');
+                    }}>
+                        <i className="bi bi-arrow-left" /> Volver a la lista
                     </button>
+                    {modoEditar && registroEditar && (
+                        <button className="corr-btn-volver" onClick={() => {
+                            setFormDirty(false); setForm(FORM_VACIO); setArchivo(null); setErroresCampo({});
+                            const reg = registroEditar;
+                            setModoEditar(false); setRegistroEditar(null);
+                            setRegistro(reg); setVista('detalle');
+                            setTimeout(() => { const c = document.querySelector('.dashboard-content'); if (c) c.scrollTo({ top: 0, behavior: 'smooth' }); }, 50);
+                        }}>
+                            <i className="bi bi-x-lg" /> Cancelar
+                        </button>
+                    )}
                 </div>
 
                 {/* Banner */}
@@ -682,10 +737,16 @@ export default function Correspondencia({ resetKey = 0 }) {
         return (
             <div className="corr-container">
                 {/* Barra superior con botón volver */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.6rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
                     <button className="corr-btn-volver" onClick={() => { setVista('lista'); setRegistro(null); }}>
                         <i className="bi bi-arrow-left" /> Volver a la lista
                     </button>
+                    {(puedeEditarCorr) && registro.estado !== 'CANCELADO' && registro.estado !== 'ARCHIVADO' && (
+                        <button className="corr-btn-nuevo" style={{ padding: '7px 16px', fontSize: 13 }}
+                            onClick={() => { abrirEditar(registro); setRegistro(null); }}>
+                            <i className="bi bi-pencil-fill" /> Editar registro
+                        </button>
+                    )}
                 </div>
 
                 {/* Banner detalle */}
@@ -1079,10 +1140,22 @@ export default function Correspondencia({ resetKey = 0 }) {
                                         )}
                                         {(puedeEditarCorr || puedeCancelarCorr) && (
                                             <>
-                                                {puedeEditarCorr && r.estado !== 'CANCELADO' && (
-                                                    <button className="corr-btn-editar" title="Editar"
-                                                        onClick={() => abrirEditar(r)}>
-                                                        <i className="bi bi-pencil-fill" />
+                                                {puedeCancelarCorr && r.estado !== 'CANCELADO' && r.estado !== 'ARCHIVADO' && (
+                                                    <button className="corr-btn-archivar" title="Archivar registro"
+                                                        onClick={() => abrirArchivar(r)}>
+                                                        <i className="bi bi-archive-fill" />
+                                                    </button>
+                                                )}
+                                                {puedeCancelarCorr && r.estado === 'ARCHIVADO' && r.prioridad !== 'TURNO' && r.prioridad !== 'CIRCULAR' && (
+                                                    <button className="corr-btn-revertir" title="Revertir archivo"
+                                                        onClick={async () => {
+                                                            try {
+                                                                const res = await revertirArchivoCorrespondencia(r.id);
+                                                                if (res.data.ok) { showToast('Archivo revertido'); cargar(); }
+                                                                else showToast(res.data.message || 'Error al revertir', 'error');
+                                                            } catch { showToast('Error de conexión', 'error'); }
+                                                        }}>
+                                                        <i className="bi bi-archive" />
                                                     </button>
                                                 )}
                                                 {puedeCancelarCorr && r.estado !== 'CANCELADO' ? (
@@ -1270,6 +1343,62 @@ export default function Correspondencia({ resetKey = 0 }) {
             )}
         {/* Modal eliminar */}
             {/* ── Modal Cancelar ── */}
+            {showArchivarModal && (
+                <div className="corr-modal-overlay">
+                    <div className="corr-modal-box corr-modal-box-danger" style={{ borderTop: '4px solid #1d4ed8', maxWidth: 480 }}>
+                        <div className="corr-modal-danger-header" style={{ background: 'linear-gradient(135deg,#1e40af,#2563eb)', borderRadius: '8px 8px 0 0' }}>
+                            <div className="corr-modal-danger-icon" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
+                                <i className="bi bi-archive-fill" style={{ fontSize: 22 }} />
+                            </div>
+                            <div>
+                                <h3 className="corr-modal-danger-titulo" style={{ color: '#fff' }}>Archivar registro</h3>
+                                <p className="corr-modal-danger-sub" style={{ color: 'rgba(255,255,255,0.8)' }}>El registro cambiará a estado <strong>Archivado</strong></p>
+                            </div>
+                        </div>
+
+                        <div className="corr-modal-danger-body">
+                            <div className="corr-modal-danger-card" style={{ marginBottom: 18 }}>
+                                <div className="corr-modal-danger-row">
+                                    <span className="corr-modal-danger-lbl"><i className="bi bi-hash" /> No. Turno</span>
+                                    <span className="corr-modal-danger-val" style={{ color: '#1d4ed8', fontWeight: 700 }}>{registroArchivar?.noTurno || '—'}</span>
+                                </div>
+                                <div className="corr-modal-danger-divider" />
+                                <div className="corr-modal-danger-row corr-modal-danger-row-col">
+                                    <span className="corr-modal-danger-lbl"><i className="bi bi-chat-left-text" /> Asunto</span>
+                                    <span className="corr-modal-danger-val">{registroArchivar?.asunto || '—'}</span>
+                                </div>
+                                {registroArchivar?.remitente && (<>
+                                    <div className="corr-modal-danger-divider" />
+                                    <div className="corr-modal-danger-row corr-modal-danger-row-col">
+                                        <span className="corr-modal-danger-lbl"><i className="bi bi-person" /> Remitente</span>
+                                        <span className="corr-modal-danger-val">{registroArchivar.remitente}</span>
+                                    </div>
+                                </>)}
+                            </div>
+
+                            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '10px 14px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <i className="bi bi-info-circle-fill" style={{ color: '#2563eb', fontSize: 15 }} />
+                                <span style={{ fontSize: 12.5, color: '#1e40af' }}>El registro quedará guardado como referencia histórica y no aparecerá en los contadores activos.</span>
+                            </div>
+
+                            <div style={{ height: 1, background: '#e5e7eb', margin: '0 0 20px' }} />
+
+                            <div className="corr-modal-acciones">
+                                <button className="corr-modal-btn-cancelar" onClick={() => setShowArchivarModal(false)} disabled={loadingArchivar} style={{ flex: 1 }}>
+                                    <i className="bi bi-x-lg" /> Cancelar
+                                </button>
+                                <button onClick={handleArchivar} disabled={loadingArchivar}
+                                    style={{ flex: 1.4, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '9px 16px', borderRadius: 8, border: 'none', background: loadingArchivar ? '#93c5fd' : '#2563eb', color: '#fff', fontWeight: 700, fontSize: 13, cursor: loadingArchivar ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
+                                    {loadingArchivar
+                                        ? <><i className="bi bi-hourglass-split" /> Archivando...</>
+                                        : <><i className="bi bi-archive-fill" /> Confirmar archivo</>}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {showCancelarModal && (
                 <div className="corr-modal-overlay">
                     <div className="corr-modal-box corr-modal-box-danger" style={{ borderTop: '4px solid #6b7280', maxWidth: 480 }}>

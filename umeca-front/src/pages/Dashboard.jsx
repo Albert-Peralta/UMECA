@@ -56,8 +56,8 @@ const menuPorRol = {
         { key: 'control-oficios',  label: 'Control de Oficios', icon: 'bi bi-file-earmark-text' },
         { separator: true,   label: 'Histórico' },
         { key: 'expedientes', label: 'Expedientes Anteriores', icon: 'bi bi-archive' },
-        { separator: true,   label: 'Comunicados' },
-        { key: 'mensajes',    label: 'Mensajes al personal',   icon: 'bi bi-megaphone' },
+        // { separator: true, label: 'Comunicados' },
+        // { key: 'mensajes', label: 'Mensajes al personal', icon: 'bi bi-megaphone' },
     ],
     ADMINISTRADOR: [
         { separator: true,   label: 'General' },
@@ -77,8 +77,8 @@ const menuPorRol = {
         { key: 'control-oficios',  label: 'Control de Oficios', icon: 'bi bi-file-earmark-text' },
         { separator: true,   label: 'Histórico' },
         { key: 'expedientes', label: 'Expedientes Anteriores', icon: 'bi bi-archive' },
-        { separator: true,   label: 'Comunicados' },
-        { key: 'mensajes',    label: 'Mensajes al personal',   icon: 'bi bi-megaphone' },
+        // { separator: true, label: 'Comunicados' },
+        // { key: 'mensajes', label: 'Mensajes al personal', icon: 'bi bi-megaphone' },
     ],
     SUPERVISION: [
         { separator: true,   label: 'General' },
@@ -95,8 +95,8 @@ const menuPorRol = {
         { key: 'control-oficios',  label: 'Control de Oficios',     icon: 'bi bi-file-earmark-text' },
         { separator: true,   label: 'Histórico' },
         { key: 'expedientes',     label: 'Expedientes Anteriores', icon: 'bi bi-archive' },
-        { separator: true,   label: 'Comunicados' },
-        { key: 'comunicados', label: 'Comunicados',               icon: 'bi bi-megaphone' },
+        // { separator: true, label: 'Comunicados' },
+        // { key: 'comunicados', label: 'Comunicados', icon: 'bi bi-megaphone' },
     ],
     EVALUADOR_RIESGO: [
         { separator: true,   label: 'General' },
@@ -114,8 +114,8 @@ const menuPorRol = {
         { key: 'control-oficios',  label: 'Control de Oficios',     icon: 'bi bi-file-earmark-text' },
         { separator: true,   label: 'Histórico' },
         { key: 'expedientes',     label: 'Expedientes Anteriores', icon: 'bi bi-archive' },
-        { separator: true,   label: 'Comunicados' },
-        { key: 'comunicados', label: 'Comunicados',               icon: 'bi bi-megaphone' },
+        // { separator: true, label: 'Comunicados' },
+        // { key: 'comunicados', label: 'Comunicados', icon: 'bi bi-megaphone' },
     ],
     CORRESPONDENCIA: [
         { separator: true,        label: 'General' },
@@ -127,8 +127,8 @@ const menuPorRol = {
         { separator: true,        label: 'Oficios' },
         { key: 'correspondencia',  label: 'Correspondencia',     icon: 'bi bi-envelope-paper' },
         { key: 'control-oficios',  label: 'Control de Oficios',  icon: 'bi bi-file-earmark-text' },
-        { separator: true,        label: 'Comunicados' },
-        { key: 'comunicados',     label: 'Comunicados',          icon: 'bi bi-megaphone' },
+        // { separator: true, label: 'Comunicados' },
+        // { key: 'comunicados', label: 'Comunicados', icon: 'bi bi-megaphone' },
     ],
 };
 

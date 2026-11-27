@@ -228,7 +228,7 @@
 
 /* ── Acciones tabla ─────────────────────────────────────── */
 .corr-acciones { display: flex; gap: 6px; align-items: center; justify-content: center; }
-.corr-btn-ver, .corr-btn-asignar, .corr-btn-quitar, .corr-btn-editar, .corr-btn-eliminar, .corr-btn-cancelar, .corr-btn-revertir {
+.corr-btn-ver, .corr-btn-asignar, .corr-btn-quitar, .corr-btn-editar, .corr-btn-eliminar, .corr-btn-cancelar, .corr-btn-revertir, .corr-btn-archivar {
     background: none; border: 1px solid #376842; color: #376842;
     border-radius: 6px; padding: 3px 7px; cursor: pointer;
     font-size: 13px; display: inline-flex; align-items: center;
@@ -240,6 +240,8 @@
 .corr-btn-editar:hover     { background: #376842; color: white; }
 .corr-btn-eliminar         { border-color: #ef4444; color: #ef4444; }
 .corr-btn-eliminar:hover   { background: #ef4444; color: white; }
+.corr-btn-archivar         { border-color: #2563eb; color: #2563eb; }
+.corr-btn-archivar:hover   { background: #2563eb; color: white; }
 .corr-btn-cancelar         { border-color: #6b7280; color: #6b7280; }
 .corr-btn-cancelar:hover   { background: #6b7280; color: white; }
 

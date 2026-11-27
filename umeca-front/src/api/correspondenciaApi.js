@@ -39,6 +39,12 @@ export const cancelarCorrespondencia = (id, motivo) =>
 export const revertirCancelacionCorrespondencia = (id) =>
     api.patch(`/correspondencia/${id}/revertir-cancelacion`);
 
+export const archivarCorrespondencia = (id) =>
+    api.patch(`/correspondencia/${id}/archivar`);
+
+export const revertirArchivoCorrespondencia = (id) =>
+    api.patch(`/correspondencia/${id}/revertir-archivo`);
+
 export const getPersonalAsignable = () =>
     api.get('/correspondencia/personal-asignable');
 

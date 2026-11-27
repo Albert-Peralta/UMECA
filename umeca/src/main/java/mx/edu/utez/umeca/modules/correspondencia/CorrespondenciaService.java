@@ -183,6 +183,33 @@ public class CorrespondenciaService {
         }).orElse(new ApiResponse(false, "Registro no encontrado"));
     }
 
+    // ── Archivar (cambia estado a ARCHIVADO) ──────────────────────────────────
+    @Transactional
+    public ApiResponse archivar(Long id) {
+        return repository.findById(id).map(c -> {
+            c.setEstado(Correspondencia.Estado.ARCHIVADO);
+            repository.save(c);
+            bitacoraService.registrar(Bitacora.Entidad.CORRESPONDENCIA, id,
+                    c.getNoTurno(), Bitacora.Accion.EDITAR,
+                    "Correspondencia archivada manualmente");
+            return new ApiResponse(true, "Registro archivado correctamente");
+        }).orElse(new ApiResponse(false, "Registro no encontrado"));
+    }
+
+    // ── Revertir archivo (vuelve a PENDIENTE) ────────────────────────────────
+    @Transactional
+    public ApiResponse revertirArchivo(Long id) {
+        return repository.findById(id).map(c -> {
+            if (c.getEstado() != Correspondencia.Estado.ARCHIVADO)
+                return new ApiResponse(false, "El registro no está archivado");
+            c.setEstado(Correspondencia.Estado.PENDIENTE);
+            repository.save(c);
+            bitacoraService.registrar(Bitacora.Entidad.CORRESPONDENCIA, id,
+                    c.getNoTurno(), Bitacora.Accion.EDITAR, "Archivo revertido — estado vuelto a PENDIENTE");
+            return new ApiResponse(true, "Archivo revertido correctamente");
+        }).orElse(new ApiResponse(false, "Registro no encontrado"));
+    }
+
     // ── Usuarios que han registrado correspondencia ───────────────────────────
     @Transactional(readOnly = true)
     public ApiResponse getRegistradores() {
